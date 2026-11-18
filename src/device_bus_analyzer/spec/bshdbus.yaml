@@ -8,6 +8,23 @@ physical: "9600 baud, 8N1, half duplex, idle gap 15 ms ends a burst"
 frame: "LL DS CC CC data... CRC16-XMODEM(LL..data); total length LL+4; ACK byte with low nibble 0xA"
 # The frame carries only the DESTINATION. The sender is derived from the destination class and is therefore
 # never better than "assumed". Exact node entries win over class entries ("1x" = every 0x1_ destination).
+# DS byte = destination node (high nibble) + subsystem (low nibble). There is NO source field on the wire
+# (hn/bsh-home-appliances; bruestel/openHAB agree). Verified against our own recordings: only high nibbles 1 and 2
+# occur; the low nibble tracks the command group, not a sender. The sender below is therefore always derived.
+node_addresses:
+  "0": {name: "network management / broadcast", status: assumed, evidence: "hn/bsh-home-appliances (washing machine); not seen on our dishwasher"}
+  "1": {name: "washing control unit (power module)", status: assumed, evidence: "hn table; commands from the panel arrive here (0x17)"}
+  "2": {name: "user control panel", status: assumed, evidence: "hn table; state reports (0x24-0x27) go here"}
+  "6": {name: "TimeLight", status: assumed, evidence: "hn DISHWASHER.md; not seen yet"}
+  "a": {name: "internet communication end point", status: assumed, evidence: "hn table; not seen yet"}
+  "b": {name: "WiFi module", status: assumed, evidence: "hn table; not seen yet"}
+subsystems:
+  "0": {name: "common / memory dump", status: assumed, evidence: "hn: S=0 is the same on all devices"}
+  "4": {name: "set parameters", status: assumed, evidence: "hn (washing machine)"}
+  "5": {name: "start/stop processes", status: assumed, evidence: "hn (washing machine)"}
+  "6": {name: "user info I", status: assumed, evidence: "hn (washing machine)"}
+  "7": {name: "user info II / other", status: assumed, evidence: "hn lists 0xa for user info II; 0x7 differs on the dishwasher (0x17/0x1xxx commands, 0x27/0x2007)"}
+  "f": {name: "network management / broadcast", status: assumed, evidence: "hn"}
 nodes:
   "1x":
     receiver: "power module"
@@ -20,8 +37,8 @@ nodes:
     status: assumed
     evidence: "state reports (remaining time, door, operating state) appear on their own while the module runs"
 acks:
-  "1": {node: "control panel", status: assumed, evidence: "ACK 1A follows commands sent to the power module"}
-  "2": {node: "power module", status: assumed, evidence: "ACK 2A follows status frames"}
+  "1": {node: "power module", status: assumed, evidence: "ACK = 0x0A | destination node << 4 (hn); in our data 1A follows 0x1x frames, 2A follows 0x2x frames"}
+  "2": {node: "control panel", status: assumed, evidence: "ACK high nibble = addressed node (hn): 2A acknowledges 0x2x frames, i.e. the panel"}
 # How telegrams are grouped into runs (program cycles). Detection is a heuristic and always marked as such.
 runs:
   start:

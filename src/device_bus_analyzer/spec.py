@@ -38,6 +38,21 @@ def node_info(spec: dict[str, Any], ds: int) -> dict[str, Any]:
             "receiver": {"value": entry.get("receiver"), "status": st if entry.get("receiver") else "unknown", "evidence": entry.get("evidence", "")}}
 
 
+def dest_info(spec: dict[str, Any], ds: int) -> dict[str, Any]:
+    """Split the DS byte: high nibble = destination node, low nibble = subsystem (per hn/bsh-home-appliances)."""
+    node, sub = ds >> 4, ds & 0xF
+    ne = spec.get("node_addresses", {}).get(f"{node:x}")
+    se = spec.get("subsystems", {}).get(f"{sub:x}")
+    return {
+        "dest_node": {"value": node, "name": ne["name"] if ne else None,
+                      "status": ne.get("status", "assumed") if ne else "unknown",
+                      "evidence": ne.get("evidence", "") if ne else "node address not in the spec"},
+        "subsystem": {"value": sub, "name": se["name"] if se else None,
+                      "status": se.get("status", "assumed") if se else "unknown",
+                      "evidence": se.get("evidence", "") if se else "subsystem not in the spec"},
+    }
+
+
 def ack_info(spec: dict[str, Any], ack: int | None) -> dict[str, Any] | None:
     """Who acknowledged (high nibble of the ACK byte). None if the frame had no ACK."""
     if ack is None:
@@ -57,7 +72,7 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
     spec = load_spec(protocol)
     key = f"{ds:02x}/{cmd:04x}"
     nodes = node_info(spec, ds)
-    base = {"key": key, **nodes, "acked_by": ack_info(spec, ack)}
+    base = {"key": key, **nodes, "acked_by": ack_info(spec, ack), **dest_info(spec, ds)}
     entry = lookup(spec, ds, cmd)
     if entry is None:
         return {**base, "name": None, "title": None, "status": "unknown", "values": {}, "fields": [], "notes": ["not in spec"]}
