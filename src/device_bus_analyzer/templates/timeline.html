@@ -1,9 +1,9 @@
-{% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+{% extends "base.html" %}{% import "_macros.html" as m %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
 <h1>{{ src.name }} · {{ t.timeline }}</h1>
-<form method="get" class="filters"><label>{{ t.since }} <input name="since" value="{{ q.since }}"></label><label>{{ t.until }} <input name="until" value="{{ q.until }}"></label>
+<form method="get" class="filters">{% if q.run %}<input type="hidden" name="run" value="{{ q.run }}"><span class="tag">{{ t.run }} #{{ q.run }}</span>{% endif %}<label>{{ t.since }} <input name="since" value="{{ q.since }}"></label><label>{{ t.until }} <input name="until" value="{{ q.until }}"></label>
 <label>{{ t.limit }} <input name="limit" value="{{ q.limit }}" size="5"></label><button>{{ t.filter }}</button></form>
 {% if not rows %}<p>{{ t.no_data }}</p>{% else %}
-<table><tr><th>{{ t.time }}</th><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.decoded }}</th></tr>
-{% for r in rows %}<tr><td>{{ fmt(r.ts) }}</td><td>{{ '%02x' % r.ds }}/{{ '%04x' % r.cmd }}</td><td class="mono">{{ hexs(r.data) }}</td>
-<td>{% if r.decoded.name %}<span class="st {{ r.decoded.status }}">{{ t[r.decoded.status] }}</span> {{ r.decoded.title }}: {{ r.decoded["values"] }}{% endif %}</td></tr>{% endfor %}</table>{% endif %}
+<table><tr><th>{{ t.time }}</th><th>{{ t.sender }}</th><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.decoded }}</th></tr>
+{% for r in rows %}<tr><td>{{ fmt(r.ts) }}</td><td>{{ m.who(r.decoded.sender, t) }}</td><td>{{ '%02x' % r.ds }}/{{ '%04x' % r.cmd }}</td><td class="mono">{{ hexs(r.data) }}</td>
+<td>{{ m.decoded(r.decoded, t) }}</td></tr>{% endfor %}</table>{% endif %}
 {% endblock %}

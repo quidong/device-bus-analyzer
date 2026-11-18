@@ -140,7 +140,7 @@ def test_html_pages_render_in_both_languages(client, lang, word):
 def test_html_shows_decoded_values_and_status_badges(client):
     login(client)
     t = client.get("/s/dw/frames?cmd=2008&lang=en").text
-    assert "remaining_time" in t and "confirmed" in t and "remaining_min" in t and "160" in t
+    assert "Remaining time" in t and "confirmed" in t and "<b>160 min</b>" in t
 
 
 def test_security_headers_and_no_store(client):
@@ -206,3 +206,74 @@ def test_failed_login_is_logged_without_secrets(client, caplog):
         login(client, pw="very-secret-wrong")
     text = caplog.text
     assert "does not match" in text and "wrong" in text and "very-secret-wrong" not in text and PW not in text
+
+
+def test_html_marks_assumed_sender_ack_and_fields(client):
+    login(client)
+    t = client.get("/s/dw/frames?cmd=2008&lang=en").text
+    assert "Sender" in t and "power module" in t and "assumed" in t         # sender + ACK node carry a badge
+    t = client.get("/s/dw/frames?lang=de").text
+    assert "Absender" in t and "angenommen" in t
+    assert "unbekannt" in client.get("/s/dw/commands?lang=de").text or "bestätigt" in client.get("/s/dw/commands?lang=de").text
+    assert "Knoten" in client.get("/findings/bshdbus?lang=de").text
+
+
+def test_api_exposes_sender_and_status(client):
+    h = {"Authorization": f"Bearer {TOKEN}"}
+    d = client.get("/api/dw/frames", params={"cmd": "2008", "limit": 1}, headers=h).json()[0]["decoded"]
+    assert d["sender"]["value"] == "power module" and d["sender"]["status"] == "assumed"
+    assert d["acked_by"]["status"] == "assumed" and d["fields"][0]["status"] == "confirmed"
+
+
+def _run_data(store):
+    sid = store.source("dw2", "bshdbus")
+    n = [0]
+
+    def put(ts, fr):
+        n[0] += 1
+        store.ingest_line(sid, raw1(n[0], n[0] * 1000, fr), ts)
+    put(1000.0, build_frame(0x17, 0x1011, b"\x1c"))
+    put(1010.0, build_frame(0x17, 0x1013, b"\x01"))
+    put(1010.2, build_frame(0x17, 0x1013, b"\x01"))                 # repeated start burst is merged
+    for k in range(4):
+        put(1060.0 + 60 * k, build_frame(0x25, 0x2008, bytes([160 - k]) + bytes(7)))
+    put(9000.0, build_frame(0x17, 0x1011, b"\x0d"))
+    put(9010.0, build_frame(0x17, 0x1013, b"\x01"))
+    put(9070.0, build_frame(0x25, 0x2008, bytes([150]) + bytes(7)))
+    return store
+
+
+def test_runs_are_detected_and_marked_assumed(store):
+    runs = _run_data(store).runs("dw2")
+    assert len(runs) == 2
+    r = runs[0]
+    assert (r["program"], r["remaining_start_min"], r["remaining_end_min"]) == ("Chef 70 C", 160, 157)
+    assert r["start_status"] == "assumed" and r["end_status"] == "assumed" and r["open"] is False
+    assert r["frames"] == 6 and runs[1]["program"] == "Auto 45-65 C"
+    assert runs[1]["from_ts"] > r["end_ts"]                          # context never reaches into the previous run
+
+
+def test_macs_has_no_runs_yet(store):
+    store.source("tr", "macs")
+    assert store.runs("tr") == []
+
+
+def test_api_and_html_run_filter(store):
+    from argon2 import PasswordHasher  # noqa: F401
+    _run_data(store)
+    c = TestClient(create_app(Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32, api_token=TOKEN), store),
+                   follow_redirects=False)
+    h = {"Authorization": f"Bearer {TOKEN}"}
+    runs = c.get("/api/dw2/runs", headers=h).json()
+    first, second = runs[0]["id"], runs[1]["id"]
+    in_first = c.get("/api/dw2/frames", params={"run": first, "limit": 100}, headers=h).json()
+    assert len(in_first) == 7 and all(f["ts"] < 5000 for f in in_first)       # selection + start + 4 status frames (+ merged repeat)
+    assert all(f["ts"] > 5000 for f in c.get("/api/dw2/frames", params={"run": second}, headers=h).json())
+    assert len(c.get("/api/dw2/timeline", params={"run": first}, headers=h).json()) > 0
+    assert c.get("/api/dw2/bursts", params={"run": first}, headers=h).json()
+    assert c.get("/api/dw2/frames", params={"run": 999999}, headers=h).status_code == 404
+    login(c)
+    t = c.get(f"/s/dw2/runs?lang=de").text
+    assert "Läufe" in t and "angenommen" in t and "Chef 70 C" in t and f"run={first}" in t
+    assert "Lauf #" in c.get(f"/s/dw2/frames?run={first}&lang=de").text
+    assert c.get("/s/dw2/runs?lang=en").status_code == 200

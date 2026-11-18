@@ -1,0 +1,5 @@
+{# Every derived or assumed value carries its status: confirmed / assumed / unknown. #}
+{% macro badge(status, t) %}<span class="st {{ status }}">{{ t[status] }}</span>{% endmacro %}
+{% macro who(x, t) %}{% if x and x.value %}{{ x.value }} {{ badge(x.status, t) }}{% else %}<span class="st unknown">{{ t.unknown }}</span>{% endif %}{% endmacro %}
+{% macro decoded(d, t) %}{% if d.name %}{{ badge(d.status, t) }} {{ d.title }}
+{% for f in d.fields %}<div class="fld">{{ f.label }}: <b>{{ f.value }}{% if f.unit %} {{ f.unit }}{% endif %}</b> {% if f.status != "confirmed" %}{{ badge(f.status, t) }}{% endif %}</div>{% endfor %}{% else %}<span class="st unknown">{{ t.unknown }}</span>{% endif %}{% endmacro %}

@@ -67,7 +67,7 @@ PRIVATE_WORDS = re.compile(r"rl29|mannheim|steffen|quidong\.de|192\.168\.", re.I
 
 def repo_files():
     for p in ROOT.rglob("*"):
-        if p.is_file() and ".git" not in p.parts and "__pycache__" not in p.parts and ".pytest_cache" not in p.parts \
+        if p.is_file() and ".git" not in p.parts and "node_modules" not in p.parts and "__pycache__" not in p.parts and ".pytest_cache" not in p.parts \
                 and p.suffix in TEXT and p.name != Path(__file__).name:
             yield p
 
@@ -90,6 +90,6 @@ def _looks_like_version(text, m):
 
 
 def test_no_log_or_database_files_in_repository():
-    bad = [p.name for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts
+    bad = [p.name for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts and "node_modules" not in p.parts
            and (p.suffix in {".sqlite", ".db", ".log"} or "dauerlog" in p.name or p.name == "secrets.yaml")]
     assert not bad, bad

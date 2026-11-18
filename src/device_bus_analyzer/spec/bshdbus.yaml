@@ -6,12 +6,37 @@ protocol: bshdbus
 title: BSH D-Bus (Bosch / Siemens / Neff)
 physical: "9600 baud, 8N1, half duplex, idle gap 15 ms ends a burst"
 frame: "LL DS CC CC data... CRC16-XMODEM(LL..data); total length LL+4; ACK byte with low nibble 0xA"
+# The frame carries only the DESTINATION. The sender is derived from the destination class and is therefore
+# never better than "assumed". Exact node entries win over class entries ("1x" = every 0x1_ destination).
 nodes:
-  "17": "power module (receives commands from the control panel)"
-  "24": "feedback node (sensors)"
-  "25": "feedback node (program state)"
-  "26": "feedback node"
-  "27": "feedback node (operating state)"
+  "1x":
+    receiver: "power module"
+    sender: "control panel"
+    status: assumed
+    evidence: "commands (program, options, start) go to 0x17 and appear only when the panel is operated"
+  "2x":
+    receiver: "control panel (status broadcast)"
+    sender: "power module"
+    status: assumed
+    evidence: "state reports (remaining time, door, operating state) appear on their own while the module runs"
+acks:
+  "1": {node: "control panel", status: assumed, evidence: "ACK 1A follows commands sent to the power module"}
+  "2": {node: "power module", status: assumed, evidence: "ACK 2A follows status frames"}
+# How telegrams are grouped into runs (program cycles). Detection is a heuristic and always marked as such.
+runs:
+  start:
+    key: "17/1013"          # start command sent by the panel
+    byte: 0
+    value: 1
+    status: assumed
+    evidence: "17/1013 = 01 comes together with 17/1012 at program start; the module then reports 27/2007 = 01"
+  end:
+    gap_minutes: 20         # no telegram for this long ends the run, or the next start begins a new one
+    status: assumed
+    evidence: "the real end-of-run marker is not yet known; the end is the last telegram before a silent gap"
+  context_seconds: 300      # telegrams shown before the start (program selection, power on)
+  program_key: "17/1011"    # program selection used to name the run
+  remaining_key: "25/2008"  # remaining time, byte 0 in minutes
 enums:
   program:
     "0x1c": "Chef 70 C"

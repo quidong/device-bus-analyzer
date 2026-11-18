@@ -54,17 +54,28 @@ dba sanitize log.txt > clean.txt                                  # remove priva
 dba collect | dba serve [--no-collector]
 ```
 
-## MCP for Claude Desktop
+## MCP for Claude Desktop (extension)
 
-Run `python -m device_bus_analyzer.mcp_server` (needs `pip install ".[mcp]"`, env `DBA_URL` and `DBA_TOKEN`), or package
-`extension/` as a Claude Desktop extension (`.mcpb`); it asks for the analyzer URL and the `API_TOKEN`. All eight tools
-(`list_sources`, `get_findings`, `command_overview`, `command_values`, `timeline`, `frames`, `raw_bursts`, `data_quality`)
-are GET requests against the read-only API.
+`extension/` is a Claude Desktop extension (`.mcpb`, Node). Build it with `cd extension && npm ci --omit=dev && npx @anthropic-ai/mcpb pack`
+(the `extension` workflow also builds it on every change) and open the file in Claude Desktop. The install dialog asks for the
+**analyzer URL** (for example `http://192.0.2.10:8089`) and the **API token** (`API_TOKEN` of the stack, stored as a sensitive value).
+Nine read-only tools: `list_sources`, `get_findings`, `list_runs`, `command_overview`, `command_values`, `timeline`, `frames`,
+`raw_bursts`, `data_quality`. Every one is a GET against the read-only API.
+
+## Sender, ACK node and runs
+A BSH D-Bus frame carries only its **destination**. Sender, receiver and the node that acknowledged (high nibble of the ACK
+byte) are therefore *derived* from the spec (`nodes`, `acks`) and always shown with a status (`confirmed` / `assumed` /
+`unknown`; unknown means the value is `null`). Per-field decode values carry their own status as well.
+
+Telegrams are grouped into **runs** (program cycles): a run starts at the start command and ends at the last telegram before a
+silent gap (rules in `spec/<protocol>.yaml`, `runs:`). Open a run in the frontend under "Runs", or pass its id as `run` to the API
+(`/api/<source>/frames?run=<id>`, also `timeline` and `bursts`) and to the MCP tools.
 
 ## Development
 
 ```
-pip install -e ".[dev,mcp]"
+pip install -e ".[dev]"
+(cd extension && npm ci)   # optional: enables the extension test
 pytest -q
 ```
 Tests use synthetic telegrams only. Add real-device evidence to the spec as `evidence` text, never as log files.

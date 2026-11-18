@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+<h1>{{ src.name }} · {{ t.runs }}</h1>
+<p><small>{{ t.runs_note }}</small></p>
+{% if not runs %}<p>{{ t.no_data }}</p>{% else %}
+<table><tr><th>#</th><th>{{ t.start }}</th><th>{{ t.end }}</th><th>{{ t.duration }}</th><th>{{ t.program }}</th><th>{{ t.remaining }}</th><th>{{ t.frames }}</th><th>{{ t.bad }}</th><th></th></tr>
+{% for r in runs %}<tr><td>{{ r.id }}</td>
+<td>{{ fmt(r.start_ts) }} {{ m.badge(r.start_status, t) }}</td>
+<td>{% if r.open %}<span class="st assumed">{{ t.running }}</span>{% else %}{{ fmt(r.end_ts) }} {{ m.badge(r.end_status, t) }}{% endif %}</td>
+<td>{{ (r.duration_s // 60)|int }} min</td><td>{{ r.program or '–' }}</td>
+<td>{{ r.remaining_start_min if r.remaining_start_min is not none else '–' }} → {{ r.remaining_end_min if r.remaining_end_min is not none else '–' }} min</td>
+<td>{{ r.frames }}</td><td>{{ r.crc_errors }}</td>
+<td><a href="/s/{{ src.name }}/timeline?run={{ r.id }}">{{ t.timeline }}</a> · <a href="/s/{{ src.name }}/frames?run={{ r.id }}">{{ t.frames }}</a> · <a href="/s/{{ src.name }}/bursts?run={{ r.id }}">{{ t.bursts }}</a></td></tr>{% endfor %}</table>{% endif %}
+{% endblock %}

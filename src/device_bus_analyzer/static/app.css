@@ -12,3 +12,4 @@ tr.bad td{color:var(--bad)}.tag,.st{font-size:11px;padding:1px 6px;border-radius
 input,button{font:inherit;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:transparent;color:inherit}button{cursor:pointer}
 .card{border:1px solid var(--line);border-radius:10px;padding:1.2rem}.narrow{max-width:360px;margin:3rem auto;display:flex;flex-direction:column;gap:.8rem}
 .narrow label{display:flex;flex-direction:column;gap:.2rem}.err{color:var(--bad)}form.inline{display:inline}.pager a{margin-right:1rem}
+.fld{font-size:12px;color:var(--mut)}.fld b{color:var(--fg)}

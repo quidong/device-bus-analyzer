@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from . import logformat, protocols
+from . import runs as runs_mod
 from .spec import decode
 
 SCHEMA = """
@@ -202,7 +203,7 @@ class Store:
                        f"ORDER BY ts, id LIMIT ? OFFSET ?", [*a, min(limit, 5000), offset])
         proto = src["protocol"]
         for r in rows:
-            r["decoded"] = decode(proto, r["ds"], r["cmd"], r["data"])
+            r["decoded"] = decode(proto, r["ds"], r["cmd"], r["data"], r["ack"])
         return rows
 
     def timeline(self, source: str, since: float | None = None, until: float | None = None, limit: int = 2000) -> list[dict]:
@@ -227,6 +228,13 @@ class Store:
                     if len(out) >= limit:
                         break
         return out
+
+    def runs(self, source: str) -> list[dict]:
+        src = self.source_by_name(source)
+        return runs_mod.find_runs(self.db, src["id"], src["protocol"], self.lock) if src else []
+
+    def run(self, source: str, run_id: int) -> dict | None:
+        return next((r for r in self.runs(source) if r["id"] == run_id), None)
 
     def command_stats(self, source: str) -> list[dict]:
         src = self.source_by_name(source)

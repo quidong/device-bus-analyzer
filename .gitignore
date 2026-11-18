@@ -7,3 +7,4 @@ privat/
 secrets.yaml
 *.log
 .env
+node_modules/

@@ -1,6 +1,11 @@
-{% extends "base.html" %}{% block body %}
+{% extends "base.html" %}{% import "_macros.html" as m %}{% block body %}
 <h1>{{ spec.title }}</h1>
 <p><b>{{ spec.physical }}</b><br><span class="mono">{{ spec.frame }}</span></p>
+<h2>{{ t.nodes }}</h2>
+{% if spec.nodes %}<table><tr><th>{{ t.dest }}</th><th>{{ t.sender }}</th><th>{{ t.receiver }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
+{% for k, n in spec.nodes.items() %}<tr><td class="mono">{{ k }}</td><td>{{ n.sender or '' }}</td><td>{{ n.receiver or '' }}</td><td>{{ m.badge(n.status, t) }}</td><td>{{ n.evidence }}</td></tr>{% endfor %}</table>
+<p>{{ t.sender_note }}</p>{% else %}<p>{{ t.unknown }}</p>{% endif %}
+<h2>{{ t.commands }}</h2>
 {% if not spec.commands %}<p>{{ t.no_data }}</p>{% else %}
 <table><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.decoded }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
 {% for c in spec.commands %}<tr><td class="mono">{{ c.key }}</td><td>{{ c.title }}<br>{% for f in c.fields %}<small>b{{ f.byte }}{% if f.bit is defined %}.{{ f.bit }}{% endif %} {{ f.label }} <span class="st {{ f.status }}">{{ t[f.status] }}</span></small><br>{% endfor %}</td>

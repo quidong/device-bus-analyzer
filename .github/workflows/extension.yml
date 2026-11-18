@@ -1,0 +1,23 @@
+name: extension
+on:
+  push:
+    branches: [main]
+    paths: ["extension/**"]
+  workflow_dispatch:
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci --omit=dev
+      - run: npx --yes @anthropic-ai/mcpb@latest validate manifest.json
+      - run: npx --yes @anthropic-ai/mcpb@latest pack . device-bus-analyzer.mcpb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: device-bus-analyzer-mcpb
+          path: extension/device-bus-analyzer.mcpb

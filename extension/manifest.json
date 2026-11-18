@@ -3,20 +3,45 @@
   "name": "device-bus-analyzer",
   "display_name": "Device Bus Analyzer",
   "version": "0.1.0",
-  "description": "Read-only access to your Device Bus Analyzer (appliance bus telegrams) from Claude Desktop, LAN only.",
-  "author": { "name": "device-bus-analyzer contributors" },
+  "description": "Read-only access to your Device Bus Analyzer (appliance bus telegrams, findings, timelines) from Claude Desktop.",
+  "long_description": "Query the telegrams recorded from appliance buses (BSH D-Bus, MACS) by your own Device Bus Analyzer: decoded frames with sender, receiver and ACK node, value timelines, the protocol findings with confirmed / assumed / unknown status, and raw bursts. All tools are read-only and talk only to the analyzer in your network.",
+  "author": { "name": "device-bus-analyzer contributors", "url": "https://github.com/quidong/device-bus-analyzer" },
+  "repository": { "type": "git", "url": "https://github.com/quidong/device-bus-analyzer" },
   "license": "MIT",
   "server": {
-    "type": "python",
-    "entry_point": "server/mcp_server.py",
+    "type": "node",
+    "entry_point": "server/index.js",
     "mcp_config": {
-      "command": "python",
-      "args": ["${__dirname}/server/mcp_server.py"],
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
       "env": { "DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}" }
     }
   },
+  "tools": [
+    { "name": "list_sources", "description": "List recorded devices" },
+    { "name": "get_findings", "description": "Protocol specification with status and evidence" },
+    { "name": "list_runs", "description": "Program runs grouped from the telegrams" },
+    { "name": "command_overview", "description": "All commands seen on a device" },
+    { "name": "command_values", "description": "Distinct values of one command" },
+    { "name": "timeline", "description": "Value changes in time order" },
+    { "name": "frames", "description": "Decoded telegrams with sender, receiver and ACK node" },
+    { "name": "raw_bursts", "description": "Raw received bursts" },
+    { "name": "data_quality", "description": "CRC errors, gaps, restarts" }
+  ],
   "user_config": {
-    "url": { "type": "string", "title": "Analyzer URL", "description": "For example http://analyzer.lan:8080", "required": true },
-    "token": { "type": "string", "title": "API token", "description": "Value of API_TOKEN of the stack", "sensitive": true, "required": true }
-  }
+    "url": {
+      "type": "string",
+      "title": "Analyzer URL",
+      "description": "Address of your Device Bus Analyzer, for example http://192.0.2.10:8089 (no trailing path)",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "title": "API token",
+      "description": "The value of API_TOKEN from your stack",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": { "platforms": ["darwin", "win32", "linux"], "runtimes": { "node": ">=18.0.0" } }
 }

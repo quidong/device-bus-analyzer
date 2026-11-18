@@ -127,6 +127,15 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             raise HTTPException(404, "unknown source")
         return s
 
+    def window(source: str, run: int | None, since: float | None, until: float | None) -> tuple[float | None, float | None]:
+        """A run id narrows the query to that run (including the context before its start)."""
+        if run is None:
+            return since, until
+        r = store.run(source, run)
+        if r is None:
+            raise HTTPException(404, "unknown run")
+        return r["from_ts"], r["end_ts"] + 60
+
     def client_ip(request: Request) -> str:
         return request.client.host if request.client else "?"
 
@@ -188,16 +197,23 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
 
     @app.get("/api/{source}/frames", dependencies=[api])
     def api_frames(source: str, ds: str | None = None, cmd: str | None = None, since: str | None = None,
-                   until: str | None = None, bad_only: bool = False, limit: int = 200, offset: int = 0):
+                   until: str | None = None, bad_only: bool = False, limit: int = 200, offset: int = 0, run: int | None = None):
         source_or_404(source)
-        rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), parse_time(since, tz), parse_time(until, tz),
+        lo, hi = window(source, run, parse_time(since, tz), parse_time(until, tz))
+        rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi,
                             False if bad_only else None, max(1, min(limit, 5000)), max(0, offset))
         return jsonable(rows)
 
     @app.get("/api/{source}/timeline", dependencies=[api])
-    def api_timeline(source: str, since: str | None = None, until: str | None = None, limit: int = 2000):
+    def api_timeline(source: str, since: str | None = None, until: str | None = None, limit: int = 2000, run: int | None = None):
         source_or_404(source)
-        return jsonable(store.timeline(source, parse_time(since, tz), parse_time(until, tz), max(1, min(limit, 20000))))
+        lo, hi = window(source, run, parse_time(since, tz), parse_time(until, tz))
+        return jsonable(store.timeline(source, lo, hi, max(1, min(limit, 20000))))
+
+    @app.get("/api/{source}/runs", dependencies=[api])
+    def api_runs(source: str):
+        source_or_404(source)
+        return store.runs(source)
 
     @app.get("/api/{source}/commands", dependencies=[api])
     def api_commands(source: str):
@@ -210,9 +226,11 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return jsonable(store.command_values(source, parse_hex(ds, 2) or 0, parse_hex(cmd, 4) or 0, max(1, min(limit, 500))))
 
     @app.get("/api/{source}/bursts", dependencies=[api])
-    def api_bursts(source: str, since: str | None = None, until: str | None = None, limit: int = 200, offset: int = 0):
+    def api_bursts(source: str, since: str | None = None, until: str | None = None, limit: int = 200, offset: int = 0,
+                   run: int | None = None):
         source_or_404(source)
-        return jsonable(store.bursts(source, parse_time(since, tz), parse_time(until, tz), max(1, min(limit, 5000)), max(0, offset)))
+        lo, hi = window(source, run, parse_time(since, tz), parse_time(until, tz))
+        return jsonable(store.bursts(source, lo, hi, max(1, min(limit, 5000)), max(0, offset)))
 
     @app.get("/api/{source}/quality", dependencies=[api])
     def api_quality(source: str):
@@ -234,19 +252,26 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
 
     @app.get("/s/{source}/frames", response_class=HTMLResponse, dependencies=[api])
     def html_frames(request: Request, source: str, ds: str = "", cmd: str = "", since: str = "", until: str = "",
-                    bad_only: bool = False, limit: int = 200, offset: int = 0):
+                    bad_only: bool = False, limit: int = 200, offset: int = 0, run: str = ""):
         src = source_or_404(source)
         limit = max(1, min(limit, 1000))
-        rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), parse_time(since, tz), parse_time(until, tz),
-                            False if bad_only else None, limit, max(0, offset))
+        run_id = int(run) if run.isdigit() else None
+        lo, hi = window(source, run_id, parse_time(since, tz), parse_time(until, tz))
+        rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi, False if bad_only else None, limit, max(0, offset))
         return page(request, "frames.html", src=src, rows=rows, q=dict(ds=ds, cmd=cmd, since=since, until=until, bad_only=bad_only,
-                    limit=limit, offset=max(0, offset)))
+                    limit=limit, offset=max(0, offset), run=run))
 
     @app.get("/s/{source}/timeline", response_class=HTMLResponse, dependencies=[api])
-    def html_timeline(request: Request, source: str, since: str = "", until: str = "", limit: int = 1000):
+    def html_timeline(request: Request, source: str, since: str = "", until: str = "", limit: int = 1000, run: str = ""):
         src = source_or_404(source)
-        rows = store.timeline(source, parse_time(since, tz), parse_time(until, tz), max(1, min(limit, 5000)))
-        return page(request, "timeline.html", src=src, rows=rows, q=dict(since=since, until=until, limit=limit))
+        lo, hi = window(source, int(run) if run.isdigit() else None, parse_time(since, tz), parse_time(until, tz))
+        rows = store.timeline(source, lo, hi, max(1, min(limit, 5000)))
+        return page(request, "timeline.html", src=src, rows=rows, q=dict(since=since, until=until, limit=limit, run=run))
+
+    @app.get("/s/{source}/runs", response_class=HTMLResponse, dependencies=[api])
+    def html_runs(request: Request, source: str):
+        src = source_or_404(source)
+        return page(request, "runs.html", src=src, runs=list(reversed(store.runs(source))))
 
     @app.get("/s/{source}/commands", response_class=HTMLResponse, dependencies=[api])
     def html_commands(request: Request, source: str, ds: str = "", cmd: str = ""):
@@ -256,10 +281,11 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return page(request, "commands.html", src=src, stats=stats, values=values, sel=(ds, cmd))
 
     @app.get("/s/{source}/bursts", response_class=HTMLResponse, dependencies=[api])
-    def html_bursts(request: Request, source: str, since: str = "", until: str = "", limit: int = 100, offset: int = 0):
+    def html_bursts(request: Request, source: str, since: str = "", until: str = "", limit: int = 100, offset: int = 0, run: str = ""):
         src = source_or_404(source)
-        rows = store.bursts(source, parse_time(since, tz), parse_time(until, tz), max(1, min(limit, 1000)), max(0, offset))
-        return page(request, "bursts.html", src=src, rows=rows, q=dict(since=since, until=until, limit=limit, offset=max(0, offset)))
+        lo, hi = window(source, int(run) if run.isdigit() else None, parse_time(since, tz), parse_time(until, tz))
+        rows = store.bursts(source, lo, hi, max(1, min(limit, 1000)), max(0, offset))
+        return page(request, "bursts.html", src=src, rows=rows, q=dict(since=since, until=until, limit=limit, offset=max(0, offset), run=run))
 
     @app.get("/s/{source}/quality", response_class=HTMLResponse, dependencies=[api])
     def html_quality(request: Request, source: str):

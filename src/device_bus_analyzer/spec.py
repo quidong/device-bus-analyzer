@@ -23,14 +23,46 @@ def lookup(spec: dict[str, Any], ds: int, cmd: int) -> dict[str, Any] | None:
     return idx.get(f"{ds:02x}/{cmd:04x}") or idx.get(f"*/{cmd:04x}")
 
 
-def decode(protocol: str, ds: int, cmd: int, data: bytes) -> dict[str, Any]:
-    """Return {'key', 'name', 'title', 'status', 'values': {...}, 'notes': [...]}; unknown commands get status 'unknown'."""
+def _unknown(why: str) -> dict[str, Any]:
+    return {"value": None, "status": "unknown", "evidence": why}
+
+
+def node_info(spec: dict[str, Any], ds: int) -> dict[str, Any]:
+    """Sender/receiver derived from the destination. Always carries a status; 'unknown' if the spec has no entry."""
+    nodes = spec.get("nodes", {})
+    entry = nodes.get(f"{ds:02x}") or nodes.get(f"{ds >> 4:x}x")
+    if not entry:
+        return {"sender": _unknown("no node entry in the spec"), "receiver": _unknown("no node entry in the spec")}
+    st = entry.get("status", "assumed")
+    return {"sender": {"value": entry.get("sender"), "status": st if entry.get("sender") else "unknown", "evidence": entry.get("evidence", "")},
+            "receiver": {"value": entry.get("receiver"), "status": st if entry.get("receiver") else "unknown", "evidence": entry.get("evidence", "")}}
+
+
+def ack_info(spec: dict[str, Any], ack: int | None) -> dict[str, Any] | None:
+    """Who acknowledged (high nibble of the ACK byte). None if the frame had no ACK."""
+    if ack is None:
+        return None
+    entry = spec.get("acks", {}).get(f"{ack >> 4:x}")
+    if not entry:
+        return {"value": None, "status": "unknown", "evidence": f"ACK {ack:02X}: node class not in the spec"}
+    return {"value": entry["node"], "status": entry.get("status", "assumed"), "evidence": entry.get("evidence", "")}
+
+
+def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None) -> dict[str, Any]:
+    """Decode one telegram.
+
+    Result keys: key, name, title, status (of the command), values {name: value}, fields [{name,label,value,unit,status}]
+    with a status per value, sender / receiver / acked_by ({value, status, evidence}; value None = unknown), notes.
+    """
     spec = load_spec(protocol)
     key = f"{ds:02x}/{cmd:04x}"
+    nodes = node_info(spec, ds)
+    base = {"key": key, **nodes, "acked_by": ack_info(spec, ack)}
     entry = lookup(spec, ds, cmd)
     if entry is None:
-        return {"key": key, "name": None, "title": None, "status": "unknown", "values": {}, "notes": ["not in spec"]}
+        return {**base, "name": None, "title": None, "status": "unknown", "values": {}, "fields": [], "notes": ["not in spec"]}
     values: dict[str, Any] = {}
+    fields: list[dict[str, Any]] = []
     notes: list[str] = []
     for f in entry.get("fields", []):
         b = f["byte"]
@@ -38,14 +70,17 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes) -> dict[str, Any]:
             notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
             continue
         if "bit" in f:
-            values[f["name"]] = bool(data[b] >> f["bit"] & 1)
+            v: Any = bool(data[b] >> f["bit"] & 1)
         elif f.get("kind") == "enum":
             label = spec.get("enums", {}).get(f["enum"], {}).get(f"0x{data[b]:02x}")
-            values[f["name"]] = label if label is not None else f"0x{data[b]:02x}"
+            v = label if label is not None else f"0x{data[b]:02x}"
         else:
-            values[f["name"]] = data[b]
-    return {"key": key, "name": entry["name"], "title": entry["title"], "status": entry["status"],
-            "values": values, "notes": notes}
+            v = data[b]
+        values[f["name"]] = v
+        fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
+                       "status": f.get("status", entry["status"])})
+    return {**base, "name": entry["name"], "title": entry["title"], "status": entry["status"],
+            "values": values, "fields": fields, "notes": notes}
 
 
 def validate_spec(protocol: str) -> list[str]:
@@ -66,4 +101,10 @@ def validate_spec(protocol: str) -> list[str]:
                 problems.append(f"{c['key']}.{f.get('name')}: bad status")
             if f.get("kind") == "enum" and f.get("enum") not in spec.get("enums", {}):
                 problems.append(f"{c['key']}.{f.get('name')}: unknown enum {f.get('enum')}")
+    for k, n in spec.get("nodes", {}).items():
+        if n.get("status") not in STATUS:
+            problems.append(f"node {k}: bad status")
+    for k, n in spec.get("acks", {}).items():
+        if n.get("status") not in STATUS:
+            problems.append(f"ack {k}: bad status")
     return problems

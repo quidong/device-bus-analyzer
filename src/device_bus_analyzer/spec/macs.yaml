@@ -3,5 +3,7 @@ title: Electrolux / AEG MACS bus (tumble dryer)
 physical: "to be documented"
 frame: "not yet documented"
 nodes: {}
+acks: {}
 enums: {}
 commands: []
+runs: {}
