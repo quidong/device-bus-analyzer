@@ -1,9 +1,8 @@
-# Portainer stack (Stacks -> Add stack -> Repository: https://github.com/quidong/device-bus-analyzer, compose path docker-compose.yml). Set the variables in the stack's
+# Portainer stack (Web editor or Repository). Set the variables in the stack's
 # "Environment variables" section; nothing secret lives in this file.
 services:
   analyzer:
-    build: .                                # Portainer: Stacks > Add stack > Repository builds the image from this repo
-    image: device-bus-analyzer:local
+    image: ghcr.io/quidong/device-bus-analyzer:latest   # built by GitHub Actions (.github/workflows/image.yml)
     restart: unless-stopped
     ports:
       - "${DBA_PORT:-8080}:8080"            # LAN only: do not publish through a reverse proxy

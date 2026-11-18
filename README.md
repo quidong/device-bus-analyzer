@@ -24,14 +24,14 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 
 1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`, example in `firmware/`).
    Enable the API encryption key in ESPHome.
-2. In Portainer create a stack from this repository (Stacks > Add stack > Repository, URL `https://github.com/quidong/device-bus-analyzer`, compose path `docker-compose.yml`; the image is built from the Dockerfile) and set these **stack variables** (nothing secret is stored in the repo):
+2. In Portainer create a stack (Web editor: paste `docker-compose.yml`; the image `ghcr.io/quidong/device-bus-analyzer:latest` is built by GitHub Actions on every push to `main`) and set these **stack variables** (nothing secret is stored in the repo):
 
 | Variable | Meaning |
 |---|---|
 | `DBA_DEVICES` | `name@host[:port]/protocol`, comma separated, for example `geschirrspueler@192.0.2.10:6053/bshdbus` |
 | `DBA_KEY_<NAME>` | ESPHome API encryption key of that device (`DBA_KEY_GESCHIRRSPUELER`) |
 | `ADMIN_EMAIL` | the single admin account (login = e-mail address) |
-| `ADMIN_PASSWORD_HASH` | argon2id hash, create with `echo -n 'your password' \| docker run -i --rm device-bus-analyzer:local dba hash-password` (after the first deploy) |
+| `ADMIN_PASSWORD_HASH` | argon2id hash, create with `echo -n 'your password' \| docker run -i --rm ghcr.io/quidong/device-bus-analyzer:latest dba hash-password` |
 | `ADMIN_PASSWORD` | alternative to the hash (plain text in the stack; the hash is preferred) |
 | `SESSION_SECRET` | 32+ random characters, signs the session cookie |
 | `API_TOKEN` | token for the MCP extension and scripts (optional) |
