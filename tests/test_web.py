@@ -186,3 +186,23 @@ def test_protocol_conflict_message_names_both_values(store):
     store.source("dw", "bshdbus")
     with pytest.raises(ValueError, match="stored with protocol 'bshdbus' but was requested with 'macs'"):
         store.source("dw", "macs")
+
+
+def test_invalid_hash_falls_back_to_plain_password(store):
+    s = Settings(admin_email=MAIL, admin_password=PW, admin_password_hash="argon2id v19 m65536 mangled", session_secret="s" * 32)
+    c = TestClient(create_app(s, store), follow_redirects=False)
+    assert login(c).status_code == 303
+
+
+def test_invalid_hash_without_password_fails_clearly(store):
+    with pytest.raises(RuntimeError, match="not a valid argon2 hash"):
+        create_app(Settings(admin_email=MAIL, admin_password_hash="garbage", session_secret="s" * 32), store)
+
+
+def test_failed_login_is_logged_without_secrets(client, caplog):
+    import logging
+    with caplog.at_level(logging.WARNING, logger="dba.auth"):
+        login(client, email="other@example.org", pw="very-secret-wrong")
+        login(client, pw="very-secret-wrong")
+    text = caplog.text
+    assert "does not match" in text and "wrong" in text and "very-secret-wrong" not in text and PW not in text

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hmac
+import logging
 import secrets
 import time
 from collections import defaultdict, deque
@@ -12,6 +13,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from .config import Settings
 
+log = logging.getLogger("dba.auth")
 COOKIE = "dba_session"
 CSRF_COOKIE = "dba_csrf"
 
@@ -22,13 +24,27 @@ class Auth:
             raise RuntimeError("ADMIN_EMAIL and ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) must be set")
         self.email = s.admin_email
         self.ph = PasswordHasher()
-        self.hash = s.admin_password_hash or self.ph.hash(s.admin_password)
+        self.hash = self._pick_hash(s)
         self.ser = URLSafeTimedSerializer(s.session_secret or secrets.token_urlsafe(32), salt="dba-session")
         self.max_age = s.session_hours * 3600
         self.token = s.api_token
         self._fails: dict[str, deque] = defaultdict(deque)
         self.max_fails, self.window = 5, 300.0
         self._dummy = self.ph.hash("dummy-password-for-timing")
+
+    def _pick_hash(self, s: Settings) -> str:
+        """Use ADMIN_PASSWORD_HASH if it is a valid argon2 hash, else fall back to ADMIN_PASSWORD (with a warning)."""
+        h = s.admin_password_hash.strip()
+        if h:
+            try:
+                self.ph.check_needs_rehash(h)
+                return h
+            except InvalidHashError:
+                log.warning("ADMIN_PASSWORD_HASH is not a valid argon2 hash (a '$' lost to variable substitution?)%s",
+                            "; using ADMIN_PASSWORD instead" if s.admin_password else "")
+                if not s.admin_password:
+                    raise RuntimeError("ADMIN_PASSWORD_HASH is not a valid argon2 hash and ADMIN_PASSWORD is empty") from None
+        return self.ph.hash(s.admin_password)
 
     def locked(self, ip: str, now: float | None = None) -> bool:
         now = time.time() if now is None else now
@@ -47,6 +63,8 @@ class Auth:
         except (VerifyMismatchError, InvalidHashError):
             ok = False
         if not ok:
+            log.warning("login failed: e-mail %s, password %s", "matches" if ok_mail else "does not match",
+                        "wrong" if ok_mail else "not checked against this account")
             self._fails[ip].append(time.time())
         else:
             self._fails.pop(ip, None)
