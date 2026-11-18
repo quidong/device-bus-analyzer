@@ -65,7 +65,7 @@ def test_exact_node_entry_beats_class_entry(monkeypatch):
 def test_ack_node_is_derived_and_marked_assumed():
     assert spec.decode("bshdbus", 0x17, 0x1010, b"\x1c", ack=0x1A)["acked_by"]["value"] == "power module"
     d = spec.decode("bshdbus", 0x25, 0x2008, bytes(8), ack=0x2A)["acked_by"]
-    assert d["value"] == "power module" and d["status"] == "assumed"
+    assert d["value"] == "control panel" and d["status"] == "assumed"
     assert spec.decode("bshdbus", 0x25, 0x2008, bytes(8), ack=0x7A)["acked_by"]["status"] == "unknown"
     assert spec.decode("bshdbus", 0x25, 0x2008, bytes(8))["acked_by"] is None
 
