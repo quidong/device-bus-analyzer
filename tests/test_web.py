@@ -171,3 +171,18 @@ def test_password_hash_variant(store):
 
 def test_healthz_is_public_and_minimal(client):
     assert client.get("/healthz").json()["status"] == "ok"
+
+
+def test_broken_device_entry_does_not_stop_the_app(store):
+    from device_bus_analyzer.config import Device
+    store.source("dw", "bshdbus")
+    s = Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32,
+                 devices=[Device("dw", "192.0.2.9", 6053, "macs")])      # conflicts with the stored protocol
+    with TestClient(create_app(s, store, start_collectors=True)) as c:
+        assert c.get("/healthz").json()["status"] == "ok"
+
+
+def test_protocol_conflict_message_names_both_values(store):
+    store.source("dw", "bshdbus")
+    with pytest.raises(ValueError, match="stored with protocol 'bshdbus' but was requested with 'macs'"):
+        store.source("dw", "macs")

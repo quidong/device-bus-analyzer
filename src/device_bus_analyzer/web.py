@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import secrets
 from contextlib import asynccontextmanager
@@ -22,6 +23,7 @@ from .spec import load_spec
 from .store import Store
 
 PKG = resources.files("device_bus_analyzer")
+log = logging.getLogger("dba.web")
 
 
 def parse_time(v: str | None, tz: ZoneInfo) -> float | None:
@@ -71,7 +73,14 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     async def lifespan(app: FastAPI):
         if start_collectors and settings.devices:
             from .collector import Collector
-            collectors.extend(asyncio.create_task(Collector(store, d).run_forever()) for d in settings.devices)
+            for d in settings.devices:             # one broken device entry must not take the web app down
+                try:
+                    c = Collector(store, d)
+                except Exception as exc:
+                    log.error("device %s@%s:%s/%s not started: %s", d.name, d.host, d.port, d.protocol, exc)
+                    continue
+                log.info("collecting %s from %s:%s (%s)", d.name, d.host, d.port, d.protocol)
+                collectors.append(asyncio.create_task(c.run_forever()))
         yield
         for t in collectors:
             t.cancel()

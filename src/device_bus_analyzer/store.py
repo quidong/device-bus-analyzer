@@ -56,7 +56,7 @@ class Store:
             row = self.db.execute("SELECT id, protocol FROM sources WHERE name=?", (name,)).fetchone()
             if row:
                 if row["protocol"] != protocol:
-                    raise ValueError(f"source {name!r} already uses protocol {row['protocol']!r}")
+                    raise ValueError(f"source {name!r} is stored with protocol {row['protocol']!r} but was requested with {protocol!r}")
                 return row["id"]
             cur = self.db.execute("INSERT INTO sources(name, protocol) VALUES(?,?)", (name, protocol))
             self.db.commit()
