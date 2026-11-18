@@ -1,0 +1,73 @@
+"""Single admin account from environment variables: argon2id, signed cookie sessions, CSRF token, login rate limit."""
+from __future__ import annotations
+
+import hmac
+import secrets
+import time
+from collections import defaultdict, deque
+
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
+from itsdangerous import BadSignature, URLSafeTimedSerializer
+
+from .config import Settings
+
+COOKIE = "dba_session"
+CSRF_COOKIE = "dba_csrf"
+
+
+class Auth:
+    def __init__(self, s: Settings):
+        if not s.admin_email or not (s.admin_password or s.admin_password_hash):
+            raise RuntimeError("ADMIN_EMAIL and ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) must be set")
+        self.email = s.admin_email
+        self.ph = PasswordHasher()
+        self.hash = s.admin_password_hash or self.ph.hash(s.admin_password)
+        self.ser = URLSafeTimedSerializer(s.session_secret or secrets.token_urlsafe(32), salt="dba-session")
+        self.max_age = s.session_hours * 3600
+        self.token = s.api_token
+        self._fails: dict[str, deque] = defaultdict(deque)
+        self.max_fails, self.window = 5, 300.0
+        self._dummy = self.ph.hash("dummy-password-for-timing")
+
+    def locked(self, ip: str, now: float | None = None) -> bool:
+        now = time.time() if now is None else now
+        q = self._fails[ip]
+        while q and now - q[0] > self.window:
+            q.popleft()
+        return len(q) >= self.max_fails
+
+    def check_login(self, ip: str, email: str, password: str) -> bool:
+        if self.locked(ip):
+            return False
+        ok_mail = hmac.compare_digest(email.strip().lower().encode(), self.email.encode())
+        try:
+            self.ph.verify(self.hash if ok_mail else self._dummy, password)   # same work for wrong e-mail
+            ok = ok_mail
+        except (VerifyMismatchError, InvalidHashError):
+            ok = False
+        if not ok:
+            self._fails[ip].append(time.time())
+        else:
+            self._fails.pop(ip, None)
+        return ok
+
+    def make_session(self) -> str:
+        return self.ser.dumps({"u": self.email})
+
+    def valid_session(self, cookie: str | None) -> bool:
+        if not cookie:
+            return False
+        try:
+            return self.ser.loads(cookie, max_age=self.max_age).get("u") == self.email
+        except BadSignature:
+            return False
+
+    def csrf_for(self, session_cookie: str) -> str:
+        """CSRF token for state-changing requests of a logged-in session (logout), bound to the session cookie."""
+        return hmac.new(self.ser.secret_keys[-1], b"csrf:" + session_cookie.encode(), "sha256").hexdigest()
+
+    def valid_token(self, header: str | None) -> bool:
+        if not self.token or not header or not header.lower().startswith("bearer "):
+            return False
+        return hmac.compare_digest(header[7:].strip().encode(), self.token.encode())

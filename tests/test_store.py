@@ -1,0 +1,112 @@
+from conftest import hb1, raw1
+
+from device_bus_analyzer.protocols.bshdbus import build_frame
+
+
+def feed(store, sid, *lines):
+    for i, z in enumerate(lines):
+        store.ingest_line(sid, z, 1000.0 + i)
+
+
+def test_ingest_stores_raw_and_frames(store):
+    sid = store.source("dw", "bshdbus")
+    f = build_frame(0x25, 0x2008, bytes.fromhex("a050580228000228"))
+    assert store.ingest_line(sid, raw1(1, 5_000_000, f + b"\x2a"), 1000.0) == "RAW1"
+    assert store.ingest_line(sid, "[12:00:00.000][S][sensor]: 'Restzeit' >> 160 min", 1000.0) is None
+    fr = store.frames("dw")
+    assert len(fr) == 1 and fr[0]["crc_ok"] == 1 and fr[0]["ack"] == 0x2A
+    assert fr[0]["decoded"]["values"]["remaining_min"] == 160
+    assert store.bursts("dw")[0]["data"] == f + b"\x2a"
+
+
+def test_heartbeat_epoch_gives_absolute_time(store):
+    sid = store.source("dw", "bshdbus")
+    feed(store, sid, hb1(0, 1_000_000, epoch=1_800_000_001), raw1(1, 3_000_000, build_frame(0x17, 0x1010, b"\x1c")))
+    ts = store.frames("dw")[0]["ts"]
+    assert abs(ts - (1_800_000_001 - 1.0 + 3.0)) < 1e-6        # boot_epoch = epoch - t_us/1e6
+
+
+def test_without_epoch_receive_time_is_used(store):
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, raw1(1, 3_000_000, build_frame(0x17, 0x1010, b"\x1c")), 1234.5)
+    assert store.frames("dw")[0]["ts"] == 1234.5
+
+
+def test_gap_in_sequence_is_recorded(store):
+    sid = store.source("dw", "bshdbus")
+    f = build_frame(0x17, 0x1010, b"\x1c")
+    feed(store, sid, raw1(1, 10, f), raw1(2, 20, f), raw1(5, 30, f))
+    assert "2 -> 5 (2 bursts missing)" in store.quality("dw")["gaps"][0]["message"]
+
+
+def test_heartbeat_seq_mismatch_is_a_gap(store):
+    sid = store.source("dw", "bshdbus")
+    feed(store, sid, raw1(1, 10, build_frame(0x17, 0x1010, b"\x1c")), hb1(4, 60_000_000))
+    assert any("bursts lost" in g["message"] for g in store.quality("dw")["gaps"])
+
+
+def test_board_restart_starts_new_session_without_gap(store):
+    sid = store.source("dw", "bshdbus")
+    f = build_frame(0x17, 0x1010, b"\x1c")
+    feed(store, sid, raw1(7, 9_000_000, f), raw1(1, 1_000_000, f), raw1(2, 2_000_000, f))
+    q = store.quality("dw")
+    assert q["sessions"] == 2 and q["gaps"] == []
+
+
+def test_broken_raw_line_is_logged_not_stored(store):
+    sid = store.source("dw", "bshdbus")
+    assert store.ingest_line(sid, "RAW1 seq=1 t_us=5 dt_us=5 n=3 hex=ff", 1.0) == "BROKEN"
+    assert store.bursts("dw") == [] and "broken" in store.quality("dw")["gaps"][0]["message"]
+
+
+def test_timeline_shows_only_changes_and_skips_crc_errors(store):
+    sid = store.source("dw", "bshdbus")
+    a, b_ = (build_frame(0x25, 0x2008, bytes([m]) + bytes(7)) for m in (160, 159))
+    bad = bytearray(a); bad[-1] ^= 1
+    feed(store, sid, raw1(1, 10, a), raw1(2, 20, a), raw1(3, 30, bytes(bad)), raw1(4, 40, b_))
+    tl = store.timeline("dw")
+    assert [t["decoded"]["values"]["remaining_min"] for t in tl] == [160, 159]
+
+
+def test_command_stats_and_values(store):
+    sid = store.source("dw", "bshdbus")
+    f = build_frame(0x17, 0x1010, b"\x1c")
+    feed(store, sid, raw1(1, 10, f), raw1(2, 20, f))
+    cs = store.command_stats("dw")
+    assert cs[0]["n"] == 2 and cs[0]["distinct_values"] == 1 and cs[0]["decoded"]["name"] == "program_select_early"
+    assert store.command_values("dw", 0x17, 0x1010)[0]["n"] == 2
+
+
+def test_rebuild_frames_is_idempotent_and_keeps_raw(store):
+    sid = store.source("dw", "bshdbus")
+    f = build_frame(0x17, 0x1010, b"\x1c")
+    feed(store, sid, raw1(1, 10, f + b"\x1a"), raw1(2, 20, f))
+    before = [(r["ds"], r["cmd"], r["data"], r["ack"]) for r in store.frames("dw")]
+    assert store.rebuild_frames() == 2 and store.rebuild_frames() == 2
+    assert [(r["ds"], r["cmd"], r["data"], r["ack"]) for r in store.frames("dw")] == before
+    assert len(store.bursts("dw")) == 2
+
+
+def test_legacy_frame_lines_are_stored_as_frames_only(store):
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, "[12:00:00.000][I][dbus_raw:99]: FRAME 252008a050580228000228 OK ACK 2A", 50.0)
+    store.ingest_line(sid, "[12:00:00.000][D][main:632]: Received frame dest 0x17 cmd 0x1010: 0x1c", 51.0)
+    fr = store.frames("dw")
+    assert [(f["ds"], f["cmd"]) for f in fr] == [(0x25, 0x2008), (0x17, 0x1010)] and store.bursts("dw") == []
+
+
+def test_protocol_mismatch_and_unknown_protocol(store):
+    import pytest
+    store.source("dw", "bshdbus")
+    with pytest.raises(ValueError):
+        store.source("dw", "macs")
+    with pytest.raises(ValueError):
+        store.source("x", "nope")
+
+
+def test_frame_filters_and_limits(store):
+    sid = store.source("dw", "bshdbus")
+    feed(store, sid, *(raw1(i, i * 10, build_frame(0x17, 0x1010 + i % 2, b"\x1c")) for i in range(1, 7)))
+    assert len(store.frames("dw", cmd=0x1011)) == 3
+    assert len(store.frames("dw", limit=2)) == 2
+    assert store.frames("nobody") == []

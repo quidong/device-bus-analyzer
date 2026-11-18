@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block body %}
+<h1>{{ t.sources }}</h1>
+{% if not sources %}<p>{{ t.no_data }}</p>{% else %}
+<table><tr><th>{{ t.name }}</th><th>{{ t.protocol }}</th><th>{{ t.bursts }}</th><th>{{ t.frames }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th></tr>
+{% for s in sources %}<tr><td><a href="/s/{{ s.name }}/frames">{{ s.name }}</a></td><td>{{ s.protocol }}</td><td>{{ s.bursts }}</td><td>{{ s.frames }}</td><td>{{ fmt(s.first_ts) }}</td><td>{{ fmt(s.last_ts) }}</td></tr>{% endfor %}</table>{% endif %}
+{% endblock %}

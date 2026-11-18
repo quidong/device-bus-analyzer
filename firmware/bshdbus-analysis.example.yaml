@@ -1,0 +1,427 @@
+# Geschirrspüler am BSH-D-Bus – Bouni BSH-Board (ESP32-C6)
+# Basis: https://github.com/jowi24/bsh-dbus-sx66t096eu (Siemens SX66T096EU)
+#        https://github.com/hn/bsh-home-appliances (bshdbus-Komponente)
+# Eigene Schlüssel/Passwörter liegen in secrets.yaml.
+# Angepasst für Neff S413K60S0E (N 50): Programm-IDs aus 0x25/0x2011 abgeleitet.
+# Am Gerät bestätigt: alle 6 Programme (0x17/0x1010+0x1011) und die Options-Bits in 0x17/0x1000 Byte 1:
+# 0x80 VarioSpeedPlus, 0x40 IntensivZone, 0x02 Extra Trocknen.
+# 0x21 = EasyClean (Maschinenpflege, steht nicht in der Programmliste 0x2011).
+
+esphome:
+  name: geschirrspuler
+  friendly_name: Geschirrspüler
+
+external_components:
+  - source: github://hn/bsh-home-appliances@master  
+
+esp32:
+  board: esp32-c6-devkitc-1
+  variant: esp32c6
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret geschirrspueler_api_key
+
+ota:
+  - platform: esphome
+    password: !secret geschirrspueler_ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Geschirrspueler Fallback"
+    password: !secret geschirrspueler_ap_password
+
+captive_portal:
+
+output:
+  - platform: gpio
+    pin: 
+      number: GPIO07
+      inverted: true
+    id: activity_led
+
+status_led:
+  pin:
+    number: GPIO06
+    inverted: true
+
+uart:
+  id: dbus_uart
+  rx_pin: GPIO4
+  tx_pin: GPIO5
+  baud_rate: 9600
+  rx_buffer_size: 1024
+  # ANALYSE: jeden Empfangs-Burst roh mitschreiben (Tag "dbus_raw"), Frames selbst
+  # zerlegen, CRC prüfen und das Bestätigungs-Byte (ACK, unteres Nibble 0xA) zuordnen.
+  # Ausgabe: "RAW1 seq= t_us= dt_us= n= hex=" je Burst, je Frame "FRAME <DS CC-CC daten> OK|CRC! ACK xx|kein ACK"
+  # und minütlich "HB1 ..." (Zähler + absolute Zeit). Das Format ist in docs/LOGFORMAT.md beschrieben.
+  debug:
+    direction: RX
+    dummy_receiver: false
+    after:
+      timeout: 15ms
+    sequence:
+      - lambda: |-
+          // Logformat 1: "RAW1 seq=<n> t_us=<µs seit Boot> dt_us=<µs seit letztem Burst> n=<Bytes> hex=<Rohbytes>"
+          // t_us = Zeitpunkt, an dem die 15-ms-Ruhe nach dem Burst erkannt wurde (Burstende ca. t_us - 15000).
+          uint32_t now32 = micros();
+          id(dbus_us64) += (uint32_t) (now32 - id(dbus_last_us32));   // 32-Bit-Überlauf alle 71 min abfangen
+          id(dbus_last_us32) = now32;
+          uint64_t t_us = id(dbus_us64);
+          uint64_t dt_us = t_us - id(dbus_prev_burst_us);
+          id(dbus_prev_burst_us) = t_us;
+          id(dbus_seq) += 1;
+          id(dbus_bursts) += 1;
+          id(dbus_bytes) += bytes.size();
+          ESP_LOGI("dbus_raw", "RAW1 seq=%u t_us=%llu dt_us=%llu n=%u hex=%s", (unsigned) id(dbus_seq),
+                   (unsigned long long) t_us, (unsigned long long) dt_us, (unsigned) bytes.size(),
+                   format_hex(bytes).c_str());
+          size_t i = 0, n = bytes.size();
+          while (i < n) {
+            size_t len = (size_t) bytes[i] + 4;            // LL DS <LL Datenbytes> CRC CRC
+            if (bytes[i] == 0 || len < 6 || i + len > n) { // kein plausibler Frame-Anfang
+              id(dbus_rest_bytes) += 1;
+              i += 1;
+              continue;
+            }
+            uint16_t soll = crc16be(&bytes[i], len - 2, 0x0, 0x1021, false, false);
+            uint16_t ist = ((uint16_t) bytes[i + len - 2] << 8) | bytes[i + len - 1];
+            std::vector<uint8_t> f(bytes.begin() + i + 1, bytes.begin() + i + len - 2);
+            if (soll != ist) {
+              id(dbus_crc_err) += 1;
+              ESP_LOGI("dbus_raw", "FRAME %s CRC! (soll %04X ist %04X)", format_hex(f).c_str(), soll, ist);
+              i += 1;                                      // ab nächstem Byte neu synchronisieren
+              continue;
+            }
+            id(dbus_ok) += 1;
+            if (i + len < n && (bytes[i + len] & 0x0F) == 0x0A) {
+              ESP_LOGI("dbus_raw", "FRAME %s OK ACK %02X", format_hex(f).c_str(), bytes[i + len]);
+              i += len + 1;
+            } else {
+              id(dbus_noack) += 1;
+              ESP_LOGI("dbus_raw", "FRAME %s OK kein ACK", format_hex(f).c_str());
+              i += len;
+            }
+          }
+
+globals:
+  - id: dbus_ok
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_crc_err
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_noack
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_rest_bytes
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_seq
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_bursts
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_bytes
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_us64
+    type: uint64_t
+    initial_value: '0'
+  - id: dbus_last_us32
+    type: uint32_t
+    initial_value: '0'
+  - id: dbus_prev_burst_us
+    type: uint64_t
+    initial_value: '0'
+
+# Absolute Zeit von Home Assistant (für die Epoch-Angabe im Heartbeat)
+time:
+  - platform: homeassistant
+    id: ha_time
+
+# Heartbeat: Zähler und absolute Zeit, auch wenn der Bus schweigt (zeigt Lücken im Sammler)
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          uint32_t now32 = micros();
+          id(dbus_us64) += (uint32_t) (now32 - id(dbus_last_us32));
+          id(dbus_last_us32) = now32;
+          auto t = id(ha_time).now();
+          long long epoch = t.is_valid() ? (long long) t.timestamp : 0;
+          ESP_LOGI("dbus_raw", "HB1 seq=%u t_us=%llu epoch=%lld bytes=%u bursts=%u ok=%u crc=%u noack=%u rest=%u",
+                   (unsigned) id(dbus_seq), (unsigned long long) id(dbus_us64), epoch,
+                   (unsigned) id(dbus_bytes), (unsigned) id(dbus_bursts), (unsigned) id(dbus_ok),
+                   (unsigned) id(dbus_crc_err), (unsigned) id(dbus_noack), (unsigned) id(dbus_rest_bytes));
+  
+bshdbus:
+  uart_id: dbus_uart
+  on_frame:
+    - logger.log:
+        format: "Received frame dest 0x%02x cmd 0x%04x: 0x%s"
+        args: [dest, command, format_hex(message).c_str()]
+    - output.turn_on: activity_led
+    - delay: 20ms
+    - output.turn_off: activity_led
+
+binary_sensor:
+  - platform: bshdbus
+    dest: 0x24
+    command: 0x2006
+    binary_sensors:
+      - id: bsh_dw_rinse_aid_ready
+        name: Klarspüler
+        device_class: problem
+        icon: mdi:glass-cocktail
+        lambda: return ((x[0] >> 1) & 0x01);
+      - id: bsh_dw_salt
+        name: Salz
+        device_class: problem
+        icon: mdi:shaker-outline
+        lambda: return ((x[0] >> 0) & 0x01);
+      - id: bsh_dw_door
+        name: Tür
+        device_class: door
+        lambda: return !((x[0] >> 3) & 0x01);
+  - platform: bshdbus
+    dest: 0x27
+    command: 0x2007
+    binary_sensors:
+      - id: bsh_dw_running
+        name: Status
+        device_class: running
+        lambda: return x[0] == 0x01;
+        on_press:
+          - binary_sensor.template.publish:
+              id: bsh_dw_active_or_delayed
+              state: true
+      - id: helper_status_finished
+        internal: true
+        lambda: return x[0] == 0x03;
+        on_press:
+          - binary_sensor.template.publish:
+              id: bsh_dw_active_or_delayed
+              state: false
+
+  # Läuft gerade ODER ist per Zeitvorwahl programmiert, bis 0x2007=0x03 (Programmende) zurückgesetzt
+  - platform: template
+    name: "Aktiv oder Zeitvorwahl"
+    id: bsh_dw_active_or_delayed
+    device_class: running
+    lambda: |-
+      if (id(bsh_dw_active_or_delayed).has_state()) return id(bsh_dw_active_or_delayed).state;
+      return false;
+
+  # 1. Die sichtbaren Haupt-Sensoren (Templates) für Home Assistant
+  - platform: template
+    name: "Option VarioSpeed"
+    id: bsh_opt_variospeed
+    icon: mdi:speedometer
+
+  - platform: template
+    name: "Option IntensivZone"
+    id: bsh_opt_intensivzone
+    icon: mdi:pot-steam
+
+  - platform: template
+    name: "Option Extra Trocknen"
+    id: bsh_opt_glanz
+    icon: mdi:shimmer
+
+  # 2. Unsichtbare Hilfssensoren für das Bedienpanel (0x1000 -> Byte 1)
+  - platform: bshdbus
+    dest: 0x17
+    command: 0x1000
+    binary_sensors:
+      - id: helper_panel_variospeed
+        internal: true
+        trigger_on_initial_state: true
+        lambda: return x.size() > 1 && (x[1] & 0x80) != 0;
+        on_state:
+          then:
+            - binary_sensor.template.publish:
+                id: bsh_opt_variospeed
+                state: !lambda "return x;"
+                
+      - id: helper_panel_intensivzone
+        internal: true
+        trigger_on_initial_state: true
+        lambda: return x.size() > 1 && (x[1] & 0x40) != 0;
+        on_state:
+          then:
+            - binary_sensor.template.publish:
+                id: bsh_opt_intensivzone
+                state: !lambda "return x;"
+                
+      - id: helper_panel_glanz
+        internal: true
+        trigger_on_initial_state: true
+        lambda: return x.size() > 1 && (x[1] & 0x02) != 0;
+        on_state:
+          then:
+            - binary_sensor.template.publish:
+                id: bsh_opt_glanz
+                state: !lambda "return x;"
+
+sensor:
+  # ANALYSE: Zähler seit Neustart – zeigt in HA, ob der Bus schweigt oder gestört ist
+  - platform: template
+    name: "D-Bus Frames gültig"
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return (float) id(dbus_ok);
+  - platform: template
+    name: "D-Bus Frames CRC-Fehler"
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return (float) id(dbus_crc_err);
+  - platform: template
+    name: "D-Bus Frames ohne ACK"
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return (float) id(dbus_noack);
+  - platform: template
+    name: "D-Bus Restbytes"
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return (float) id(dbus_rest_bytes);
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+  # Sensor der die Betriebszeit des Mikrokontrollers zeigt
+  - platform: uptime
+    name: Uptime 
+  - platform: bshdbus
+    dest: 0x25
+    command: 0x2008
+    sensors:
+      - id: bsh_dw_remain
+        name: Restzeit
+        device_class: duration
+        state_class: measurement
+        unit_of_measurement: min
+        accuracy_decimals: 0
+        lambda: return x[0];
+  - platform: bshdbus
+    dest: 0x17
+    command: 0x1012
+    sensors:
+      - id: bsh_dw_delay
+        name: Zeitvorwahl
+        icon: mdi:timer-sand
+        device_class: duration
+        state_class: measurement
+        unit_of_measurement: min
+        accuracy_decimals: 0
+        lambda: return x[1] * 60 + x[2];
+        on_value_range:
+          - above: 0.5
+            then:
+              - binary_sensor.template.publish:
+                  id: bsh_dw_active_or_delayed
+                  state: true
+
+text_sensor:
+  # 1. Der sichtbare Haupt-Sensor für Home Assistant
+  - platform: template
+    name: "Ausgewähltes Programm"
+    id: bsh_dw_program
+    icon: mdi:dishwasher
+
+  # 2. Unsichtbarer Hilfssensor für das Bedienpanel
+  - platform: bshdbus
+    dest: 0x17
+    command: 0x1011
+    text_sensors:
+      - id: bsh_helper_panel
+        internal: true # Versteckt diesen Sensor in Home Assistant
+        lambda: |-
+          if (x.empty()) return {}; 
+          switch (x[0]) {
+            case 0x1C: return std::string("Chef 70°");
+            case 0x0D: return std::string("Auto 45-65°");
+            case 0x0E: return std::string("Eco 50°");
+            case 0x0F: return std::string("Glas 40°");
+            case 0x15: return std::string("1h 65°");
+            case 0x12: return std::string("Vorspülen");
+            case 0x21: return std::string("EasyClean");
+            default: return str_sprintf("Unbekannt (0x%02X)", x[0]);
+          }
+        on_value:
+          then:
+            - text_sensor.template.publish:
+                id: bsh_dw_program
+                state: !lambda "return x;"
+
+  # 2b. Gleiche Programm-ID, vom Bedienfeld kurz vor 0x1011 gesendet (0x1010).
+  #     Zweite Quelle, weil 0x1011 auf dem Neff-Bus öfter durch CRC-Fehler verloren geht.
+  - platform: bshdbus
+    dest: 0x17
+    command: 0x1010
+    text_sensors:
+      - id: bsh_helper_panel_auswahl
+        internal: true # Versteckt diesen Sensor in Home Assistant
+        lambda: |-
+          if (x.empty()) return {}; 
+          switch (x[0]) {
+            case 0x1C: return std::string("Chef 70°");
+            case 0x0D: return std::string("Auto 45-65°");
+            case 0x0E: return std::string("Eco 50°");
+            case 0x0F: return std::string("Glas 40°");
+            case 0x15: return std::string("1h 65°");
+            case 0x12: return std::string("Vorspülen");
+            case 0x21: return std::string("EasyClean");
+            default: return str_sprintf("Unbekannt (0x%02X)", x[0]);
+          }
+        on_value:
+          then:
+            - text_sensor.template.publish:
+                id: bsh_dw_program
+                state: !lambda "return x;"
+
+  # 3. Unsichtbarer Hilfssensor für den Start/Init
+  - platform: bshdbus
+    dest: 0x25
+    command: 0x2010
+    text_sensors:
+      - id: bsh_helper_init
+        internal: true # Versteckt diesen Sensor in Home Assistant
+        lambda: |-
+          if (x.empty()) return {};
+          switch (x[0]) {
+            case 0x1C: return std::string("Chef 70°");
+            case 0x0D: return std::string("Auto 45-65°");
+            case 0x0E: return std::string("Eco 50°");
+            case 0x0F: return std::string("Glas 40°");
+            case 0x15: return std::string("1h 65°");
+            case 0x12: return std::string("Vorspülen");
+            case 0x21: return std::string("EasyClean");
+            default: return std::string("Bereit");
+          }
+        on_value:
+          then:
+            - text_sensor.template.publish:
+                id: bsh_dw_program
+                state: !lambda "return x;"

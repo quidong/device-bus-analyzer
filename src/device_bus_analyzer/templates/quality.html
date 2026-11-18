@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+<h1>{{ src.name }} · {{ t.quality }}</h1>
+<table><tr><th>{{ t.frames }}</th><td>{{ q.frames }}</td></tr><tr><th>{{ t.ok }}</th><td>{{ q.ok }}</td></tr><tr><th>{{ t.bad }}</th><td>{{ q.crc_errors }}</td></tr>
+<tr><th>ok / {{ t.ack }} –</th><td>{{ q.ok_without_ack }}</td></tr><tr><th>{{ t.sessions }}</th><td>{{ q.sessions }}</td></tr></table>
+<h2>{{ t.gaps }}</h2>{% if not q.gaps %}<p>–</p>{% else %}<table>{% for g in q.gaps %}<tr><td>{{ fmt(g.recv_ts) }}</td><td>{{ g.message }}</td></tr>{% endfor %}</table>{% endif %}
+{% endblock %}

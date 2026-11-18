@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+<h1>{{ src.name }} · {{ t.commands }}</h1>
+{% if not stats %}<p>{{ t.no_data }}</p>{% else %}
+<table><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.count }}</th><th>{{ t.distinct }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th><th>{{ t.status }}</th><th>{{ t.decoded }}</th></tr>
+{% for r in stats %}<tr><td><a href="?ds={{ '%02x' % r.ds }}&cmd={{ '%04x' % r.cmd }}">{{ '%02x' % r.ds }}/{{ '%04x' % r.cmd }}</a></td><td>{{ r.n }}</td><td>{{ r.distinct_values }}</td><td>{{ fmt(r.first_ts) }}</td><td>{{ fmt(r.last_ts) }}</td>
+<td><span class="st {{ r.decoded.status }}">{{ t[r.decoded.status] }}</span></td><td>{{ r.decoded.title or '' }}</td></tr>{% endfor %}</table>{% endif %}
+{% if values %}<h2>{{ sel[0] }}/{{ sel[1] }} · {{ t.values }}</h2>
+<table><tr><th>{{ t.data }}</th><th>{{ t.count }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th></tr>
+{% for v in values %}<tr><td class="mono">{{ hexs(v.data) }}</td><td>{{ v.n }}</td><td>{{ fmt(v.first_ts) }}</td><td>{{ fmt(v.last_ts) }}</td></tr>{% endfor %}</table>{% endif %}
+{% endblock %}

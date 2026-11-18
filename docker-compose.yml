@@ -1,0 +1,23 @@
+# Portainer stack (Stacks -> Add stack -> Repository: https://github.com/quidong/device-bus-analyzer, compose path docker-compose.yml). Set the variables in the stack's
+# "Environment variables" section; nothing secret lives in this file.
+services:
+  analyzer:
+    build: .                                # Portainer: Stacks > Add stack > Repository builds the image from this repo
+    image: device-bus-analyzer:local
+    restart: unless-stopped
+    ports:
+      - "${DBA_PORT:-8080}:8080"            # LAN only: do not publish through a reverse proxy
+    environment:
+      DBA_DEVICES: ${DBA_DEVICES}           # e.g. geschirrspueler@<host-or-ip>:6053/bshdbus,trockner@<host>/macs
+      DBA_KEY_GESCHIRRSPUELER: ${DBA_KEY_GESCHIRRSPUELER:-}   # ESPHome API encryption key (one per device)
+      DBA_KEY_TROCKNER: ${DBA_KEY_TROCKNER:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}          # preferred: argon2id hash (see README)
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}                    # alternative: plain password
+      SESSION_SECRET: ${SESSION_SECRET}                      # 32+ random characters
+      API_TOKEN: ${API_TOKEN:-}                              # for the local MCP extension / scripts
+      DBA_TZ: ${DBA_TZ:-Europe/Berlin}
+    volumes:
+      - dba-data:/data
+volumes:
+  dba-data:

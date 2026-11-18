@@ -1,0 +1,144 @@
+# Protocol findings for the BSH D-Bus. Source of truth for the decoder AND the findings page.
+# status: confirmed = verified against several recorded runs; assumed = plausible, not yet verified;
+#         unknown   = seen on the bus, meaning not understood.
+# Device-specific notes name the model they were observed on. Nothing in here may contain private data.
+protocol: bshdbus
+title: BSH D-Bus (Bosch / Siemens / Neff)
+physical: "9600 baud, 8N1, half duplex, idle gap 15 ms ends a burst"
+frame: "LL DS CC CC data... CRC16-XMODEM(LL..data); total length LL+4; ACK byte with low nibble 0xA"
+nodes:
+  "17": "power module (receives commands from the control panel)"
+  "24": "feedback node (sensors)"
+  "25": "feedback node (program state)"
+  "26": "feedback node"
+  "27": "feedback node (operating state)"
+enums:
+  program:
+    "0x1c": "Chef 70 C"
+    "0x0d": "Auto 45-65 C"
+    "0x0e": "Eco 50 C"
+    "0x0f": "Glass 40 C"
+    "0x15": "1 h 65 C"
+    "0x12": "Pre-rinse"
+    "0x21": "EasyClean"
+  operating_state:
+    "0x01": "running"
+    "0x02": "on / idle"
+    "0x06": "seen during or after a run, meaning unclear"
+commands:
+  - key: "24/2006"
+    name: sensors
+    title: Door, rinse aid, salt
+    status: confirmed
+    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs"
+    fields:
+      - {byte: 0, bit: 3, name: door_closed, label: Door closed, status: confirmed}
+      - {byte: 0, bit: 1, name: rinse_aid_flag, label: Rinse aid flag, status: assumed}
+      - {byte: 0, bit: 0, name: salt_flag, label: Salt flag, status: assumed}
+  - key: "25/2008"
+    name: remaining_time
+    title: Remaining time
+    status: confirmed
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later)"
+    fields:
+      - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
+  - key: "17/1010"
+    name: program_select_early
+    title: Program selection (panel, early)
+    status: confirmed
+    evidence: "byte 0 equals the program shown on the panel"
+    fields:
+      - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
+  - key: "17/1011"
+    name: program_select
+    title: Program selection (panel)
+    status: confirmed
+    evidence: "same value as 17/1010; often lost to CRC errors on the Neff bus"
+    fields:
+      - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
+  - key: "25/2010"
+    name: program_echo
+    title: Program echo from the module
+    status: confirmed
+    evidence: "byte 0 equals the selected program id"
+    fields:
+      - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
+  - key: "17/1000"
+    name: options
+    title: Options
+    status: confirmed
+    evidence: "byte 1 bits follow the option buttons"
+    fields:
+      - {byte: 1, bit: 7, name: vario_speed_plus, label: VarioSpeedPlus, status: confirmed}
+      - {byte: 1, bit: 6, name: intensive_zone, label: IntensiveZone, status: confirmed}
+      - {byte: 1, bit: 1, name: extra_drying, label: Extra drying, status: confirmed}
+  - key: "27/2007"
+    name: operating_state
+    title: Operating state
+    status: assumed
+    evidence: "02 after power-on, 01 right after start; 06 seen later in earlier runs; end-of-run value not yet captured"
+    fields:
+      - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: assumed}
+  - key: "17/1007"
+    name: power
+    title: Power on (panel)
+    status: assumed
+    evidence: "value 01 appears when the machine is switched on"
+    fields:
+      - {byte: 0, kind: u8, name: power, label: Power, status: assumed}
+  - key: "17/1012"
+    name: delay_start
+    title: Delayed start (7 data bytes)
+    status: unknown
+    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing; layout with a non-zero delay not yet recorded"
+    fields: []
+  - key: "17/1013"
+    name: start
+    title: Start command
+    status: assumed
+    evidence: "data 01 is sent together with 17/1012 at program start; the module then reports 27/2007 = 01"
+    fields:
+      - {byte: 0, kind: u8, name: start, label: Start, status: assumed}
+  - key: "25/2005"
+    name: phase
+    title: Program phase
+    status: unknown
+    evidence: "changes during a run; mapping of values to phases not verified"
+    fields:
+      - {byte: 0, kind: u8, name: phase, label: Phase, status: unknown}
+  - key: "25/2004"
+    name: flags
+    title: Flags
+    status: unknown
+    evidence: "bit field, meaning unknown"
+    fields: []
+  - key: "26/2002"
+    name: status_26
+    title: Status after start
+    status: unknown
+    evidence: "00000000 observed after start"
+    fields: []
+  - key: "25/2011"
+    name: program_list
+    title: Program list (module announces supported programs)
+    status: assumed
+    evidence: "starts with a5 followed by the program ids 1c 0d 0e 0f 15 12 ... seen at power-on on a Neff S413K60S0E"
+    fields: []
+  - key: "22/7ff1"
+    name: node22_7ff1
+    title: Node 0x22 message 7ff1
+    status: unknown
+    evidence: "single byte (10), seen right after power-on; meaning unknown"
+    fields: []
+  - key: "25/1017"
+    name: cmd_1017
+    title: Command 1017 from node 0x25
+    status: unknown
+    evidence: "seen twice around power-on; meaning unknown"
+    fields: []
+  - key: "25/1020"
+    name: cmd_1020
+    title: Command 1020 from node 0x25
+    status: unknown
+    evidence: "seen once around power-on; meaning unknown"
+    fields: []

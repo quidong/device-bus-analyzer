@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+<h1>{{ src.name }} · {{ t.frames }}</h1>
+<form method="get" class="filters">
+<label>{{ t.dest }} <input name="ds" value="{{ q.ds }}" size="3" placeholder="17"></label>
+<label>{{ t.cmd }} <input name="cmd" value="{{ q.cmd }}" size="5" placeholder="2008"></label>
+<label>{{ t.since }} <input name="since" value="{{ q.since }}" placeholder="2026-11-18T21:58"></label>
+<label>{{ t.until }} <input name="until" value="{{ q.until }}"></label>
+<label>{{ t.limit }} <input name="limit" value="{{ q.limit }}" size="4"></label>
+<label><input type="checkbox" name="bad_only" value="true" {% if q.bad_only %}checked{% endif %}> {{ t.only_bad }}</label>
+<button>{{ t.filter }}</button></form>
+{% if not rows %}<p>{{ t.no_data }}</p>{% else %}
+<table><tr><th>{{ t.time }}</th><th>{{ t.dest }}</th><th>{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.ack }}</th><th>{{ t.crc }}</th><th>{{ t.decoded }}</th></tr>
+{% for r in rows %}<tr class="{{ '' if r.crc_ok else 'bad' }}"><td>{{ fmt(r.ts) }}</td><td>{{ '%02x' % r.ds }}</td><td>{{ '%04x' % r.cmd }}</td><td class="mono">{{ hexs(r.data) }}</td>
+<td>{{ '%02X' % r.ack if r.ack is not none else '' }}</td><td>{{ t.ok if r.crc_ok else t.bad }}</td>
+<td>{% if r.decoded.name %}<span class="st {{ r.decoded.status }}">{{ t[r.decoded.status] }}</span> {{ r.decoded.name }} {{ r.decoded["values"] }}{% endif %}</td></tr>{% endfor %}</table>
+<p class="pager">{% if q.offset > 0 %}<a href="?ds={{ q.ds }}&cmd={{ q.cmd }}&since={{ q.since }}&until={{ q.until }}&limit={{ q.limit }}&offset={{ [q.offset - q.limit, 0]|max }}">{{ t.prev }}</a>{% endif %}
+{% if rows|length == q.limit %}<a href="?ds={{ q.ds }}&cmd={{ q.cmd }}&since={{ q.since }}&until={{ q.until }}&limit={{ q.limit }}&offset={{ q.offset + q.limit }}">{{ t.next }}</a>{% endif %}</p>{% endif %}
+{% endblock %}

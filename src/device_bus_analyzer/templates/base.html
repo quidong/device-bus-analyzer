@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="{{ lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t.title }}</title><link rel="stylesheet" href="/static/app.css"></head><body>
+<header><a class="brand" href="/">{{ t.title }}</a>
+{% if logged_in %}
+<span class="tag">{{ t.read_only }}</span>
+<nav>{% block nav %}{% endblock %}</nav>
+<span class="right"><a href="?lang=de">DE</a> <a href="?lang=en">EN</a>
+<form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.logout }}</button></form></span>
+{% endif %}</header>
+<main>{% block body %}{% endblock %}</main>
+<footer>v{{ version }} · {{ t.timezone_note }} {{ tz }}</footer></body></html>

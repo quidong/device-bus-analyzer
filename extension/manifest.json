@@ -1,0 +1,22 @@
+{
+  "manifest_version": "0.2",
+  "name": "device-bus-analyzer",
+  "display_name": "Device Bus Analyzer",
+  "version": "0.1.0",
+  "description": "Read-only access to your Device Bus Analyzer (appliance bus telegrams) from Claude Desktop, LAN only.",
+  "author": { "name": "device-bus-analyzer contributors" },
+  "license": "MIT",
+  "server": {
+    "type": "python",
+    "entry_point": "server/mcp_server.py",
+    "mcp_config": {
+      "command": "python",
+      "args": ["${__dirname}/server/mcp_server.py"],
+      "env": { "DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}" }
+    }
+  },
+  "user_config": {
+    "url": { "type": "string", "title": "Analyzer URL", "description": "For example http://analyzer.lan:8080", "required": true },
+    "token": { "type": "string", "title": "API token", "description": "Value of API_TOKEN of the stack", "sensitive": true, "required": true }
+  }
+}
