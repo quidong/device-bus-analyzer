@@ -56,7 +56,7 @@ def test_hash_password_cli(monkeypatch, capsys):
 
 
 # --- repository hygiene: the repo is public ----------------------------------------------------
-TEXT = {".py", ".md", ".yaml", ".yml", ".json", ".toml", ".html", ".css", ".txt", ".cfg", ""}
+TEXT = {".py", ".md", ".yaml", ".yml", ".json", ".toml", ".html", ".css", ".txt", ".cfg", ".h", ".cpp", ""}
 IP = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 OK_IP = re.compile(r"^(0\.0\.0\.0|127\.0\.0\.1|192\.0\.2\.\d+|198\.51\.100\.\d+|203\.0\.113\.\d+|10\.0\.0\.\d+)$")
 MAC = re.compile(r"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b")

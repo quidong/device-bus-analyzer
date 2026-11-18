@@ -38,6 +38,26 @@ def node_info(spec: dict[str, Any], ds: int) -> dict[str, Any]:
             "receiver": {"value": entry.get("receiver"), "status": st if entry.get("receiver") else "unknown", "evidence": entry.get("evidence", "")}}
 
 
+def device_info(spec: dict[str, Any], ds: int, cmd: int) -> dict[str, Any]:
+    """Buses whose frames carry source AND destination (MACS): ``cmd`` high byte = source address.
+
+    The addresses are read from the wire (always true); what a device *is* comes from ``devices`` in the spec
+    and keeps that entry's status.
+    """
+    devs = spec.get("devices", {})
+
+    def one(addr: int, role: str) -> dict[str, Any]:
+        e = devs.get(f"{addr:02x}")
+        if not e:
+            return _unknown(f"{role} address 0x{addr:02x} is not in the spec")
+        return {"value": e["name"], "status": e.get("status", "assumed"), "evidence": e.get("evidence", "")}
+
+    src = cmd >> 8
+    return {"sender": one(src, "source"), "receiver": one(ds, "destination"),
+            "dest_node": {**one(ds, "destination"), "value": ds, "name": (devs.get(f"{ds:02x}") or {}).get("name")},
+            "subsystem": {"value": None, "name": None, "status": "unknown", "evidence": "no subsystem nibble on this bus"}}
+
+
 def dest_info(spec: dict[str, Any], ds: int) -> dict[str, Any]:
     """Split the DS byte: high nibble = destination node, low nibble = subsystem (per hn/bsh-home-appliances)."""
     node, sub = ds >> 4, ds & 0xF
@@ -71,8 +91,10 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
     """
     spec = load_spec(protocol)
     key = f"{ds:02x}/{cmd:04x}"
-    nodes = node_info(spec, ds)
-    base = {"key": key, **nodes, "acked_by": ack_info(spec, ack), **dest_info(spec, ds)}
+    if spec.get("source_in_cmd"):
+        base = {"key": key, **device_info(spec, ds, cmd), "acked_by": ack_info(spec, ack)}
+    else:
+        base = {"key": key, **node_info(spec, ds), "acked_by": ack_info(spec, ack), **dest_info(spec, ds)}
     entry = lookup(spec, ds, cmd)
     if entry is None:
         return {**base, "name": None, "title": None, "status": "unknown", "values": {}, "fields": [], "notes": ["not in spec"]}
@@ -83,6 +105,16 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
         b = f["byte"]
         if b >= len(data):
             notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
+            continue
+        if f.get("kind") == "ascii":
+            n = int(f.get("length", 1))
+            if b + n > len(data):
+                notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
+                continue
+            v = bytes(data[b:b + n]).decode("ascii", errors="replace")
+            values[f["name"]] = v
+            fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
+                           "status": f.get("status", entry["status"])})
             continue
         if "bit" in f:
             v: Any = bool(data[b] >> f["bit"] & 1)
@@ -116,6 +148,9 @@ def validate_spec(protocol: str) -> list[str]:
                 problems.append(f"{c['key']}.{f.get('name')}: bad status")
             if f.get("kind") == "enum" and f.get("enum") not in spec.get("enums", {}):
                 problems.append(f"{c['key']}.{f.get('name')}: unknown enum {f.get('enum')}")
+    for k, n in spec.get("devices", {}).items():
+        if n.get("status") not in STATUS:
+            problems.append(f"device {k}: bad status")
     for k, n in spec.get("nodes", {}).items():
         if n.get("status") not in STATUS:
             problems.append(f"node {k}: bad status")

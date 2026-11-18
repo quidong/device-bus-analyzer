@@ -1,9 +1,188 @@
+# Protocol findings for the Electrolux / AEG MACS bus. Source of truth for the decoder AND the findings page.
+# status: confirmed = verified (frame structure: arithmetic; values: against what was done on the appliance);
+#         assumed   = plausible and consistent with the recording, not yet verified by a targeted test;
+#         unknown   = seen on the bus, meaning not understood.
+# Observed so far on ONE AEG heat-pump dryer in ONE recording (idle heartbeat, all programs and options stepped through,
+# start, stop, power off). Everything marked "single recording" needs a second, labelled recording before it is confirmed.
+# Nothing in here may contain private data (no addresses of the board, no network names, no keys).
 protocol: macs
 title: Electrolux / AEG MACS bus (tumble dryer)
-physical: "to be documented"
-frame: "not yet documented"
-nodes: {}
-acks: {}
-enums: {}
-commands: []
-runs: {}
+physical: "RAST 2.5, 4 pins: 1 = +12 V, 2 = +5 V, 3 = DATA, 4 = GND. 9600 baud 8E1, inverted logic (idle 0 V), half duplex, 20 ms idle gap ends a burst"
+frame: "C9 DD SS LL <payload LL bytes> XX  (DD destination, SS source, XX = XOR of all preceding bytes, frame length LL+5). First payload byte = message type. ACK = 98 <checksum byte of the message> <XOR of both>"
+# Key format of a command: "<destination>/<source><type>" in hex, e.g. 2a/225f = heartbeat from 0x22 to 0x2a.
+# Field byte numbers count the payload WITHOUT the type byte (byte 0 = second payload byte).
+source_in_cmd: true
+# Addresses are read from the frame and therefore always true. What a device IS is derived from its traffic and carries a status.
+devices:
+  "22":
+    name: "dryer control board (main controller)"
+    status: assumed
+    evidence: "sends the heartbeat every 3 s and all device-state / time messages; wakes and polls device 0x30"
+  "2a":
+    name: "user panel (display and buttons)"
+    status: assumed
+    evidence: "sends program selection, start/stop and on/off; acknowledges the heartbeat; receives state and time"
+  "30":
+    name: "compressor / inverter board"
+    status: assumed
+    evidence: "silent while the dryer is idle; during a run it announces itself and answers status queries; identifies itself with the ASCII text M1IB1606 (message 22/3011)"
+  "00":
+    name: "broadcast"
+    status: assumed
+    evidence: "the compressor board sends its wake-up message 10 00 23 to 0x00 when it starts; single recording"
+acks:
+  "9":
+    node: "addressed node (receiver of the acknowledged message)"
+    status: assumed
+    evidence: "98 is followed by the checksum byte of the message just seen (228 of 228 ACKs in the recording); who sends the ACK electrically was not measured"
+# How telegrams are grouped into runs (program cycles). Detection is a heuristic and always marked as such.
+runs:
+  start:
+    key: "22/2a51"          # command message from the panel
+    byte: 1
+    value: 0x60
+    status: assumed
+    evidence: "51 00 60 00 00 1b 03 was sent when the start button was pressed; the controller then reported state 02 (running); repeated start messages within 60 s are merged; single recording"
+  end:
+    gap_minutes: 10         # the board is powered from the bus: when the dryer switches off, telegrams stop
+    status: assumed
+    evidence: "no end-of-programme marker has been captured yet; the run ends with the last telegram before a silent gap (the dryer powers itself and the board off after a few minutes without use)"
+  context_seconds: 300      # telegrams shown before the start (programme selection, power on)
+  program_key: "22/2a50"    # programme selection used to name the run
+enums:
+  program:
+    "0x01": "Programme 1"
+    "0x02": "Programme 2"
+    "0x03": "Programme 3"
+    "0x04": "Programme 4"
+    "0x05": "Programme 5"
+    "0x06": "Programme 6"
+    "0x07": "Programme 7"
+    "0x08": "Programme 8"
+    "0x09": "Programme 9"
+    "0x0a": "Programme 10"
+  device_state:
+    "0x0b": "off"
+    "0x01": "on / ready"
+    "0x02": "running"
+    "0x04": "paused"
+  panel_action:
+    "0x60": "start"
+    "0x61": "programme selected (after power-on)"
+    "0x62": "stop / pause"
+commands:
+  - key: "2a/225f"
+    name: heartbeat
+    title: Heartbeat (controller to panel)
+    status: confirmed
+    evidence: "payload 5f 03, every 3 s while the dryer is on (91 in the recording), always acknowledged"
+    fields: []
+  - key: "22/2a50"
+    name: program_select
+    title: Programme selection (panel to controller)
+    status: confirmed
+    evidence: "byte 13 followed the programme button through 4, 5, 6, 7, 8, 9, 10, 1, 2; the programme names are not mapped yet (programme 3 was pre-selected and not recorded)"
+    fields:
+      - {byte: 13, kind: enum, enum: program, name: program, label: Programme number, status: confirmed}
+      - {byte: 1, kind: u8, name: flags_b1, label: Varies with programme, status: unknown}
+      - {byte: 5, kind: u8, name: flags_b5, label: Varies with programme, status: unknown}
+      - {byte: 6, kind: u8, name: option_b6, label: Toggles 01 / 04 with one option, status: assumed}
+      - {byte: 8, kind: u8, name: flags_b8, label: Varies with programme (4a / 4b), status: unknown}
+      - {byte: 16, kind: u8, name: flags_b16, label: Varies with programme (07 for programme 2, else 01), status: unknown}
+  - key: "22/2a55"
+    name: program_data_panel
+    title: Programme data / option bits (panel to controller)
+    status: unknown
+    evidence: "13-byte payload that changes with programme and option; nine different values in the recording; bit meaning not mapped"
+    fields: []
+  - key: "2a/2255"
+    name: program_data_controller
+    title: Programme data echo (controller to panel)
+    status: assumed
+    evidence: "17-byte payload sent once at the start, same layout family as the panel message; single recording"
+    fields: []
+  - key: "22/2a51"
+    name: panel_command
+    title: Panel command (start / stop)
+    status: assumed
+    evidence: "60 = start, 62 = stop or pause, 61 = programme selected after power-on; matches the start and stop pressed during the recording and the controller states 02 and 04 that followed; single recording"
+    fields:
+      - {byte: 1, kind: enum, enum: panel_action, name: action, label: Action, status: assumed}
+  - key: "22/2a53"
+    name: power
+    title: On / off (panel to controller)
+    status: assumed
+    evidence: "one message (53 03 10 02 00 00) in the recording, followed within 50 ms by device state 0b (off); the on direction and the meaning of byte 1 were not recorded"
+    fields:
+      - {byte: 1, kind: u8, name: power_arg, label: Argument, status: unknown}
+  - key: "2a/2252"
+    name: device_state
+    title: Device state (controller to panel)
+    status: assumed
+    evidence: "byte 1: 01 after wake-up, 02 after start, 04 after stop, 0b when switched off; single recording"
+    fields:
+      - {byte: 1, kind: enum, enum: device_state, name: state, label: State, status: assumed}
+      - {byte: 2, kind: u8, name: run_flag, label: 01 in states running and paused, status: unknown}
+      - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 when off, status: unknown}
+  - key: "2a/2256"
+    name: time
+    title: Time (controller to panel)
+    status: unknown
+    evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched; 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32. Possibly durations in minutes or tens of minutes, not verified; no remaining-time reading was recorded"
+    fields:
+      - {byte: 1, kind: u8, name: layout, label: Layout (00 or 04), status: unknown}
+  - key: "2a/2257"
+    name: alarm
+    title: Alarm
+    status: unknown
+    evidence: "type is listed as alarm in third-party notes for the washing machine; not seen on this dryer"
+    fields: []
+  - key: "30/2210"
+    name: wakeup_to_compressor
+    title: Wake-up (controller to compressor board)
+    status: assumed
+    evidence: "10 00 24 (8 times) and 10 01 (twice) at the start of a run; the compressor board answers with its own wake-up, a broadcast 10 00 23"
+    fields: []
+  - key: "00/3010"
+    name: wakeup_from_compressor
+    title: Wake-up (compressor board, broadcast)
+    status: assumed
+    evidence: "10 00 23, twice, only while the compressor board starts up"
+    fields: []
+  - key: "22/3011"
+    name: identification
+    title: Identification (compressor board)
+    status: confirmed
+    evidence: "payload 11 00 followed by the ASCII text M1IB1606 and two more bytes (3d d4, meaning unknown)"
+    fields:
+      - {byte: 1, kind: ascii, length: 8, name: ident, label: Identification text, status: confirmed}
+  - key: "30/2211"
+    name: parameter_blocks
+    title: Parameter blocks (controller to compressor board)
+    status: unknown
+    evidence: "four long blocks 11 03 00 .. 11 03 03 plus a short 11 01 2e 00; looks like a parameter set for the compressor board, values not interpreted"
+    fields: []
+  - key: "30/2212"
+    name: inverter_command
+    title: Inverter command (controller to compressor board)
+    status: unknown
+    evidence: "12 00 00 e6 06 4a 80 00 (and 81, 00 07 30 ... variants) 25 times during a run; byte 6 toggles 80/81"
+    fields: []
+  - key: "22/3012"
+    name: inverter_status
+    title: Inverter status (compressor board to controller)
+    status: unknown
+    evidence: "19-byte payload roughly every 2 s during a run, 13 different values; bytes 8 and 9 change slowly (18 / 19 / 20, 00..02), others stay 00; no compressor values (speed, temperatures) mapped yet"
+    fields: []
+  - key: "30/2214"
+    name: query_14
+    title: Query 0x14 (controller to compressor board)
+    status: unknown
+    evidence: "14 00 ff ff, eight times, each answered by 14 01 00"
+    fields: []
+  - key: "22/3014"
+    name: query_14_answer
+    title: Answer to query 0x14 (compressor board)
+    status: unknown
+    evidence: "14 01 00, always right after the query"
+    fields: []
