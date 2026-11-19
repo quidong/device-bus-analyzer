@@ -201,3 +201,11 @@ def test_rebuild_frames_reproduces_the_same_result(store):
 def test_spec_lists_the_known_devices():
     s = spec.load_spec("macs")
     assert {"22", "2a", "30", "00"} <= set(s["devices"]) and all(v["status"] in spec.STATUS for v in s["devices"].values())
+
+
+def test_drying_time_and_delayed_start_are_decoded():
+    d = spec.decode("macs", 0x22, 0x2A50, bytes.fromhex("0300000000000132cb012c00000300000100"))
+    v = d["values"]
+    assert v["drying_time"] == 0x32 and v["delayed_start"] == 300 and v["delayed_start_set"] is True and v["program"] == "Cotton"
+    v = spec.decode("macs", 0x22, 0x2A50, bytes.fromhex("030000000000011e4b000000000300000100"))["values"]
+    assert v["drying_time"] == 30 and v["delayed_start_set"] is False and v["delayed_start"] == 0

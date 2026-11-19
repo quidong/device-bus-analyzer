@@ -116,8 +116,13 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
             fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
                            "status": f.get("status", entry["status"])})
             continue
-        if "bit" in f:
-            v: Any = bool(data[b] >> f["bit"] & 1)
+        if f.get("kind") == "u16":
+            if b + 1 >= len(data):
+                notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
+                continue
+            v: Any = data[b] << 8 | data[b + 1]
+        elif "bit" in f:
+            v = bool(data[b] >> f["bit"] & 1)
         elif f.get("kind") == "enum":
             label = spec.get("enums", {}).get(f["enum"], {}).get(f"0x{data[b]:02x}")
             v = label if label is not None else f"0x{data[b]:02x}"

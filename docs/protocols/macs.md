@@ -97,5 +97,10 @@ programmes on one dryer (display names, translated); no second recording has con
 | 4 | Easy care | 9 | Light ironing |
 | 5 | Delicates | 10 | Refresh |
 
-Option menus (seen on the display, bus encoding not yet analysed): drying time 0 to 2 h in 10-minute steps, delayed
-start from 0 in 30-minute steps up to 2 h, then hourly up to 20 h (then back to 0).
+Option encoding in `22/2a50` (assumed, one recording, values compared with the user's display readings):
+
+- byte 7: drying time in minutes, 10 to 120 in 10-minute steps (then back to 0)
+- byte 8 bit 7: delayed start set (`4b` without, `cb` with)
+- bytes 9-10: delayed start in minutes (big endian): 30-minute steps up to 2 h, then hourly up to 20 h (1200), then back to 0
+
+Drying degree, signal and anti-crease (Knitterschutz) bits are not decoded yet.

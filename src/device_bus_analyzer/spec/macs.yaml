@@ -83,13 +83,16 @@ commands:
     name: program_select
     title: Programme selection (panel to controller)
     status: confirmed
-    evidence: "byte 13 followed the programme button through 4, 5, 6, 7, 8, 9, 10, 1, 2; mapped from the order the user stepped through the programmes (Cotton, Easy care, Delicates, Bedding XL, Sportswear, Down, Light ironing, Refresh, Mix Dry, Eco, Cotton): 1 Mix Dry, 2 Eco, 3 Cotton, 4-10 as listed; display names are the German ones the user read off the dryer, translated"
+    evidence: "byte 7 took 10, 20, 30 ... 120 (0x0a..0x78) while the user stepped the drying time from 10 min to 2 h, then 0; with delayed start byte 8 changed 4b to cb and bytes 9-10 counted 30, 60, 90, 120, 180, 240 ... 1200 (0x1e..0x4b0) minutes, i.e. 30-min steps up to 2 h, then hourly up to 20 h, as the user read off the display; one recording. Byte 13 followed the programme button through 4, 5, 6, 7, 8, 9, 10, 1, 2; mapped from the order the user stepped through the programmes (Cotton, Easy care, Delicates, Bedding XL, Sportswear, Down, Light ironing, Refresh, Mix Dry, Eco, Cotton): 1 Mix Dry, 2 Eco, 3 Cotton, 4-10 as listed; display names are the German ones the user read off the dryer, translated"
     fields:
       - {byte: 13, kind: enum, enum: program, name: program, label: Programme number, status: confirmed}
       - {byte: 1, kind: u8, name: flags_b1, label: Varies with programme, status: unknown}
       - {byte: 5, kind: u8, name: flags_b5, label: Varies with programme, status: unknown}
       - {byte: 6, kind: u8, name: option_b6, label: Toggles 01 / 04 with one option, status: assumed}
-      - {byte: 8, kind: u8, name: flags_b8, label: Varies with programme (4a / 4b), status: unknown}
+      - {byte: 7, kind: u8, name: drying_time, label: Drying time set on the panel, unit: min, status: assumed}
+      - {byte: 8, kind: u8, name: flags_b8, label: Varies with programme (4a / 4b); 0xcb while a delayed start is set, status: unknown}
+      - {byte: 8, bit: 7, name: delayed_start_set, label: Delayed start set, status: assumed}
+      - {byte: 9, kind: u16, name: delayed_start, label: Delayed start, unit: min, status: assumed}
       - {byte: 16, kind: u8, name: flags_b16, label: Varies with programme (07 for programme 2, else 01), status: unknown}
   - key: "22/2a55"
     name: program_data_panel
