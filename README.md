@@ -12,7 +12,8 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 ```
 
 * **Read-only by design.** The collector only connects and subscribes to the device log; there is no code path that
-  sends anything to a device or to the bus. A test asserts that the API has no write routes.
+  sends anything to a device or to the bus. A test asserts that the API has no write routes. The only thing the web UI can
+  change is the local device list (below); it can never delete data and never write to an appliance.
 * **Raw first.** Every burst is stored unchanged; decoded frames can be rebuilt at any time (`dba rebuild`), so better
   decoders never require re-recording.
 * **Findings are data.** `src/device_bus_analyzer/spec/<protocol>.yaml` drives both the decoder and the findings page. Each
@@ -24,12 +25,12 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 
 1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`, examples in `firmware/`: `bshdbus-analysis.example.yaml` for the dishwasher, `macs-analysis.example.yaml` + `macs_recorder.h` for the dryer).
    Enable the API encryption key in ESPHome.
-2. In Portainer create a stack (Web editor: paste `docker-compose.yml`; the image `ghcr.io/quidong/device-bus-analyzer:latest` is built by GitHub Actions on every push to `main`) and set these **stack variables** (nothing secret is stored in the repo):
+2. In Portainer create a stack (Web editor: paste `docker-compose.yml`; the image `ghcr.io/quidong/device-bus-analyzer:latest` is built by GitHub Actions on every push to `main`) and set these **stack variables** (nothing secret is stored in the repo). Devices are *not* stack variables any more, add them in the UI (step 3):
 
 | Variable | Meaning |
 |---|---|
-| `DBA_DEVICES` | `name@host[:port]/protocol`, comma separated, for example `geschirrspueler@192.0.2.10:6053/bshdbus` |
-| `DBA_KEY_<NAME>` | ESPHome API encryption key of that device (`DBA_KEY_GESCHIRRSPUELER`) |
+| `DBA_DEVICES` | *optional, one-time import*: `name@host[:port]/protocol`, comma separated, for example `geschirrspueler@192.0.2.10:6053/bshdbus` |
+| `DBA_KEY_<NAME>` | *optional, one-time import*: ESPHome API encryption key of that device (`DBA_KEY_GESCHIRRSPUELER`) |
 | `ADMIN_EMAIL` | the single admin account (login = e-mail address) |
 | `ADMIN_PASSWORD_HASH` | argon2id hash, create with `echo -n 'your password' \| docker run -i --rm ghcr.io/quidong/device-bus-analyzer:latest dba hash-password` |
 | `ADMIN_PASSWORD` | alternative to the hash (plain text in the stack; the hash is preferred) |
@@ -37,8 +38,19 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 | `API_TOKEN` | token for the MCP extension and scripts (optional) |
 | `DBA_TZ` | display timezone, default `Europe/Berlin` |
 
-3. Open `http://<host>:8080`, sign in. Expose it in your LAN only; there is no password reset and no e-mail sending.
+3. Open `http://<host>:8080`, sign in, then **Devices > New device**: choose type, manufacturer and model (suggestions from
+   `src/device_bus_analyzer/catalog.yaml`, free text is allowed; the manufacturer selects the decoder protocol), enter host, port and the
+   ESPHome API key. Collection starts immediately and changes apply without a restart. Expose it in your LAN only; there is no password reset and no e-mail sending.
    If you must put it behind a reverse proxy, set `COOKIE_SECURE=1` and terminate TLS there.
+
+**Device management.** Devices live in the SQLite database in the data volume (table `devices`, host and key included, so back up the
+volume like a secret). The key is write-only: the UI shows only whether one is set. There is no delete function: *edit* changes
+type/model/connection, *Collect off* pauses a device, and all recorded data stays. A device's name and protocol are fixed once
+created, because the name identifies the data and the decoder depends on the protocol. **Upgrading an existing installation:**
+leave `DBA_DEVICES` / `DBA_KEY_*` in the stack for the first start; they are imported once into the database without overwriting
+anything configured in the UI. Afterwards open **Devices**, assign type/manufacturer/model, and remove the variables if you like.
+Type, manufacturer and model are only recorded for now (they will let findings be split into "general for the protocol" and "specific
+to a model"); decoding is unchanged. New catalogue entries are welcome as pull requests to `catalog.yaml`.
 
 Devices that are only online sometimes (a dryer that connects when switched on) are fine: the collector reconnects forever
 with back-off and the data model records board restarts and gaps explicitly.

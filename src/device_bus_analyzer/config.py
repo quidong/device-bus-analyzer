@@ -57,3 +57,33 @@ def load(env: dict[str, str] | None = None) -> Settings:
         cookie_secure=env.get("COOKIE_SECURE", "0") == "1",
         session_hours=int(env.get("SESSION_HOURS", "12")),
     )
+
+
+_NAME = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
+_HOST = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$")
+
+
+def validate_device_input(name: str, host: str, port: str | int, protocol: str, key: str | None, known_protocols) -> tuple[int, str | None]:
+    """Validate the fields of the device dialog. Returns (port, normalised key). Raises ValueError with a short code."""
+    import base64
+    import binascii
+    if not _NAME.match(name or ""):
+        raise ValueError("bad_name")
+    if protocol not in known_protocols:
+        raise ValueError("bad_protocol")
+    if host and not _HOST.match(host):
+        raise ValueError("bad_host")
+    try:
+        p = int(port or 6053)
+    except ValueError:
+        raise ValueError("bad_port") from None
+    if not 1 <= p <= 65535:
+        raise ValueError("bad_port")
+    k = (key or "").strip() or None
+    if k:
+        try:
+            if len(base64.b64decode(k, validate=True)) != 32:
+                raise ValueError("bad_key")
+        except (binascii.Error, ValueError):
+            raise ValueError("bad_key") from None
+    return p, k

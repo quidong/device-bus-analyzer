@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         print("bursts re-decoded:", store.rebuild_frames())
     elif a.cmd == "collect":
         from .collector import run_all
-        asyncio.run(run_all(store, s.devices))
+        asyncio.run(run_all(store, s.devices))   # env devices are imported into the DB first
     elif a.cmd == "serve":
         import uvicorn
         from .web import create_app

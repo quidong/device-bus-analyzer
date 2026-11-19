@@ -4,7 +4,7 @@
 <header><a class="brand" href="/">{{ t.title }}</a>
 {% if logged_in %}
 <span class="tag">{{ t.read_only }}</span>
-<nav>{% block nav %}{% endblock %}</nav>
+<nav><a href="/devices">{{ t.devices_title }}</a>{% block nav %}{% endblock %}</nav>
 <span class="right"><a href="?lang=de">DE</a> <a href="?lang=en">EN</a>
 <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.logout }}</button></form></span>
 {% endif %}</header>

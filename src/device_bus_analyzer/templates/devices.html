@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% block body %}
+<h1>{{ t.devices_title }} <button type="button" id="new-device">+ {{ t.new_device }}</button></h1>
+<p>{{ t.dev_note }}</p>
+{% if error %}<p class="err">{{ t[error] }}</p>{% endif %}
+<table><tr><th>{{ t.name }}</th><th>{{ t.device_type }}</th><th>{{ t.manufacturer }}</th><th>{{ t.model }}</th><th>{{ t.protocol }}</th><th>{{ t.connection }}</th><th>{{ t.api_key }}</th><th>{{ t.status }}</th><th>{{ t.frames }}</th><th></th></tr>
+{% for d in devices %}<tr>
+<td><a href="/s/{{ d.name }}/frames">{{ d.name }}</a></td>
+<td>{% if d.type %}{{ (catalog.types[d.type][lang] if d.type in catalog.types else d.type) }}{% else %}<span class="st unknown">{{ t.unclassified }}</span>{% endif %}</td>
+<td>{{ d.manufacturer or "" }}</td><td>{{ d.model or "" }}</td><td>{{ d.protocol }}</td>
+<td class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}<span class="st unknown">{{ t.import_only }}</span>{% endif %}</td>
+<td>{% if d.configured and d.host %}{{ t.key_set if d.has_key else t.key_missing }}{% endif %}</td>
+<td>{% if d.host %}{{ t.enabled_on if d.enabled else t.disabled }}{% endif %}</td><td>{{ d.frames }}</td>
+<td><button type="button" class="edit-device" data-name="{{ d.name }}" data-protocol="{{ d.protocol }}" data-type="{{ d.type or '' }}"
+ data-manufacturer="{{ d.manufacturer or '' }}" data-model="{{ d.model or '' }}" data-host="{{ d.host or '' }}" data-port="{{ d.port or 6053 }}"
+ data-haskey="{{ '1' if d.has_key else '' }}" data-enabled="{{ '1' if (d.enabled or not d.host) else '' }}">{{ t.edit }}</button></td></tr>{% endfor %}</table>
+
+<dialog id="device-dialog" {% if form %}data-open="1"{% endif %}>
+<form method="post" action="{{ '/devices' if not form or form.creating else '/devices/' ~ form.name }}" id="device-form" class="dialog-form">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}">
+<h2 id="dialog-title">{{ t.new_device }}</h2>
+<p class="fld">{{ t.pick_hint }}</p>
+<label>{{ t.name }}<input name="name" id="f-name" required maxlength="40" pattern="[A-Za-z0-9_\-]+" value="{{ form.name if form else '' }}"></label>
+<label>{{ t.device_type }}<input name="type" id="f-type" list="dl-types" autocomplete="off" value="{{ form.type if form else '' }}"></label>
+<label>{{ t.manufacturer }}<input name="manufacturer" id="f-man" list="dl-mans" autocomplete="off" value="{{ form.manufacturer if form else '' }}"></label>
+<label>{{ t.model }}<input name="model" id="f-model" list="dl-models" autocomplete="off" value="{{ form.model if form else '' }}"></label>
+<label>{{ t.protocol }}<select name="protocol" id="f-proto">{% for p in catalog.protocols %}<option value="{{ p }}" {% if form and form.protocol == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></label>
+<small class="fld" id="proto-note" hidden>{{ t.protocol_fixed }}</small>
+<label>{{ t.host }}<input name="host" id="f-host" required value="{{ form.host if form else '' }}"></label>
+<label>{{ t.port }}<input name="port" id="f-port" type="number" min="1" max="65535" value="{{ form.port if form and form.port else 6053 }}"></label>
+<label>{{ t.api_key }}<input name="key" id="f-key" type="password" autocomplete="off" spellcheck="false"></label>
+<small class="fld" id="key-note" hidden>{{ t.key_keep }}</small>
+<label class="chk" id="clear-key-row" hidden><input type="checkbox" name="clear_key" value="1"> {{ t.key_clear }}</label>
+<label class="chk"><input type="checkbox" name="enabled" id="f-enabled" value="1" {% if not form or form.enabled %}checked{% endif %}> {{ t.enabled }}</label>
+<div class="actions"><button>{{ t.save }}</button> <button type="button" id="dialog-cancel">{{ t.cancel }}</button></div>
+</form></dialog>
+<datalist id="dl-types">{% for k, v in catalog.types.items() %}<option value="{{ k }}">{{ v[lang] }}</option>{% endfor %}</datalist>
+<datalist id="dl-mans"></datalist><datalist id="dl-models"></datalist>
+<div id="catalog" data-catalog="{{ catalog|tojson|forceescape }}" data-title-new="{{ t.new_device }}" data-title-edit="{{ t.edit }}" hidden></div>
+<script src="/static/devices.js"></script>
+{% endblock %}

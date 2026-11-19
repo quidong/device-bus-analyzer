@@ -154,7 +154,9 @@ def test_no_write_routes_exist(app):
         methods = getattr(r, "methods", None) or set()
         if r.path.startswith("/api") or r.path.startswith("/s/"):
             assert methods <= {"GET", "HEAD"}, r.path
-    assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout"}
+    # configuration (devices) is changed only through session + CSRF forms; no route can delete or send anything to a device
+    assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout", "/devices", "/devices/{name}"}
+    assert not [r.path for r in app.routes if {"DELETE", "PUT", "PATCH"} & (getattr(r, "methods", None) or set())]
 
 
 def test_startup_needs_admin_settings(store):

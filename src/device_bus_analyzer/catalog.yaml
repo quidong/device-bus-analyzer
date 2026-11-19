@@ -1,0 +1,18 @@
+# Suggestions for the "new device" dialog: type -> manufacturer -> model. Public data only (no private details).
+# The decoder is chosen by `protocol`; `models` only classify a source so that findings can later be split into
+# "general for the protocol/manufacturer" and "specific to a model". Values typed freely in the dialog are stored with the
+# device and offered again next time; add them here (pull request) when they should become suggestions for everybody.
+types:
+  dishwasher: {de: "Geschirrspüler", en: "Dishwasher"}
+  dryer: {de: "Trockner", en: "Tumble dryer"}
+manufacturers:
+  bsh:
+    name: "Bosch / Siemens / Neff"
+    protocol: bshdbus
+    types: [dishwasher]
+    models: ["Neff S413K60S0E"]
+  electrolux:
+    name: "Electrolux / AEG"
+    protocol: macs
+    types: [dryer]
+    models: []

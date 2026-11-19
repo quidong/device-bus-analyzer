@@ -77,5 +77,41 @@ def _debug_level():
     return LogLevel.LOG_LEVEL_INFO
 
 
-async def run_all(store: Store, devices: list[Device]) -> None:
-    await asyncio.gather(*(Collector(store, d).run_forever() for d in devices))
+class CollectorManager:
+    """Keeps one collector task per enabled device stored in the database; ``sync()`` after every change of the device list.
+    A changed connection (host, port, key) restarts only that device's collector; stored data is never touched."""
+
+    def __init__(self, store: Store, factory: Callable[[Device], Any] = default_client_factory):
+        self.store, self.factory = store, factory
+        self.tasks: dict[str, tuple[Device, asyncio.Task]] = {}
+
+    def sync(self) -> None:
+        wanted = {d.name: d for d in self.store.connections()}
+        for name, (dev, task) in list(self.tasks.items()):
+            if wanted.get(name) != dev:
+                task.cancel()
+                del self.tasks[name]
+        for name, dev in wanted.items():
+            if name in self.tasks:
+                continue
+            try:                                   # one broken device entry must not stop the others
+                c = Collector(self.store, dev, self.factory)
+            except Exception as exc:
+                log.error("device %s@%s:%s/%s not started: %s", dev.name, dev.host, dev.port, dev.protocol, exc)
+                continue
+            log.info("collecting %s from %s:%s (%s)", dev.name, dev.host, dev.port, dev.protocol)
+            self.tasks[name] = (dev, asyncio.create_task(c.run_forever()))
+
+    def stop(self) -> None:
+        for _dev, task in self.tasks.values():
+            task.cancel()
+        self.tasks.clear()
+
+
+async def run_all(store: Store, devices: list[Device] | None = None) -> None:
+    """Collector-only mode (``dba collect``): runs the devices stored in the database (the environment was imported before)."""
+    if devices:
+        store.seed_devices(devices)
+    mgr = CollectorManager(store)
+    mgr.sync()
+    await asyncio.gather(*(t for _d, t in mgr.tasks.values()))

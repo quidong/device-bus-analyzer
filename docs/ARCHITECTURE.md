@@ -7,7 +7,8 @@
 | Protocol decoders | `protocols/` | `bshdbus` (framing + CRC16/XMODEM, ACK, resync), `macs` (C9 frames, XOR checksum, 98 ACK, source on the wire) |
 | Spec | `spec/*.yaml`, `spec.py` | command catalogue with status + evidence, drives decoding and the findings page |
 | Storage | `store.py` | SQLite (WAL); raw bursts append-only, frames derived, sessions per board boot, gap table |
-| Collector | `collector.py` | aioesphomeapi `subscribe_logs`, reconnect with back-off, never sends |
+| Collector | `collector.py` | aioesphomeapi `subscribe_logs`, reconnect with back-off, never sends; `CollectorManager` follows the device list |
+| Devices | `catalog.py`, `catalog.yaml`, `store.py` (`devices` table), `web.py` (`/devices`) | type / manufacturer / model + connection, managed in the UI; env variables are imported once; no delete path |
 | Importer | `importer.py` | saved logs, midnight rollover, timezone |
 | API + frontend | `web.py`, `auth.py` | single admin from env, argon2id, signed cookie, CSRF, login rate limit, bearer token for API |
 | MCP | `mcp_server.py`, `extension/` | stdio server calling the read-only API |

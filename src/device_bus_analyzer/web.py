@@ -1,7 +1,6 @@
 """FastAPI application: read-only JSON API (/api) and HTML frontend. Nothing here can write to a device."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import secrets
@@ -16,9 +15,9 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import __version__, i18n
+from . import __version__, catalog, i18n, protocols
 from .auth import COOKIE, CSRF_COOKIE, Auth
-from .config import Settings
+from .config import Settings, validate_device_input
 from .spec import load_spec
 from .store import Store
 
@@ -67,23 +66,18 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     auth = Auth(settings)
     tz = ZoneInfo(os.environ.get("DBA_TZ", "Europe/Berlin"))
     tpl = Jinja2Templates(directory=str(PKG.joinpath("templates")))
-    collectors: list[asyncio.Task] = []
+    from .collector import CollectorManager
+    manager = CollectorManager(store)
+    created = store.seed_devices(settings.devices)   # former DBA_DEVICES / DBA_KEY_<NAME>: imported once, never overwrites
+    if created:
+        log.info("devices imported from the environment: %s", ", ".join(created))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        if start_collectors and settings.devices:
-            from .collector import Collector
-            for d in settings.devices:             # one broken device entry must not take the web app down
-                try:
-                    c = Collector(store, d)
-                except Exception as exc:
-                    log.error("device %s@%s:%s/%s not started: %s", d.name, d.host, d.port, d.protocol, exc)
-                    continue
-                log.info("collecting %s from %s:%s (%s)", d.name, d.host, d.port, d.protocol)
-                collectors.append(asyncio.create_task(c.run_forever()))
+        if start_collectors:
+            manager.sync()
         yield
-        for t in collectors:
-            t.cancel()
+        manager.stop()
 
     app = FastAPI(title="Device Bus Analyzer", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=str(PKG.joinpath("static"))), name="static")
@@ -244,6 +238,66 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         except (FileNotFoundError, OSError):
             raise HTTPException(404, "unknown protocol") from None
         return {k: v for k, v in spec.items() if not k.startswith("_")}
+
+    # --- device management (HTML forms only: session + CSRF; the bearer token can never change configuration) ---
+    def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):
+        resp = page(request, "devices.html", devices=store.devices(), catalog=catalog.build(store.used_classifications()),
+                    error=error, form=form)
+        resp.status_code = status
+        return resp
+
+    def need_session_csrf(request: Request, csrf: str) -> None:
+        cookie = request.cookies.get(COOKIE)
+        if not auth.valid_session(cookie):
+            raise HTTPException(303, headers={"Location": "/login"})
+        if not secrets.compare_digest(auth.csrf_for(cookie or ""), csrf):
+            raise HTTPException(403, "bad CSRF token")
+
+    @app.get("/devices", response_class=HTMLResponse, dependencies=[api])
+    def devices_list(request: Request):
+        return devices_page(request)
+
+    async def save_device(request: Request, name: str, creating: bool, csrf: str, form: dict) -> Response:
+        need_session_csrf(request, csrf)
+        existing = store.device(name)
+        try:
+            if creating:
+                if existing and existing["configured"]:
+                    raise ValueError("exists")
+                protocol = form["protocol"]
+            else:
+                if not existing:
+                    raise HTTPException(404, "unknown device")
+                protocol = existing["protocol"]            # fixed once data exists: the decoder must not change underneath it
+            if not form["host"]:
+                raise ValueError("bad_host")
+            port, key = validate_device_input(name, form["host"], form["port"], protocol, form["key"], protocols.PROTOCOLS)
+            store.save_device(name, protocol, form["type"] or None, form["manufacturer"] or None, form["model"] or None,
+                              form["host"], port, key, clear_key=form["clear_key"], enabled=form["enabled"])
+        except ValueError as exc:
+            msg = str(exc)
+            code = msg if msg in i18n.STR["en"] else "bad_input"
+            return devices_page(request, code, {**form, "name": name, "key": "", "creating": creating}, 422)
+        manager.sync() if start_collectors else None
+        return RedirectResponse("/devices", status_code=303)
+
+    def device_form(type, manufacturer, model, protocol, host, port, key, clear_key, enabled) -> dict:
+        return {"type": type.strip(), "manufacturer": manufacturer.strip(), "model": model.strip(), "protocol": protocol,
+                "host": host.strip(), "port": port.strip(), "key": key, "clear_key": clear_key == "1", "enabled": enabled == "1"}
+
+    @app.post("/devices")
+    async def device_create(request: Request, csrf: str = Form(...), name: str = Form(...), type: str = Form(""),
+                            manufacturer: str = Form(""), model: str = Form(""), protocol: str = Form(""), host: str = Form(""),
+                            port: str = Form("6053"), key: str = Form(""), enabled: str = Form("")):
+        return await save_device(request, name.strip(), True, csrf,
+                                 device_form(type, manufacturer, model, protocol, host, port, key, "", enabled))
+
+    @app.post("/devices/{name}")
+    async def device_update(request: Request, name: str, csrf: str = Form(...), type: str = Form(""), manufacturer: str = Form(""),
+                            model: str = Form(""), host: str = Form(""), port: str = Form("6053"), key: str = Form(""),
+                            clear_key: str = Form(""), enabled: str = Form("")):
+        return await save_device(request, name, False, csrf,
+                                 device_form(type, manufacturer, model, "", host, port, key, clear_key, enabled))
 
     # --- HTML ---------------------------------------------------------------------
     @app.get("/", response_class=HTMLResponse, dependencies=[api])

@@ -1,6 +1,7 @@
 """SQLite storage. Raw bursts are append-only; frames are derived and can be rebuilt at any time."""
 from __future__ import annotations
 
+import logging
 import sqlite3
 import threading
 import time
@@ -9,7 +10,10 @@ from typing import Any, Iterable
 
 from . import logformat, protocols
 from . import runs as runs_mod
+from .config import Device
 from .spec import decode
+
+log = logging.getLogger("dba.store")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sources(
@@ -32,6 +36,12 @@ CREATE TABLE IF NOT EXISTS heartbeats(
   bytes INTEGER, bursts INTEGER, ok INTEGER, crc INTEGER, noack INTEGER, rest INTEGER, recv_ts REAL);
 CREATE TABLE IF NOT EXISTS gaps(
   id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, session_id INTEGER, recv_ts REAL, message TEXT NOT NULL);
+-- Added with device management. Purely additive: existing tables and rows are never altered or dropped.
+CREATE TABLE IF NOT EXISTS devices(             -- classification + connection of a source; no row = imported / unclassified
+  source_id INTEGER PRIMARY KEY REFERENCES sources(id),
+  type TEXT, manufacturer TEXT, model TEXT,
+  host TEXT, port INTEGER NOT NULL DEFAULT 6053, key TEXT,   -- key: ESPHome API encryption key, never leaves the server
+  enabled INTEGER NOT NULL DEFAULT 1, created_ts REAL NOT NULL, updated_ts REAL NOT NULL);
 """
 
 
@@ -67,13 +77,81 @@ class Store:
     def sources(self) -> list[dict]:
         with self.lock:
             rows = self.db.execute(
-                "SELECT s.id, s.name, s.protocol,"
+                "SELECT s.id, s.name, s.protocol, d.type, d.manufacturer, d.model,"
                 " (SELECT COUNT(*) FROM bursts b JOIN sessions x ON x.id=b.session_id WHERE x.source_id=s.id) AS bursts,"
                 " (SELECT COUNT(*) FROM frames f WHERE f.source_id=s.id) AS frames,"
                 " (SELECT MIN(ts) FROM frames f WHERE f.source_id=s.id) AS first_ts,"
                 " (SELECT MAX(ts) FROM frames f WHERE f.source_id=s.id) AS last_ts"
-                " FROM sources s ORDER BY s.name").fetchall()
+                " FROM sources s LEFT JOIN devices d ON d.source_id=s.id ORDER BY s.name").fetchall()
         return [dict(r) for r in rows]
+
+    # --- devices (classification + connection) ------------------------------------
+    # Nothing here deletes anything: there is deliberately no way to remove a source, its device row or its data.
+    def devices(self) -> list[dict]:
+        """All sources with their device row, without the key (only whether one is set)."""
+        rows = self._q(
+            "SELECT s.name, s.protocol, d.type, d.manufacturer, d.model, d.host, d.port, d.enabled, d.key IS NOT NULL AND d.key<>'' AS has_key,"
+            " d.source_id IS NOT NULL AS configured,"
+            " (SELECT COUNT(*) FROM frames f WHERE f.source_id=s.id) AS frames"
+            " FROM sources s LEFT JOIN devices d ON d.source_id=s.id ORDER BY s.name")
+        for r in rows:
+            r["has_key"], r["configured"] = bool(r["has_key"]), bool(r["configured"])
+            r["enabled"] = bool(r["enabled"]) if r["enabled"] is not None else False
+        return rows
+
+    def device(self, name: str) -> dict | None:
+        return next((d for d in self.devices() if d["name"] == name), None)
+
+    def used_classifications(self) -> list[dict]:
+        return self._q("SELECT d.type, d.manufacturer, d.model, s.protocol FROM devices d JOIN sources s ON s.id=d.source_id")
+
+    def save_device(self, name: str, protocol: str, type: str | None, manufacturer: str | None, model: str | None,
+                    host: str | None, port: int = 6053, key: str | None = None, clear_key: bool = False,
+                    enabled: bool = True) -> int:
+        """Create or update the device row of a source (creating the source if needed; an existing source keeps its id and data).
+
+        ``key=None`` keeps a stored key, ``clear_key`` removes it. The protocol of an existing source cannot change."""
+        source_id = self.source(name, protocol)          # raises on protocol mismatch with stored data
+        now = time.time()
+        with self.lock:
+            row = self.db.execute("SELECT key FROM devices WHERE source_id=?", (source_id,)).fetchone()
+            new_key = None if clear_key else (key if key is not None else (row["key"] if row else None))
+            if row is None:
+                self.db.execute("INSERT INTO devices(source_id, type, manufacturer, model, host, port, key, enabled, created_ts, updated_ts)"
+                                " VALUES(?,?,?,?,?,?,?,?,?,?)",
+                                (source_id, type, manufacturer, model, host, port, new_key, int(enabled), now, now))
+            else:
+                self.db.execute("UPDATE devices SET type=?, manufacturer=?, model=?, host=?, port=?, key=?, enabled=?, updated_ts=?"
+                                " WHERE source_id=?", (type, manufacturer, model, host, port, new_key, int(enabled), now, source_id))
+            self.db.commit()
+        return source_id
+
+    def connections(self) -> list[Device]:
+        """Enabled devices that have a host: what the collector should connect to."""
+        rows = self._q("SELECT s.name, s.protocol, d.host, d.port, d.key FROM devices d JOIN sources s ON s.id=d.source_id"
+                       " WHERE d.enabled=1 AND d.host IS NOT NULL AND d.host<>'' ORDER BY s.name")
+        return [Device(r["name"], r["host"], r["port"], r["protocol"], r["key"] or None) for r in rows]
+
+    def seed_devices(self, devices: Iterable[Device]) -> list[str]:
+        """One-time import of the former environment configuration (DBA_DEVICES / DBA_KEY_<NAME>).
+
+        Idempotent and never overwrites: a device that already has a row keeps everything the user set in the UI; only a missing
+        key is filled in. Returns the names that were created."""
+        created = []
+        for d in devices:
+            try:
+                existing = self._q("SELECT d.source_id, d.key FROM devices d JOIN sources s ON s.id=d.source_id WHERE s.name=?", (d.name,))
+                if existing:
+                    if d.key and not existing[0]["key"]:
+                        with self.lock:
+                            self.db.execute("UPDATE devices SET key=?, updated_ts=? WHERE source_id=?", (d.key, time.time(), existing[0]["source_id"]))
+                            self.db.commit()
+                    continue
+                self.save_device(d.name, d.protocol, None, None, None, d.host, d.port, d.key)
+                created.append(d.name)
+            except ValueError as exc:                    # e.g. protocol differs from the one stored for that name: keep the data, skip
+                log.warning("device %s from the environment not imported: %s", d.name, exc)
+        return created
 
     # --- sessions -----------------------------------------------------------
     def _session(self, source_id: int, t_us: int | None, recv_ts: float) -> dict:

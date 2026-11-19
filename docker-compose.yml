@@ -7,7 +7,10 @@ services:
     ports:
       - "${DBA_PORT:-8080}:8080"            # LAN only: do not publish through a reverse proxy
     environment:
-      DBA_DEVICES: ${DBA_DEVICES}           # e.g. geschirrspueler@<host-or-ip>:6053/bshdbus,trockner@<host>/macs
+      # Devices are managed in the web UI ("Devices" > "New device") and stored in the data volume.
+      # The three variables below are OPTIONAL and only imported once, at start, for devices that are not in the UI yet
+      # (an existing installation keeps working on update; remove them once the devices show up under "Devices").
+      DBA_DEVICES: ${DBA_DEVICES:-}         # e.g. geschirrspueler@<host-or-ip>:6053/bshdbus,trockner@<host>/macs
       DBA_KEY_GESCHIRRSPUELER: ${DBA_KEY_GESCHIRRSPUELER:-}   # ESPHome API encryption key (one per device)
       DBA_KEY_TROCKNER: ${DBA_KEY_TROCKNER:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
