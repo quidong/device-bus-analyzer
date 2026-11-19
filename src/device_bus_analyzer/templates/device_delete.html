@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block body %}
+<h1>{{ t.delete_title }}</h1>
+<form method="post" action="/devices/{{ device.name }}/delete" class="card danger-card" style="margin-top:1rem">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}">
+<p style="margin:0"><b class="mono">{{ device.name }}</b>{% if device.manufacturer or device.model %} · {{ device.manufacturer or '' }} {{ device.model or '' }}{% endif %}</p>
+<p class="err" role="alert" style="margin:0">{{ t.delete_warn }}</p>
+{% if error %}<p class="err" role="alert" style="margin:0">{{ t[error] }}</p>{% endif %}
+<div>{{ t.delete_removes }}<ul>
+<li><b>{{ counts.frames }}</b> {{ t.n_frames }}</li><li><b>{{ counts.bursts }}</b> {{ t.n_bursts }}</li><li><b>{{ counts.heartbeats }}</b> {{ t.n_heartbeats }}</li>
+<li><b>{{ counts.sessions }}</b> {{ t.n_sessions }}</li><li><b>{{ counts.gaps }}</b> {{ t.n_gaps }}</li><li>{{ t.connection }}, {{ t.api_key }}</li></ul>
+<span class="fld">{{ t.delete_keep }}</span></div>
+<label class="field">{{ t.delete_confirm_label }}: <span class="mono">{{ device.name }}</span><input name="confirm" class="mono" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+<div class="actions" style="display:flex;flex-wrap:wrap;gap:10px"><button class="danger">{{ t.delete_forever }}</button><a class="btn" href="/devices">{{ t.cancel }}</a></div>
+</form>{% endblock %}

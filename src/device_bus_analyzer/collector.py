@@ -28,8 +28,11 @@ class Collector:
         self.source_id = store.source(device.name, device.protocol)
         self.lines = 0
         self.connected = False
+        self.stopped = False            # set when the device is removed: late lines must not be stored
 
     def on_log(self, msg: Any) -> None:
+        if self.stopped:
+            return
         text = msg.message.decode("utf-8", "replace") if isinstance(msg.message, (bytes, bytearray)) else str(msg.message)
         if self.store.ingest_line(self.source_id, text, time.time()):
             self.lines += 1
@@ -83,14 +86,13 @@ class CollectorManager:
 
     def __init__(self, store: Store, factory: Callable[[Device], Any] = default_client_factory):
         self.store, self.factory = store, factory
-        self.tasks: dict[str, tuple[Device, asyncio.Task]] = {}
+        self.tasks: dict[str, tuple[Device, asyncio.Task, Collector]] = {}
 
     def sync(self) -> None:
         wanted = {d.name: d for d in self.store.connections()}
-        for name, (dev, task) in list(self.tasks.items()):
+        for name, (dev, _task, _c) in list(self.tasks.items()):
             if wanted.get(name) != dev:
-                task.cancel()
-                del self.tasks[name]
+                self.stop_device(name)
         for name, dev in wanted.items():
             if name in self.tasks:
                 continue
@@ -100,12 +102,18 @@ class CollectorManager:
                 log.error("device %s@%s:%s/%s not started: %s", dev.name, dev.host, dev.port, dev.protocol, exc)
                 continue
             log.info("collecting %s from %s:%s (%s)", dev.name, dev.host, dev.port, dev.protocol)
-            self.tasks[name] = (dev, asyncio.create_task(c.run_forever()))
+            self.tasks[name] = (dev, asyncio.create_task(c.run_forever()), c)
+
+    def stop_device(self, name: str) -> None:
+        """Stop one collector for good (before its data is deleted): lines still in flight are dropped."""
+        entry = self.tasks.pop(name, None)
+        if entry:
+            entry[2].stopped = True
+            entry[1].cancel()
 
     def stop(self) -> None:
-        for _dev, task in self.tasks.values():
-            task.cancel()
-        self.tasks.clear()
+        for name in list(self.tasks):
+            self.stop_device(name)
 
 
 async def run_all(store: Store, devices: list[Device] | None = None) -> None:
@@ -114,4 +122,4 @@ async def run_all(store: Store, devices: list[Device] | None = None) -> None:
         store.seed_devices(devices)
     mgr = CollectorManager(store)
     mgr.sync()
-    await asyncio.gather(*(t for _d, t in mgr.tasks.values()))
+    await asyncio.gather(*(v[1] for v in mgr.tasks.values()))

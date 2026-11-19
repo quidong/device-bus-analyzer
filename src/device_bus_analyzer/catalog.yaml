@@ -1,18 +1,25 @@
-# Suggestions for the "new device" dialog: type -> manufacturer -> model. Public data only (no private details).
-# The decoder is chosen by `protocol`; `models` only classify a source so that findings can later be split into
-# "general for the protocol/manufacturer" and "specific to a model". Values typed freely in the dialog are stored with the
-# device and offered again next time; add them here (pull request) when they should become suggestions for everybody.
+# Suggestions for the "new device" dialog: type -> manufacturer (the concrete brand) -> model. Public data only.
+# `protocol` selects the decoder (brands that share a bus share a protocol, but are kept apart here on purpose: the same
+# protocol can behave differently per brand or model, and findings should later be split into "general" and "specific").
+# Values typed freely in the dialog are stored with the device and offered again; add them here (pull request) when they
+# should become suggestions for everybody. `firmware` points to the recommended ESPHome files in `firmware/`.
 types:
   dishwasher: {de: "Geschirrspüler", en: "Dishwasher"}
   dryer: {de: "Trockner", en: "Tumble dryer"}
 manufacturers:
-  bsh:
-    name: "Bosch / Siemens / Neff"
-    protocol: bshdbus
-    types: [dishwasher]
-    models: ["Neff S413K60S0E"]
-  electrolux:
-    name: "Electrolux / AEG"
-    protocol: macs
-    types: [dryer]
-    models: []
+  bosch:     {name: "Bosch",     protocol: bshdbus, types: [dishwasher], models: []}
+  siemens:   {name: "Siemens",   protocol: bshdbus, types: [dishwasher], models: []}
+  neff:      {name: "Neff",      protocol: bshdbus, types: [dishwasher], models: ["S413K60S0E"]}
+  electrolux: {name: "Electrolux", protocol: macs,   types: [dryer],      models: []}
+  aeg:       {name: "AEG",       protocol: macs,    types: [dryer],      models: []}
+firmware:
+  bshdbus:
+    files: [bshdbus-analysis.example.yaml]
+    note:
+      de: "Beispiel für die BSH-Platine (ESP32-C6), nur Mitlesen. Angepasst für den Neff S413K60S0E: Programm-IDs und Options-Bits bei anderen Modellen prüfen. Schlüssel und Passwörter gehören in die secrets.yaml."
+      en: "Example for the BSH board (ESP32-C6), listen only. Adapted for the Neff S413K60S0E: check program ids and option bits on other models. Keys and passwords belong in secrets.yaml."
+  macs:
+    files: [macs-analysis.example.yaml, macs_recorder.h]
+    note:
+      de: "Beispiel für die MACS-Platine (ESP32-C6), nur Mitlesen. macs_recorder.h muss im selben Ordner wie die YAML liegen. Bisher nur an einem AEG-Wärmepumpentrockner aufgenommen: Electrolux-Modelle können abweichen."
+      en: "Example for the MACS board (ESP32-C6), listen only. macs_recorder.h must sit next to the YAML. So far recorded on one AEG heat-pump dryer only: Electrolux models may differ."

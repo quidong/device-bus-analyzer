@@ -2,16 +2,16 @@
 <h1>{{ spec.title }}</h1>
 <p><b>{{ spec.physical }}</b><br><span class="mono">{{ spec.frame }}</span></p>
 {% if spec.devices %}<h2>{{ t.devices }}</h2>
-<table><tr><th>{{ t.address }}</th><th>{{ t.device }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
-{% for k, n in spec.devices.items() %}<tr><td class="mono">0x{{ k }}</td><td>{{ n.name }}</td><td>{{ m.badge(n.status, t) }}</td><td>{{ n.evidence }}</td></tr>{% endfor %}</table>
+<div class="tbl"><table class="stack"><tr><th>{{ t.address }}</th><th>{{ t.device }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
+{% for k, n in spec.devices.items() %}<tr><td class="mono" data-label="{{ t.address }}">0x{{ k }}</td><td data-label="{{ t.device }}">{{ n.name }}</td><td data-label="{{ t.status }}">{{ m.badge(n.status, t) }}</td><td class="wide" data-label="{{ t.evidence }}">{{ n.evidence }}</td></tr>{% endfor %}</table></div>
 <p>{{ t.devices_note }}</p>
 {% else %}<h2>{{ t.nodes }}</h2>
-{% if spec.nodes %}<table><tr><th>{{ t.dest }}</th><th>{{ t.sender }}</th><th>{{ t.receiver }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
-{% for k, n in spec.nodes.items() %}<tr><td class="mono">{{ k }}</td><td>{{ n.sender or '' }}</td><td>{{ n.receiver or '' }}</td><td>{{ m.badge(n.status, t) }}</td><td>{{ n.evidence }}</td></tr>{% endfor %}</table>
+{% if spec.nodes %}<div class="tbl"><table class="stack"><tr><th>{{ t.dest }}</th><th>{{ t.sender }}</th><th>{{ t.receiver }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
+{% for k, n in spec.nodes.items() %}<tr><td class="mono" data-label="{{ t.dest }}">{{ k }}</td><td data-label="{{ t.sender }}">{{ n.sender or '' }}</td><td data-label="{{ t.receiver }}">{{ n.receiver or '' }}</td><td data-label="{{ t.status }}">{{ m.badge(n.status, t) }}</td><td class="wide" data-label="{{ t.evidence }}">{{ n.evidence }}</td></tr>{% endfor %}</table></div>
 <p>{{ t.sender_note }}</p>{% else %}<p>{{ t.unknown }}</p>{% endif %}{% endif %}
 <h2>{{ t.commands }}</h2>
 {% if not spec.commands %}<p>{{ t.no_data }}</p>{% else %}
-<table><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.decoded }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
-{% for c in spec.commands %}<tr><td class="mono">{{ c.key }}</td><td>{{ c.title }}<br>{% for f in c.fields %}<small>b{{ f.byte }}{% if f.bit is defined %}.{{ f.bit }}{% endif %} {{ f.label }} <span class="st {{ f.status }}">{{ t[f.status] }}</span></small><br>{% endfor %}</td>
-<td><span class="st {{ c.status }}">{{ t[c.status] }}</span></td><td>{{ c.evidence }}</td></tr>{% endfor %}</table>{% endif %}
+<div class="tbl"><table class="stack"><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.decoded }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>
+{% for c in spec.commands %}<tr><td class="mono" data-label="{{ t.dest }}/{{ t.cmd }}">{{ c.key }}</td><td class="wide" data-label="{{ t.decoded }}">{{ c.title }}<br>{% for f in c.fields %}<small>b{{ f.byte }}{% if f.bit is defined %}.{{ f.bit }}{% endif %} {{ f.label }} <span class="st {{ f.status }}">{{ t[f.status] }}</span></small><br>{% endfor %}</td>
+<td data-label="{{ t.status }}"><span class="st {{ c.status }}">{{ t[c.status] }}</span></td><td class="wide" data-label="{{ t.evidence }}">{{ c.evidence }}</td></tr>{% endfor %}</table></div>{% endif %}
 {% endblock %}

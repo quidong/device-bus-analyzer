@@ -40,14 +40,28 @@ def fill(store, name="dw"):
 
 
 # --- catalogue --------------------------------------------------------------------------------
-def test_catalog_is_consistent_and_merges_used_values():
+def test_catalog_has_concrete_brands_and_firmware_for_each_protocol():
     assert catalog.validate_catalog() == []
     c = catalog.build([{"type": "washer", "manufacturer": "Acme", "model": "X1", "protocol": "bshdbus"},
-                       {"type": "dishwasher", "manufacturer": "Bosch / Siemens / Neff", "model": "Own 1", "protocol": "bshdbus"}])
+                       {"type": "dishwasher", "manufacturer": "Neff", "model": "Own 1", "protocol": "bshdbus"}])
     assert {"dishwasher", "dryer", "washer"} <= set(c["types"])
     mans = {m["name"]: m for m in c["manufacturers"]}
-    assert mans["Acme"]["models"] == ["X1"] and "Own 1" in mans["Bosch / Siemens / Neff"]["models"]
-    assert mans["Electrolux / AEG"]["protocol"] == "macs" and sorted(c["protocols"]) == ["bshdbus", "macs"]
+    assert {"Bosch", "Siemens", "Neff", "Electrolux", "AEG"} <= set(mans)            # brands, not families
+    assert mans["Electrolux"]["protocol"] == mans["AEG"]["protocol"] == "macs" and mans["Bosch"]["protocol"] == "bshdbus"
+    assert mans["Acme"]["models"] == ["X1"] and {"S413K60S0E", "Own 1"} <= set(mans["Neff"]["models"])
+    assert sorted(c["protocols"]) == ["bshdbus", "macs"]
+    for proto in c["protocols"]:
+        prof = catalog.firmware_profile(proto, "de")
+        assert prof and prof["note"] and all(f["text"].strip() for f in prof["files"])
+    assert [f["name"] for f in catalog.firmware_profile("macs")["files"]] == ["macs-analysis.example.yaml", "macs_recorder.h"]
+
+
+def test_firmware_files_are_shipped_with_the_package():
+    import tomllib
+    from pathlib import Path
+    pkg = tomllib.loads((Path(__file__).resolve().parent.parent / "pyproject.toml").read_text())["tool"]["setuptools"]["package-data"]
+    assert "firmware/*" in pkg["device_bus_analyzer"] and "catalog.yaml" in pkg["device_bus_analyzer"]
+    assert catalog.firmware_file("../catalog.yaml") is None and catalog.firmware_file("secrets.yaml") is None
 
 
 # --- storage: additive, secrets, no deletion ---------------------------------------------------
@@ -122,6 +136,42 @@ def test_validation():
             config.validate_device_input(*args, ("bshdbus",))
 
 
+def test_delete_device_removes_everything_of_that_device_only(store, tmp_path):
+    fill(store, "a")
+    fill(store, "b")
+    store.ingest_line(store.source("a", "bshdbus"), "[00:00:00.000][I][dbus_raw:1]: HB1 seq=3 t_us=5000 epoch=1800000000 bytes=1 bursts=3 ok=1 crc=0 noack=0 rest=0", 1.8e9)
+    store.save_device("a", "bshdbus", "dishwasher", "Neff", "S413", "h", 6053, KEY)
+    store.db.execute("INSERT INTO gaps(source_id, recv_ts, message) VALUES((SELECT id FROM sources WHERE name='a'), 1, 'x')")
+    store.db.commit()
+    keep = len(store.frames("b"))
+    counts = store.data_counts("a")
+    assert counts["bursts"] == 3 and counts["frames"] == 3 and counts["heartbeats"] == 1 and counts["gaps"] == 1
+    assert store.delete_device("a") == counts
+    assert store.source_by_name("a") is None and store.data_counts("a") is None and store.device("a") is None
+    for table, col in (("frames", "source_id"), ("gaps", "source_id"), ("sessions", "source_id"), ("devices", "source_id")):
+        assert store.db.execute(f"SELECT COUNT(*) FROM {table} WHERE {col} NOT IN (SELECT id FROM sources)").fetchone()[0] == 0, table
+    assert store.db.execute("SELECT COUNT(*) FROM bursts WHERE session_id NOT IN (SELECT id FROM sessions)").fetchone()[0] == 0
+    assert store.db.execute("SELECT COUNT(*) FROM heartbeats WHERE session_id NOT IN (SELECT id FROM sessions)").fetchone()[0] == 0
+    assert len(store.frames("b")) == keep == 3 and store.connections() == []         # the other device is untouched
+    assert store.delete_device("a") is None
+    store.save_device("a", "bshdbus", None, None, None, "h")                         # same name again starts empty
+    assert store.data_counts("a")["frames"] == 0
+
+
+def test_set_enabled_keeps_data(store):
+    fill(store)
+    store.save_device("dw", "bshdbus", None, None, None, "h", 6053, KEY)
+    assert store.set_enabled("dw", False) and store.connections() == [] and len(store.frames("dw")) == 3
+    assert store.set_enabled("dw", True) and len(store.connections()) == 1 and store.set_enabled("nope", True) is False
+
+
+def test_last_seen_comes_from_heartbeat_or_board_clock(store):
+    sid = fill(store)
+    assert store.device("dw")["last_seen"] is not None
+    store.ingest_line(sid, "[00:00:00.000][I][dbus_raw:1]: HB1 seq=3 t_us=9000000 epoch=1800000500 bytes=1 bursts=3 ok=1 crc=0 noack=0 rest=0", 1_800_000_500.0)
+    assert store.device("dw")["last_seen"] >= 1_800_000_500.0
+
+
 # --- web dialog -------------------------------------------------------------------------------
 @pytest.fixture
 def client(store):
@@ -176,7 +226,7 @@ def test_dialog_errors_keep_entered_values_and_change_nothing(client, store):
     token = login(client)
     n = len(store.devices())
     r = client.post("/devices", data={"csrf": token, "name": "x y", "protocol": "macs", "host": "h", "model": "KeepMe"})
-    assert r.status_code == 422 and "KeepMe" in r.text and 'data-open="1"' in r.text
+    assert r.status_code == 422 and "KeepMe" in r.text and "data-form=" in r.text
     r = client.post("/devices", data={"csrf": token, "name": "env", "protocol": "macs", "host": "h"})
     assert r.status_code == 422 and len(store.devices()) == n                   # name already configured
     r = client.post("/devices", data={"csrf": token, "name": "ok", "protocol": "macs", "host": "h", "key": "notbase64"})
@@ -233,3 +283,90 @@ def test_manager_follows_device_changes(store):
         assert m.tasks == {}
         m.stop()
     asyncio.run(go())
+
+
+# --- web: firmware, delete, pause, UI structure ----------------------------------------------------------
+def test_firmware_page_shows_and_serves_only_catalogue_files(client):
+    login(client)
+    html = client.get("/firmware/macs", params={"lang": "de"}).text
+    assert "macs-analysis.example.yaml" in html and "macs_recorder.h" in html and "substitutions:" in html
+    assert "Electrolux-Modelle können abweichen" in html and "/static/firmware.js" in html
+    r = client.get("/firmware/macs/macs_recorder.h")
+    assert r.status_code == 200 and "attachment" in r.headers["content-disposition"] and r.text == catalog.firmware_file("macs_recorder.h")
+    assert client.get("/firmware/macs/bshdbus-analysis.example.yaml").status_code == 404          # not part of this protocol's profile
+    assert client.get("/firmware/macs/..%2Fcatalog.yaml").status_code == 404
+    assert client.get("/firmware/nope").status_code == 404
+    assert "bshdbus-analysis.example.yaml" in client.get("/firmware/bshdbus", params={"device": "dw", "new": "1"}).text
+
+
+def test_firmware_needs_login(client):
+    assert client.get("/firmware/macs").status_code == 303 and client.get("/firmware/macs/macs_recorder.h").status_code == 303
+
+
+def test_creating_a_device_leads_to_its_firmware(client, store):
+    token = login(client)
+    r = client.post("/devices", data={"csrf": token, "name": "dry3", "type": "dryer", "manufacturer": "AEG", "model": "Z", "protocol": "macs", "host": "h.lan", "enabled": "1"})
+    assert r.status_code == 303 and r.headers["location"] == "/firmware/macs?device=dry3&new=1"
+    assert "dry3" in client.get(r.headers["location"]).text
+
+
+def test_delete_needs_confirmation_by_typing_the_name_and_removes_everything(client, store):
+    token = login(client)
+    html = client.get("/devices/dw/delete").text
+    assert "<b>3</b>" in html and 'name="confirm"' in html and "dw" in html
+    n = len(store.frames("dw"))
+    assert client.post("/devices/dw/delete", data={"csrf": token, "confirm": "wrong"}).status_code == 422
+    assert client.post("/devices/dw/delete", data={"csrf": token}).status_code == 422                # field missing
+    assert client.post("/devices/dw/delete", data={"csrf": "forged", "confirm": "dw"}).status_code == 403
+    assert len(store.frames("dw")) == n and store.source_by_name("dw")
+    r = client.post("/devices/dw/delete", data={"csrf": token, "confirm": "dw"})
+    assert r.status_code == 303 and r.headers["location"] == "/devices"
+    assert store.source_by_name("dw") is None and store.frames("dw") == []
+    assert client.get("/devices/dw/delete").status_code == 404 and client.post("/devices/dw/delete", data={"csrf": token, "confirm": "dw"}).status_code == 404
+
+
+def test_delete_and_toggle_are_not_possible_with_the_api_token_or_anonymously(client, store):
+    anon = TestClient(client.app, follow_redirects=False)
+    h = {"Authorization": "Bearer tok-123456"}
+    assert anon.post("/devices/dw/delete", data={"csrf": "x", "confirm": "dw"}, headers=h).status_code == 303
+    assert anon.post("/devices/dw/enabled", data={"csrf": "x"}, headers=h).status_code == 303
+    assert anon.get("/devices/dw/delete", headers=h).status_code == 303 and anon.get("/devices", headers=h).status_code == 303   # hosts: login only
+    assert store.source_by_name("dw") and len(store.frames("dw")) == 3
+
+
+def test_pause_and_resume_via_button_keeps_data(client, store):
+    token = login(client)
+    store.save_device("dw", "bshdbus", None, None, None, "h", 6053, KEY)
+    assert client.post("/devices/dw/enabled", data={"csrf": token, "enabled": ""}).status_code == 303
+    assert store.device("dw")["enabled"] is False and len(store.frames("dw")) == 3
+    assert client.post("/devices/dw/enabled", data={"csrf": token, "enabled": "1"}).status_code == 303 and store.device("dw")["enabled"] is True
+    assert client.post("/devices/dw/enabled", data={"csrf": "bad"}).status_code == 403
+    assert client.post("/devices/nobody/enabled", data={"csrf": token}).status_code == 404
+
+
+def test_collector_manager_stop_device_drops_late_lines(store):
+    async def go():
+        m = CollectorManager(store, lambda d: FakeClient())
+        store.save_device("a", "bshdbus", None, None, None, "h", 6053, KEY)
+        m.sync()
+        c = m.tasks["a"][2]
+        f = build_frame(0x17, 0x1010, b"\x1c")
+        c.on_log(types.SimpleNamespace(message=raw1(1, 10, f).encode()))
+        assert c.lines == 1
+        m.stop_device("a")
+        c.on_log(types.SimpleNamespace(message=raw1(2, 20, f).encode()))              # in flight while the device is deleted
+        assert c.lines == 1 and "a" not in m.tasks
+    asyncio.run(go())
+
+
+def test_ui_has_no_misleading_read_only_claims_and_is_responsive(client):
+    login(client)
+    for path in ("/", "/devices", "/s/dw/frames", "/findings/bshdbus"):
+        html = client.get(path, params={"lang": "de"}).text
+        assert "nur lesend" not in html and "read-only" not in html.lower() and 'name="viewport"' in html, path
+    css = (client.get("/static/app.css")).text
+    assert "@media (max-width:700px)" in css and "table.stack" in css and "dialog.sheet" in css
+    devices = client.get("/devices", params={"lang": "de"}).text
+    for needle in ("Neues Gerät", 'data-step="1"', 'data-step="4"', "Bosch", "Siemens", "Neff", "Electrolux", "AEG", "Firmware", "Löschen"):
+        assert needle in devices, needle
+    assert 'class="bottom"' in client.get("/s/dw/frames").text and 'data-label=' in client.get("/s/dw/frames").text

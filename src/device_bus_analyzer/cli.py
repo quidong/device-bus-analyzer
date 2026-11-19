@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("gaps", help="check a log file for lost bursts")
     p.add_argument("file")
     sub.add_parser("hash-password", help="print an argon2id hash for ADMIN_PASSWORD_HASH (reads the password from stdin)")
-    sub.add_parser("collect", help="run the read-only collector for DBA_DEVICES")
+    sub.add_parser("collect", help="run the passive collector for DBA_DEVICES")
     p = sub.add_parser("serve", help="run API + frontend")
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=8080)

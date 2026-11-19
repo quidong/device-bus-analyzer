@@ -1,52 +1,89 @@
-// Device dialog: type -> manufacturer -> model suggestions from the catalogue; free text is always allowed.
+// Device dialog: side sheet on wide screens (all fields), step-by-step wizard on phones. type -> manufacturer -> model from the catalogue.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var cat = JSON.parse($("catalog").getAttribute("data-catalog"));
   var dlg = $("device-dialog"), form = $("device-form");
+  var cat = JSON.parse($("catalog").dataset.catalog), T = JSON.parse($("catalog").dataset.t);
+  var mq = window.matchMedia("(max-width: 700px)"), step = 1, editing = false, lockedProto = "";
+  var sets = [].slice.call(form.querySelectorAll("fieldset[data-step]"));
+  var radios = function (n) { return [].slice.call(form.querySelectorAll('input[name="' + n + '"]')); };
+  var checked = function (n) { return radios(n).filter(function (r) { return r.checked; })[0] || null; };
 
-  function fill(list, values) {
-    list.replaceChildren();
-    values.forEach(function (v) { var o = document.createElement("option"); o.value = v; list.appendChild(o); });
+  function setRadio(name, value, otherId) {
+    var rs = radios(name), hit = rs.filter(function (r) { return r.value === value; })[0];
+    rs.forEach(function (r) { r.checked = false; }); $(otherId).value = "";
+    if (value && hit) { hit.checked = true; }
+    else if (value) { rs.filter(function (r) { return r.value === "__other"; })[0].checked = true; $(otherId).value = value; }
   }
-  function manufacturer() {
-    var n = $("f-man").value.trim();
-    return cat.manufacturers.filter(function (m) { return m.name === n; })[0] || null;
-  }
+  function val(name, otherId) { var c = checked(name); return !c ? "" : (c.value === "__other" ? $(otherId).value.trim() : c.value); }
+  var typeValue = function () { return val("type_sel", "type-other"); }, makerValue = function () { return val("man_sel", "man-other"); };
+  var maker = function () { var n = makerValue(); return cat.manufacturers.filter(function (m) { return m.name === n; })[0] || null; };
+
   function refresh() {
-    var t = $("f-type").value.trim();
-    var mans = cat.manufacturers.filter(function (m) { return !t || !m.types.length || m.types.indexOf(t) >= 0; });
-    fill($("dl-mans"), mans.map(function (m) { return m.name; }));
-    var m = manufacturer();
-    fill($("dl-models"), m ? m.models : []);
-    if (m && m.protocol && !$("f-proto").disabled) { $("f-proto").value = m.protocol; }   // protocol follows the manufacturer
-  }
-  function open(mode, d) {
-    var edit = mode === "edit";
-    form.action = edit ? "/devices/" + encodeURIComponent(d.name) : "/devices";
-    $("dialog-title").textContent = $("catalog").getAttribute(edit ? "data-title-edit" : "data-title-new");
-    $("f-name").value = edit ? d.name : ""; $("f-name").readOnly = edit;
-    $("f-type").value = edit ? d.type : ""; $("f-man").value = edit ? d.manufacturer : ""; $("f-model").value = edit ? d.model : "";
-    $("f-host").value = edit ? d.host : ""; $("f-port").value = edit ? d.port : 6053; $("f-key").value = "";
-    $("f-enabled").checked = edit ? d.enabled === "1" : true;
-    $("f-proto").value = edit ? d.protocol : $("f-proto").options[0].value;
-    $("f-proto").disabled = edit; $("proto-note").hidden = !edit;       // protocol is fixed once the device exists
-    $("key-note").hidden = !(edit && d.haskey); $("clear-key-row").hidden = !(edit && d.haskey);
-    refresh();
-    dlg.showModal();
-  }
-  $("new-device").addEventListener("click", function () { open("new"); });
-  Array.prototype.forEach.call(document.querySelectorAll(".edit-device"), function (b) {
-    b.addEventListener("click", function () {
-      open("edit", { name: b.dataset.name, protocol: b.dataset.protocol, type: b.dataset.type, manufacturer: b.dataset.manufacturer,
-        model: b.dataset.model, host: b.dataset.host, port: b.dataset.port, haskey: b.dataset.haskey, enabled: b.dataset.enabled });
+    var t = typeValue(), ct = checked("type_sel"), cm = checked("man_sel");
+    $("type-other-wrap").hidden = !(ct && ct.value === "__other"); $("type-other").required = !$("type-other-wrap").hidden;
+    $("man-other-wrap").hidden = !(cm && cm.value === "__other"); $("man-other").required = !$("man-other-wrap").hidden;
+    radios("man_sel").forEach(function (r) {                                  // only brands that make this kind of device
+      if (r.value === "__other") { return; }
+      var types = (r.dataset.types || "").split(",").filter(Boolean), ok = !t || !types.length || types.indexOf(t) >= 0;
+      r.nextElementSibling.hidden = !ok; if (!ok && r.checked) { r.checked = false; }
+      r.disabled = editing && !!lockedProto && r.dataset.protocol !== lockedProto;  // the decoder cannot change once the device exists
     });
+    var m = maker(), proto = $("f-proto"), other = !!(cm && cm.value === "__other");
+    if (m && m.protocol && !proto.disabled) { proto.value = m.protocol; }
+    $("proto-wrap").hidden = !(other && !editing);
+    $("decoder-name").textContent = editing ? lockedProto : (m && m.protocol) || (other ? proto.value : "–");
+    var fw = $("fw-link"), p = $("decoder-name").textContent; fw.hidden = !p || p === "–"; fw.href = "/firmware/" + encodeURIComponent(p);
+    var models = m ? m.models : [], dl = $("dl-models"), chips = $("model-chips");
+    dl.replaceChildren(); chips.replaceChildren();
+    models.forEach(function (x) {
+      var o = document.createElement("option"); o.value = x; dl.appendChild(o);
+      var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = x;
+      b.addEventListener("click", function () { $("f-model").value = x; }); chips.appendChild(b);
+    });
+  }
+
+  function go(n) {
+    step = n; var wiz = form.classList.contains("wizard");
+    sets.forEach(function (fs) { fs.hidden = wiz && Number(fs.dataset.step) !== n; });
+    [].forEach.call($("steps").children, function (li, i) { li.className = i + 1 < n ? "done" : (i + 1 === n ? "now" : ""); });
+    $("wz-back").hidden = !(wiz && n > 1); $("wz-next").hidden = !(wiz && n < 4); $("save").hidden = wiz && n < 4;
+    $("dialog-cancel").hidden = wiz;
+  }
+  function validStep(n) {
+    var fs = sets[n - 1], els = [].slice.call(fs.querySelectorAll("input,select"));
+    for (var i = 0; i < els.length; i++) { if (!els[i].disabled && !els[i].checkValidity()) { els[i].reportValidity(); return false; } }
+    return true;
+  }
+  $("wz-next").addEventListener("click", function () { if (validStep(step)) { go(step + 1); refresh(); } });
+  $("wz-back").addEventListener("click", function () { go(step - 1); });
+  mq.addEventListener("change", function () { form.classList.toggle("wizard", mq.matches); go(mq.matches ? 1 : step); });
+
+  function open(mode, d) {
+    editing = mode === "edit"; d = d || {}; lockedProto = d.protocol || "";
+    form.reset();
+    form.action = editing ? "/devices/" + encodeURIComponent(d.name) : "/devices";
+    $("dialog-title").textContent = editing ? T.edit : T["new"];
+    $("f-name").value = d.name || ""; $("f-name").readOnly = editing;
+    setRadio("type_sel", d.type || "", "type-other"); setRadio("man_sel", d.manufacturer || "", "man-other");
+    $("f-model").value = d.model || ""; $("f-host").value = d.host || ""; $("f-port").value = d.port || 6053; $("f-key").value = "";
+    $("f-enabled").checked = editing ? d.enabled === "1" : true;
+    $("f-proto").disabled = editing; if (editing) { $("f-proto").value = d.protocol; }
+    $("key-note").hidden = !(editing && d.haskey); $("clear-key-row").hidden = !(editing && d.haskey);
+    var del = $("delete-link"); del.hidden = !editing; if (editing) { del.href = "/devices/" + encodeURIComponent(d.name) + "/delete"; }
+    form.classList.toggle("wizard", mq.matches); refresh(); go(1);
+    if (!dlg.open) { dlg.showModal(); }
+  }
+  form.addEventListener("submit", function () { $("h-type").value = typeValue(); $("h-man").value = makerValue(); });
+  form.addEventListener("input", refresh); form.addEventListener("change", refresh);
+  var close = function () { dlg.close(); };
+  $("dialog-x").addEventListener("click", close); $("dialog-cancel").addEventListener("click", close);
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) { close(); } });
+  ["new-device", "add-tile"].forEach(function (id) { $(id).addEventListener("click", function () { open("new"); }); });
+  [].forEach.call(document.querySelectorAll(".edit-device"), function (b) {
+    b.addEventListener("click", function () { open("edit", b.dataset); });
   });
-  $("dialog-cancel").addEventListener("click", function () { dlg.close(); });
-  ["f-type", "f-man"].forEach(function (id) { $(id).addEventListener("input", refresh); });
-  refresh();
-  if (dlg.getAttribute("data-open")) {          // server-side validation error: reopen with the entered values
-    var editing = form.getAttribute("action") !== "/devices";
-    if (editing) { $("f-name").readOnly = true; $("f-proto").disabled = true; $("proto-note").hidden = false; }
-    dlg.showModal();
+  if (dlg.dataset.form) {                                           // server-side validation error: reopen with the entered values
+    var f = JSON.parse(dlg.dataset.form), btn = document.querySelector('.edit-device[data-name="' + f.name + '"]');
+    open(f.creating ? "new" : "edit", Object.assign({}, btn ? btn.dataset : {}, f, { enabled: f.enabled ? "1" : "" }));
   } else if (new URLSearchParams(location.search).get("new")) { open("new"); }
 })();

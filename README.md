@@ -1,6 +1,6 @@
 # device-bus-analyzer
 
-Collect, store, decode and inspect the internal bus telegrams of household appliances **read-only**.
+Collect, store, decode and inspect the internal bus telegrams of household appliances without ever transmitting on the bus.
 Protocols: **BSH D-Bus** (Bosch / Siemens / Neff dishwashers) and the **Electrolux/AEG MACS bus** (heat-pump dryers; findings with confirmed/assumed/unknown status, see `docs/protocols/macs.md`; run detection names the run by the programme chosen before the start).
 
 ```
@@ -11,9 +11,9 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
                                     read-only HTTP API ─▶ web frontend (login) ─▶ MCP server (Claude Desktop)
 ```
 
-* **Read-only by design.** The collector only connects and subscribes to the device log; there is no code path that
-  sends anything to a device or to the bus. A test asserts that the API has no write routes. The only thing the web UI can
-  change is the local device list (below); it can never delete data and never write to an appliance.
+* **Passive by design.** The collector only connects and subscribes to the device log; there is no code path that
+  sends anything to a device or to the bus. The HTTP API is GET-only (a test asserts this). The web UI manages the local
+  device list (add, edit, pause, delete with all its data) and never writes to an appliance.
 * **Raw first.** Every burst is stored unchanged; decoded frames can be rebuilt at any time (`dba rebuild`), so better
   decoders never require re-recording.
 * **Findings are data.** `src/device_bus_analyzer/spec/<protocol>.yaml` drives both the decoder and the findings page. Each
@@ -23,7 +23,7 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 
 ## Quick start (Portainer / Docker)
 
-1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`, examples in `firmware/`: `bshdbus-analysis.example.yaml` for the dishwasher, `macs-analysis.example.yaml` + `macs_recorder.h` for the dryer).
+1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`). The matching ESPHome YAML for each device is shown in the app under **Devices > Firmware** (copy or download); the files live in `src/device_bus_analyzer/firmware/`: `bshdbus-analysis.example.yaml` for the dishwasher, `macs-analysis.example.yaml` + `macs_recorder.h` for the dryer.
    Enable the API encryption key in ESPHome.
 2. In Portainer create a stack (Web editor: paste `docker-compose.yml`; the image `ghcr.io/quidong/device-bus-analyzer:latest` is built by GitHub Actions on every push to `main`) and set these **stack variables** (nothing secret is stored in the repo). Devices are *not* stack variables any more, add them in the UI (step 3):
 
@@ -44,8 +44,9 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
    If you must put it behind a reverse proxy, set `COOKIE_SECURE=1` and terminate TLS there.
 
 **Device management.** Devices live in the SQLite database in the data volume (table `devices`, host and key included, so back up the
-volume like a secret). The key is write-only: the UI shows only whether one is set. There is no delete function: *edit* changes
-type/model/connection, *Collect off* pauses a device, and all recorded data stays. A device's name and protocol are fixed once
+volume like a secret). The key is write-only: the UI shows only whether one is set. *Edit* changes type/model/connection, *Pause* stops collecting and keeps all data,
+and *Delete* removes the device with all its frames, bursts, heartbeats, sessions and logs after you type its name (irreversible).
+After saving a new device the **Firmware** page shows the recommended ESPHome YAML (and header) for its protocol with copy/download buttons. A device's name and protocol are fixed once
 created, because the name identifies the data and the decoder depends on the protocol. **Upgrading an existing installation:**
 leave `DBA_DEVICES` / `DBA_KEY_*` in the stack for the first start; they are imported once into the database without overwriting
 anything configured in the UI. Afterwards open **Devices**, assign type/manufacturer/model, and remove the variables if you like.
@@ -71,8 +72,8 @@ dba collect | dba serve [--no-collector]
 `extension/` is a Claude Desktop extension (`.mcpb`, Node). Build it with `cd extension && npm ci --omit=dev && npx @anthropic-ai/mcpb pack`
 (the `extension` workflow also builds it on every change) and open the file in Claude Desktop. The install dialog asks for the
 **analyzer URL** (for example `http://192.0.2.10:8089`) and the **API token** (`API_TOKEN` of the stack, stored as a sensitive value).
-Nine read-only tools: `list_sources`, `get_findings`, `list_runs`, `command_overview`, `command_values`, `timeline`, `frames`,
-`raw_bursts`, `data_quality`. Every one is a GET against the read-only API.
+Nine tools (read access only): `list_sources`, `get_findings`, `list_runs`, `command_overview`, `command_values`, `timeline`, `frames`,
+`raw_bursts`, `data_quality`. Every one is a GET against the API.
 
 ## Sender, ACK node and runs
 A BSH D-Bus frame carries only its **destination**. Sender, receiver and the node that acknowledged (high nibble of the ACK

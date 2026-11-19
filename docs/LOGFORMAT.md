@@ -26,7 +26,7 @@ Die Zerlegung in Telegramme macht der Sammler aus den Rohbytes. Die Zeilen `FRAM
 
 ### MACS (Trockner)
 Beim MACS-Bus sind die Pausen innerhalb eines Frames nicht verlässlich kürzer als die zwischen zwei Frames. Die Firmware
-(`firmware/macs_recorder.h`) bildet Bursts deshalb frame-genau: ein Burst ist ein Frame mit seinem ACK, Bytes ohne Frame
+(`src/device_bus_analyzer/firmware/macs_recorder.h`) bildet Bursts deshalb frame-genau: ein Burst ist ein Frame mit seinem ACK, Bytes ohne Frame
 bilden einen eigenen Burst. `t_us` ist der Zeitpunkt, an dem der Burst vollständig war (bis ca. 40 ms nach Busende, wenn
 kein ACK kam). Das Format der Zeilen ist unverändert.
 

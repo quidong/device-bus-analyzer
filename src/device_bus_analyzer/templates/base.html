@@ -1,12 +1,19 @@
 <!doctype html>
 <html lang="{{ lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ t.title }}</title><link rel="stylesheet" href="/static/app.css"></head><body>
-<header><a class="brand" href="/">{{ t.title }}</a>
+<title>{{ t.title }}</title><link rel="stylesheet" href="/static/app.css"></head>
+<body class="{{ 'in-src' if has_src else '' }}">
+{% set path = request.url.path %}
+<header class="top">
+{% if logged_in and has_src %}<a class="back" href="/" aria-label="{{ t.sources }}"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>{% endif %}
+<a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="var(--acc)"/><path d="M5 9h5l2 4 3-8 2 4h4M5 17h16" stroke="var(--on-acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ t.title }}</a>
 {% if logged_in %}
-<span class="tag">{{ t.read_only }}</span>
-<nav><a href="/devices">{{ t.devices_title }}</a>{% block nav %}{% endblock %}</nav>
-<span class="right"><a href="?lang=de">DE</a> <a href="?lang=en">EN</a>
+<nav class="main" aria-label="{{ t.menu }}"><a href="/" {% if path == '/' or path.startswith('/s/') %}aria-current="page"{% endif %}>{{ t.sources }}</a><a href="/devices" {% if path.startswith('/devices') or path.startswith('/firmware') %}aria-current="page"{% endif %}>{{ t.devices_title }}</a></nav>
+<span class="right"><span class="lang"><a href="?lang=de" {% if lang == 'de' %}class="on"{% endif %}>DE</a> · <a href="?lang=en" {% if lang == 'en' %}class="on"{% endif %}>EN</a></span>
 <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.logout }}</button></form></span>
 {% endif %}</header>
+{% block nav %}{% endblock %}
 <main>{% block body %}{% endblock %}</main>
+{% if logged_in and not has_src %}<nav class="bottom" aria-label="{{ t.menu }}">
+<a href="/" {% if path == '/' %}aria-current="page"{% endif %}><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>{{ t.sources }}</a>
+<a href="/devices" {% if path.startswith('/devices') or path.startswith('/firmware') %}aria-current="page"{% endif %}><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="11" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/></svg>{{ t.devices_title }}</a></nav>{% endif %}
 <footer>v{{ version }} · {{ t.timezone_note }} {{ tz }}</footer></body></html>

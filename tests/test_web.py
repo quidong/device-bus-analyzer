@@ -154,8 +154,8 @@ def test_no_write_routes_exist(app):
         methods = getattr(r, "methods", None) or set()
         if r.path.startswith("/api") or r.path.startswith("/s/"):
             assert methods <= {"GET", "HEAD"}, r.path
-    # configuration (devices) is changed only through session + CSRF forms; no route can delete or send anything to a device
-    assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout", "/devices", "/devices/{name}"}
+    # devices (add, edit, pause, delete) change only through session + CSRF forms; the API and the data pages are GET-only; nothing sends to a device
+    assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout", "/devices", "/devices/{name}", "/devices/{name}/enabled", "/devices/{name}/delete"}
     assert not [r.path for r in app.routes if {"DELETE", "PUT", "PATCH"} & (getattr(r, "methods", None) or set())]
 
 

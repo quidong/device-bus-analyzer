@@ -86,18 +86,70 @@ class Store:
         return [dict(r) for r in rows]
 
     # --- devices (classification + connection) ------------------------------------
-    # Nothing here deletes anything: there is deliberately no way to remove a source, its device row or its data.
     def devices(self) -> list[dict]:
         """All sources with their device row, without the key (only whether one is set)."""
         rows = self._q(
             "SELECT s.name, s.protocol, d.type, d.manufacturer, d.model, d.host, d.port, d.enabled, d.key IS NOT NULL AND d.key<>'' AS has_key,"
             " d.source_id IS NOT NULL AS configured,"
-            " (SELECT COUNT(*) FROM frames f WHERE f.source_id=s.id) AS frames"
+            " (SELECT COUNT(*) FROM frames f WHERE f.source_id=s.id) AS frames,"
+            # last sign of life: newest heartbeat, or the newest burst of the latest board session (start + board clock)
+            " MAX(COALESCE((SELECT MAX(h.recv_ts) FROM heartbeats h JOIN sessions x ON x.id=h.session_id WHERE x.source_id=s.id), 0),"
+            "     COALESCE((SELECT x.started_recv + x.last_t_us/1e6 FROM sessions x WHERE x.source_id=s.id ORDER BY x.id DESC LIMIT 1), 0)) AS last_seen"
             " FROM sources s LEFT JOIN devices d ON d.source_id=s.id ORDER BY s.name")
         for r in rows:
+            r["last_seen"] = r["last_seen"] or None
             r["has_key"], r["configured"] = bool(r["has_key"]), bool(r["configured"])
             r["enabled"] = bool(r["enabled"]) if r["enabled"] is not None else False
         return rows
+
+    def data_counts(self, name: str) -> dict[str, int] | None:
+        """How much would be removed with this device (for the confirmation page)."""
+        src = self.source_by_name(name)
+        if not src:
+            return None
+        one = lambda sql: self._q(sql, (src["id"],))[0]["n"]               # noqa: E731
+        return {"bursts": one("SELECT COUNT(*) n FROM bursts WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)"),
+                "frames": one("SELECT COUNT(*) n FROM frames WHERE source_id=?"),
+                "heartbeats": one("SELECT COUNT(*) n FROM heartbeats WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)"),
+                "sessions": one("SELECT COUNT(*) n FROM sessions WHERE source_id=?"),
+                "gaps": one("SELECT COUNT(*) n FROM gaps WHERE source_id=?")}
+
+    def delete_device(self, name: str) -> dict[str, int] | None:
+        """Remove a source completely: raw bursts, frames, runs (derived), heartbeats, gaps, sessions, connection and key.
+        Irreversible; one transaction. Returns what was removed, or None for an unknown name."""
+        with self.lock:
+            counts = self.data_counts(name)
+            if counts is None:
+                return None
+            sid = self.source_by_name(name)["id"]
+            try:
+                self.db.execute("DELETE FROM bursts WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)", (sid,))
+                self.db.execute("DELETE FROM heartbeats WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)", (sid,))
+                self.db.execute("DELETE FROM frames WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM gaps WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM sessions WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM devices WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM sources WHERE id=?", (sid,))
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
+            self._sessions.pop(sid, None)
+            self._pending_rx.pop(sid, None)
+            try:
+                self.db.execute("PRAGMA wal_checkpoint(TRUNCATE)")          # give the WAL space back; freed pages are reused by new data
+            except sqlite3.Error:
+                pass
+        log.info("device %s deleted: %s", name, counts)
+        return counts
+
+    def set_enabled(self, name: str, enabled: bool) -> bool:
+        """Pause or resume the collection of a configured device. Data is untouched."""
+        with self.lock:
+            cur = self.db.execute("UPDATE devices SET enabled=?, updated_ts=? WHERE source_id=(SELECT id FROM sources WHERE name=?)",
+                                  (int(enabled), time.time(), name))
+            self.db.commit()
+            return cur.rowcount > 0
 
     def device(self, name: str) -> dict | None:
         return next((d for d in self.devices() if d["name"] == name), None)

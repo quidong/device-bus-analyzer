@@ -1,1 +1,15 @@
-<a href="/s/{{ src.name }}/runs">{{ t.runs }}</a><a href="/s/{{ src.name }}/frames">{{ t.frames }}</a><a href="/s/{{ src.name }}/timeline">{{ t.timeline }}</a><a href="/s/{{ src.name }}/commands">{{ t.commands }}</a><a href="/s/{{ src.name }}/bursts">{{ t.bursts }}</a><a href="/s/{{ src.name }}/quality">{{ t.quality }}</a><a href="/findings/{{ src.protocol }}">{{ t.findings }}</a>
+{% set path = request.url.path %}
+{% set links = [
+ ('/s/' ~ src.name ~ '/runs', t.runs, 'runs', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M4 11h4l2-6 3 12 2-6h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
+ ('/s/' ~ src.name ~ '/frames', t.frames, 'frames', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="3" y="4" width="16" height="4" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="10" width="16" height="4" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="16" width="16" height="3" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>'),
+ ('/s/' ~ src.name ~ '/timeline', t.timeline, 'timeline', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 17l5-6 4 3 7-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
+ ('/s/' ~ src.name ~ '/commands', t.commands, 'commands', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M4 6h14M4 11h14M4 16h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'),
+ ('/s/' ~ src.name ~ '/bursts', t.bursts, 'bursts', ''),
+ ('/s/' ~ src.name ~ '/quality', t.quality, 'quality', ''),
+ ('/findings/' ~ src.protocol, t.findings, src.protocol, '') ] %}
+<nav class="subnav" aria-label="{{ src.name }}"><span class="src-name">{{ src.name }}</span>
+{% for href, label, key, icon in links %}<a href="{{ href }}" {% if path.endswith('/' ~ key) %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+<nav class="bottom" aria-label="{{ src.name }}">
+{% for href, label, key, icon in links[:4] %}<a href="{{ href }}" {% if path.endswith('/' ~ key) %}aria-current="page"{% endif %}>{{ icon|safe }}{{ label }}</a>{% endfor %}
+<details><summary><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="5" cy="11" r="1.6" fill="currentColor"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/><circle cx="17" cy="11" r="1.6" fill="currentColor"/></svg>{{ t.more }}</summary>
+<div class="pop">{% for href, label, key, icon in links[4:] %}<a href="{{ href }}">{{ label }}</a>{% endfor %}</div></details></nav>

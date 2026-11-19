@@ -1,9 +1,10 @@
-"""FastAPI application: read-only JSON API (/api) and HTML frontend. Nothing here can write to a device."""
+"""FastAPI application: GET-only JSON API (/api) and HTML frontend. Nothing here can write to a device."""
 from __future__ import annotations
 
 import logging
 import os
 import secrets
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from importlib import resources
@@ -96,7 +97,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
         return {"request": request, "t": i18n.STR[lang], "logout_csrf": auth.csrf_for(request.cookies.get(COOKIE, "")),
                 "logged_in": auth.valid_session(request.cookies.get(COOKIE)), "lang": lang, "tz": str(tz), "version": __version__,
-                "fmt": lambda ts: datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] if ts else "-",
+                "has_src": "src" in kw, "fmt": lambda ts: datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] if ts else "-",
                 "hexs": lambda b: bytes(b).hex() if b is not None else "", **kw}
 
     def page(request: Request, name: str, **kw: Any) -> HTMLResponse:
@@ -240,11 +241,39 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return {k: v for k, v in spec.items() if not k.startswith("_")}
 
     # --- device management (HTML forms only: session + CSRF; the bearer token can never change configuration) ---
+    def ago(ts: float | None, lang: str) -> str:
+        if not ts:
+            return i18n.STR[lang]["never"]
+        sec = max(0, int(time.time() - ts))
+        t = i18n.STR[lang]
+        for limit, div, unit in ((60, 1, "s"), (3600, 60, "min"), (86400, 3600, "h"), (10 ** 9, 86400, "d")):
+            if sec < limit:
+                return t["ago"].format(f"{sec // div} {t[unit]}")
+        return ""
+
+    def device_state(d: dict) -> str:
+        if not d["host"]:
+            return "import"
+        if not d["enabled"]:
+            return "paused"
+        return "live" if d["last_seen"] and time.time() - d["last_seen"] < 150 else "waiting"
+
     def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):
-        resp = page(request, "devices.html", devices=store.devices(), catalog=catalog.build(store.used_classifications()),
+        lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
+        rows = store.devices()
+        for d in rows:
+            d["state"], d["ago"] = device_state(d), ago(d["last_seen"], lang)
+        resp = page(request, "devices.html", devices=rows, catalog=catalog.build(store.used_classifications()),
                     error=error, form=form)
         resp.status_code = status
         return resp
+
+    def need_session(request: Request) -> None:
+        """Configuration pages (hosts, deletion) need a real login session; the API token only reads data."""
+        if not auth.valid_session(request.cookies.get(COOKIE)):
+            raise HTTPException(303, headers={"Location": "/login"})
+
+    cfg = Depends(need_session)
 
     def need_session_csrf(request: Request, csrf: str) -> None:
         cookie = request.cookies.get(COOKIE)
@@ -253,7 +282,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         if not secrets.compare_digest(auth.csrf_for(cookie or ""), csrf):
             raise HTTPException(403, "bad CSRF token")
 
-    @app.get("/devices", response_class=HTMLResponse, dependencies=[api])
+    @app.get("/devices", response_class=HTMLResponse, dependencies=[cfg])
     def devices_list(request: Request):
         return devices_page(request)
 
@@ -278,8 +307,10 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             msg = str(exc)
             code = msg if msg in i18n.STR["en"] else "bad_input"
             return devices_page(request, code, {**form, "name": name, "key": "", "creating": creating}, 422)
-        manager.sync() if start_collectors else None
-        return RedirectResponse("/devices", status_code=303)
+        if start_collectors:
+            manager.sync()
+        target = f"/firmware/{protocol}?device={name}&new=1" if creating else "/devices"
+        return RedirectResponse(target, status_code=303)
 
     def device_form(type, manufacturer, model, protocol, host, port, key, clear_key, enabled) -> dict:
         return {"type": type.strip(), "manufacturer": manufacturer.strip(), "model": model.strip(), "protocol": protocol,
@@ -298,6 +329,58 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
                             clear_key: str = Form(""), enabled: str = Form("")):
         return await save_device(request, name, False, csrf,
                                  device_form(type, manufacturer, model, "", host, port, key, clear_key, enabled))
+
+    @app.post("/devices/{name}/enabled")
+    async def device_toggle(request: Request, name: str, csrf: str = Form(...), enabled: str = Form("")):
+        need_session_csrf(request, csrf)
+        if not store.set_enabled(name, enabled == "1"):
+            raise HTTPException(404, "unknown device")
+        if start_collectors:
+            manager.sync()
+        return RedirectResponse("/devices", status_code=303)
+
+    @app.get("/devices/{name}/delete", response_class=HTMLResponse, dependencies=[cfg])
+    def device_delete_confirm(request: Request, name: str):
+        counts = store.data_counts(name)
+        if counts is None:
+            raise HTTPException(404, "unknown device")
+        return page(request, "device_delete.html", device=store.device(name), counts=counts, error=None)
+
+    @app.post("/devices/{name}/delete")
+    async def device_delete(request: Request, name: str, csrf: str = Form(...), confirm: str = Form("")):
+        need_session_csrf(request, csrf)
+        counts = store.data_counts(name)
+        if counts is None:
+            raise HTTPException(404, "unknown device")
+        if confirm.strip() != name:                       # the name must be typed: no accidental deletes
+            r = page(request, "device_delete.html", device=store.device(name), counts=counts, error="confirm_mismatch")
+            r.status_code = 422
+            return r
+        manager.stop_device(name)                         # first stop the collector: nothing may be stored after the delete
+        store.delete_device(name)
+        if start_collectors:
+            manager.sync()
+        return RedirectResponse("/devices", status_code=303)
+
+    # --- firmware: the recommended ESPHome files of a protocol, to read, copy and download ---------------------------
+    @app.get("/firmware/{protocol}", response_class=HTMLResponse, dependencies=[api])
+    def firmware_page(request: Request, protocol: str, device: str = "", new: str = ""):
+        lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
+        prof = catalog.firmware_profile(protocol, lang)
+        if prof is None:
+            raise HTTPException(404, "no firmware for this protocol")
+        dev = store.device(device) if device else None
+        return page(request, "firmware.html", protocol=protocol, prof=prof, device=dev if dev and dev["protocol"] == protocol else None,
+                    new=bool(new))
+
+    @app.get("/firmware/{protocol}/{filename}", dependencies=[api])
+    def firmware_download(protocol: str, filename: str):
+        prof = catalog.firmware_profile(protocol)
+        text = next((f["text"] for f in prof["files"] if f["name"] == filename), None) if prof else None
+        if text is None:                                  # only files named by the catalogue for this protocol are ever served
+            raise HTTPException(404, "unknown file")
+        return Response(text, media_type="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
     # --- HTML ---------------------------------------------------------------------
     @app.get("/", response_class=HTMLResponse, dependencies=[api])

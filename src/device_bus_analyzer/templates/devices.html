@@ -1,40 +1,71 @@
-{% extends "base.html" %}{% block body %}
-<h1>{{ t.devices_title }} <button type="button" id="new-device">+ {{ t.new_device }}</button></h1>
-<p>{{ t.dev_note }}</p>
-{% if error %}<p class="err">{{ t[error] }}</p>{% endif %}
-<table><tr><th>{{ t.name }}</th><th>{{ t.device_type }}</th><th>{{ t.manufacturer }}</th><th>{{ t.model }}</th><th>{{ t.protocol }}</th><th>{{ t.connection }}</th><th>{{ t.api_key }}</th><th>{{ t.status }}</th><th>{{ t.frames }}</th><th></th></tr>
-{% for d in devices %}<tr>
-<td><a href="/s/{{ d.name }}/frames">{{ d.name }}</a></td>
-<td>{% if d.type %}{{ (catalog.types[d.type][lang] if d.type in catalog.types else d.type) }}{% else %}<span class="st unknown">{{ t.unclassified }}</span>{% endif %}</td>
-<td>{{ d.manufacturer or "" }}</td><td>{{ d.model or "" }}</td><td>{{ d.protocol }}</td>
-<td class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}<span class="st unknown">{{ t.import_only }}</span>{% endif %}</td>
-<td>{% if d.configured and d.host %}{{ t.key_set if d.has_key else t.key_missing }}{% endif %}</td>
-<td>{% if d.host %}{{ t.enabled_on if d.enabled else t.disabled }}{% endif %}</td><td>{{ d.frames }}</td>
-<td><button type="button" class="edit-device" data-name="{{ d.name }}" data-protocol="{{ d.protocol }}" data-type="{{ d.type or '' }}"
- data-manufacturer="{{ d.manufacturer or '' }}" data-model="{{ d.model or '' }}" data-host="{{ d.host or '' }}" data-port="{{ d.port or 6053 }}"
- data-haskey="{{ '1' if d.has_key else '' }}" data-enabled="{{ '1' if (d.enabled or not d.host) else '' }}">{{ t.edit }}</button></td></tr>{% endfor %}</table>
+{% extends "base.html" %}
+{% macro editdata(d) %}data-name="{{ d.name }}" data-protocol="{{ d.protocol }}" data-type="{{ d.type or '' }}" data-manufacturer="{{ d.manufacturer or '' }}" data-model="{{ d.model or '' }}" data-host="{{ d.host or '' }}" data-port="{{ d.port or 6053 }}" data-haskey="{{ '1' if d.has_key else '' }}" data-enabled="{{ '1' if (d.enabled or not d.host) else '' }}"{% endmacro %}
+{% macro tile(kind) %}<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="3" y="3" width="20" height="20" rx="3" stroke="currentColor" stroke-width="1.8"/>
+{% if kind == 'dishwasher' %}<path d="M3 9h20" stroke="currentColor" stroke-width="1.8"/><circle cx="13" cy="16" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+{% elif kind == 'dryer' %}<circle cx="13" cy="14" r="6" stroke="currentColor" stroke-width="1.8"/><circle cx="7" cy="7" r="1" fill="currentColor"/>
+{% else %}<path d="M8 13h10M8 9h10M8 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>{% endif %}</svg>{% endmacro %}
+{% block body %}
+<div class="pagehead"><h1>{{ t.devices_title }}</h1><button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
+<p class="lead">{{ t.dev_note }}</p>
+{% if error %}<p class="err" role="alert">{{ t[error] }}</p>{% endif %}
+<div class="cards">
+{% for d in devices %}<article class="dev">
+<div class="head"><div class="tile">{{ tile(d.type) }}</div>
+<div><div class="name">{{ d.name }}</div>
+<div class="sub">{% if d.type or d.manufacturer %}{% if d.type %}{{ catalog.types[d.type][lang] if d.type in catalog.types else d.type }}{% endif %}{% if d.manufacturer or d.model %} · {{ d.manufacturer or '' }} {{ d.model or '' }}{% endif %}{% else %}{{ t.unclassified }}{% endif %}</div></div>
+<span class="badge b-{{ d.state }}">{{ t['st_' ~ d.state] }}</span></div>
+{% if not d.type or not d.manufacturer %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
+<dl><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
+<div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
+<div><dt>{{ t.frames }}</dt><dd><b>{{ d.frames }}</b></dd></div>
+<div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div></dl>
+<div class="actions">
+<a class="btn soft" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
+<a class="btn" href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
+<button type="button" class="edit-device" {{ editdata(d) }}>{{ t.edit }}</button>
+{% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button>{{ t.pause if d.enabled else t.resume }}</button></form>{% endif %}
+<a class="btn dangerlink" href="/devices/{{ d.name }}/delete">{{ t.delete }}</a></div>
+</article>{% endfor %}
+<button type="button" class="dev add" id="add-tile"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 5v18M5 14h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><strong>{{ t.new_device }}</strong><span class="fld">{{ t.device_type }}, {{ t.manufacturer }}, {{ t.model }}, {{ t.connection }}</span></button>
+</div>
 
-<dialog id="device-dialog" {% if form %}data-open="1"{% endif %}>
-<form method="post" action="{{ '/devices' if not form or form.creating else '/devices/' ~ form.name }}" id="device-form" class="dialog-form">
-<input type="hidden" name="csrf" value="{{ logout_csrf }}">
-<h2 id="dialog-title">{{ t.new_device }}</h2>
-<p class="fld">{{ t.pick_hint }}</p>
-<label>{{ t.name }}<input name="name" id="f-name" required maxlength="40" pattern="[A-Za-z0-9_\-]+" value="{{ form.name if form else '' }}"></label>
-<label>{{ t.device_type }}<input name="type" id="f-type" list="dl-types" autocomplete="off" value="{{ form.type if form else '' }}"></label>
-<label>{{ t.manufacturer }}<input name="manufacturer" id="f-man" list="dl-mans" autocomplete="off" value="{{ form.manufacturer if form else '' }}"></label>
-<label>{{ t.model }}<input name="model" id="f-model" list="dl-models" autocomplete="off" value="{{ form.model if form else '' }}"></label>
-<label>{{ t.protocol }}<select name="protocol" id="f-proto">{% for p in catalog.protocols %}<option value="{{ p }}" {% if form and form.protocol == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></label>
-<small class="fld" id="proto-note" hidden>{{ t.protocol_fixed }}</small>
-<label>{{ t.host }}<input name="host" id="f-host" required value="{{ form.host if form else '' }}"></label>
-<label>{{ t.port }}<input name="port" id="f-port" type="number" min="1" max="65535" value="{{ form.port if form and form.port else 6053 }}"></label>
-<label>{{ t.api_key }}<input name="key" id="f-key" type="password" autocomplete="off" spellcheck="false"></label>
-<small class="fld" id="key-note" hidden>{{ t.key_keep }}</small>
-<label class="chk" id="clear-key-row" hidden><input type="checkbox" name="clear_key" value="1"> {{ t.key_clear }}</label>
-<label class="chk"><input type="checkbox" name="enabled" id="f-enabled" value="1" {% if not form or form.enabled %}checked{% endif %}> {{ t.enabled }}</label>
-<div class="actions"><button>{{ t.save }}</button> <button type="button" id="dialog-cancel">{{ t.cancel }}</button></div>
-</form></dialog>
-<datalist id="dl-types">{% for k, v in catalog.types.items() %}<option value="{{ k }}">{{ v[lang] }}</option>{% endfor %}</datalist>
-<datalist id="dl-mans"></datalist><datalist id="dl-models"></datalist>
-<div id="catalog" data-catalog="{{ catalog|tojson|forceescape }}" data-title-new="{{ t.new_device }}" data-title-edit="{{ t.edit }}" hidden></div>
+<dialog id="device-dialog" class="sheet" aria-labelledby="dialog-title" {% if form %}data-form="{{ form|tojson|forceescape }}"{% endif %}>
+<form method="post" action="/devices" id="device-form">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="type" id="h-type"><input type="hidden" name="manufacturer" id="h-man">
+<div class="sheet-head"><h2 id="dialog-title">{{ t.new_device }}</h2><button type="button" class="icon" id="dialog-x" aria-label="{{ t.close }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+<ol class="steps" id="steps" aria-label="{{ t.step_of }}"><li>{{ t.device_type }}</li><li>{{ t.manufacturer }}</li><li>{{ t.model }}</li><li>{{ t.connection }}</li></ol>
+<div class="sheet-body">
+<fieldset data-step="1"><legend class="not-wizard">1 · {{ t.device_type }}</legend><h3 class="step-title">{{ t.which_type }}</h3>
+<div class="chips">{% for k, v in catalog.types.items() %}<input class="vh" type="radio" name="type_sel" id="ty-{{ loop.index }}" value="{{ k }}" {% if loop.first %}required{% endif %}><label class="chip" for="ty-{{ loop.index }}">{{ v[lang] }}</label>{% endfor %}
+<input class="vh" type="radio" name="type_sel" id="ty-other" value="__other"><label class="chip dashed" for="ty-other">{{ t.other }}</label></div>
+<label class="field" id="type-other-wrap" hidden>{{ t.other_type }}<input id="type-other" maxlength="40" autocomplete="off"></label></fieldset>
+
+<fieldset data-step="2"><legend class="not-wizard">2 · {{ t.manufacturer }}</legend><h3 class="step-title">{{ t.which_maker }}</h3>
+<div class="opts" role="radiogroup">{% for m in catalog.manufacturers %}<input class="vh" type="radio" name="man_sel" id="mk-{{ loop.index }}" value="{{ m.name }}" data-protocol="{{ m.protocol or '' }}" data-types="{{ m.types|join(',') }}" {% if loop.first %}required{% endif %}><label class="opt" for="mk-{{ loop.index }}"><span>{{ m.name }}</span><small>{{ m.protocol or '' }}</small></label>{% endfor %}
+<input class="vh" type="radio" name="man_sel" id="mk-other" value="__other"><label class="opt dashed" for="mk-other"><span>{{ t.other }}</span></label></div>
+<label class="field" id="man-other-wrap" hidden>{{ t.other_maker }}<input id="man-other" maxlength="60" autocomplete="off"></label>
+<label class="field" id="proto-wrap" hidden>{{ t.decoder }}<select name="protocol" id="f-proto">{% for p in catalog.protocols %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select><span class="fld">{{ t.brand_other_note }}</span></label>
+<div class="info"><span><b>{{ t.decoder }}:</b> <span class="mono" id="decoder-name">–</span> · {{ t.decoder_note }} <a id="fw-link" href="#" target="_blank" rel="noopener" hidden>{{ t.firmware_link }}</a></span></div></fieldset>
+
+<fieldset data-step="3"><legend class="not-wizard">3 · {{ t.model }}</legend><h3 class="step-title">{{ t.which_model }}</h3>
+<label class="field">{{ t.model }}<input name="model" id="f-model" list="dl-models" maxlength="60" autocomplete="off"></label>
+<datalist id="dl-models"></datalist><div class="chips" id="model-chips"></div><span class="fld">{{ t.model_hint }}</span></fieldset>
+
+<fieldset data-step="4"><legend class="not-wizard">4 · {{ t.connection }}</legend><h3 class="step-title">{{ t.which_conn }}</h3>
+<label class="field">{{ t.name }}<input name="name" id="f-name" class="mono" required maxlength="40" pattern="[A-Za-z0-9_\-]+" autocomplete="off"></label>
+<div class="row2"><label class="field">{{ t.host }}<input name="host" id="f-host" class="mono" required autocomplete="off"></label><label class="field">{{ t.port }}<input name="port" id="f-port" type="number" min="1" max="65535" value="6053"></label></div>
+<label class="field">{{ t.api_key }}<input name="key" id="f-key" type="password" autocomplete="off" spellcheck="false"></label>
+<span class="fld">{{ t.key_never }} <span id="key-note" hidden>{{ t.key_keep }}</span></span>
+<label id="clear-key-row" class="field chk" hidden><input type="checkbox" name="clear_key" value="1"> {{ t.key_clear }}</label>
+<label class="field chk"><input type="checkbox" name="enabled" id="f-enabled" value="1" checked> {{ t.enabled }}</label>
+<a id="delete-link" class="btn dangerlink" href="#" hidden>{{ t.delete }}…</a></fieldset>
+</div>
+<div class="sheet-actions">
+<button type="button" id="wz-back" class="only-wizard">{{ t.back }}</button>
+<button type="button" id="wz-next" class="primary only-wizard">{{ t.wz_next }}</button>
+<button id="save" class="primary">{{ t.save }}</button>
+<button type="button" id="dialog-cancel" class="not-wizard">{{ t.cancel }}</button>
+</div></form></dialog>
+<div id="catalog" hidden data-catalog="{{ catalog|tojson|forceescape }}" data-t="{{ {'new': t.new_device, 'edit': t.edit}|tojson|forceescape }}"></div>
 <script src="/static/devices.js"></script>
 {% endblock %}

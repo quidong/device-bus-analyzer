@@ -1,10 +1,10 @@
-// Host harness for firmware/macs_recorder.h. stdin: one command per line:
+// Host harness for src/device_bus_analyzer/firmware/macs_recorder.h. stdin: one command per line:
 //   "<hex>"   -> bytes arrive (one UART callback), time advances 5 ms
 //   "IDLE"    -> 100 ms of silence, then on_idle()
 //   "HB"      -> heartbeat line
 // stdout: the log lines the firmware would write, followed by "STATE <state> <program> <last_command> <inverter_seen>".
 #define MACS_HOST_TEST
-#include "../../firmware/macs_recorder.h"
+#include "../../src/device_bus_analyzer/firmware/macs_recorder.h"
 #include <iostream>
 
 int main() {

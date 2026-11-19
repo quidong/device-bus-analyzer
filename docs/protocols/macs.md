@@ -80,7 +80,7 @@ both are marked *assumed*. No end-of-programme marker and no remaining-time mess
 * a second `51 00 60` appeared after the stop followed by an off sequence: resume or part of switching off is unclear
 
 ## Recording
-Use `firmware/macs-analysis.example.yaml` with `firmware/macs_recorder.h`. The recorder assembles frames by their length
+Use `src/device_bus_analyzer/firmware/macs-analysis.example.yaml` with `src/device_bus_analyzer/firmware/macs_recorder.h`. The recorder assembles frames by their length
 byte and writes one `RAW1` burst per frame (with its ACK) instead of cutting at a time gap, because the pauses inside a
 frame are not reliably shorter than the pauses between frames. Bytes that fit no frame are kept raw as their own burst.
 
