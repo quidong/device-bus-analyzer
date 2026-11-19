@@ -52,16 +52,16 @@ runs:
   program_key: "22/2a50"    # programme selection used to name the run
 enums:
   program:
-    "0x01": "Programme 1"
-    "0x02": "Programme 2"
-    "0x03": "Programme 3"
-    "0x04": "Programme 4"
-    "0x05": "Programme 5"
-    "0x06": "Programme 6"
-    "0x07": "Programme 7"
-    "0x08": "Programme 8"
-    "0x09": "Programme 9"
-    "0x0a": "Programme 10"
+    "0x01": "Mix Dry"
+    "0x02": "Eco"
+    "0x03": "Cotton"
+    "0x04": "Easy care"
+    "0x05": "Delicates"
+    "0x06": "Bedding XL"
+    "0x07": "Sportswear"
+    "0x08": "Down"
+    "0x09": "Light ironing"
+    "0x0a": "Refresh"
   device_state:
     "0x0b": "off"
     "0x03": "starting (after power-on)"
@@ -83,7 +83,7 @@ commands:
     name: program_select
     title: Programme selection (panel to controller)
     status: confirmed
-    evidence: "byte 13 followed the programme button through 4, 5, 6, 7, 8, 9, 10, 1, 2; the programme names are not mapped yet (programme 3 was pre-selected and not recorded)"
+    evidence: "byte 13 followed the programme button through 4, 5, 6, 7, 8, 9, 10, 1, 2; mapped from the order the user stepped through the programmes (Cotton, Easy care, Delicates, Bedding XL, Sportswear, Down, Light ironing, Refresh, Mix Dry, Eco, Cotton): 1 Mix Dry, 2 Eco, 3 Cotton, 4-10 as listed; display names are the German ones the user read off the dryer, translated"
     fields:
       - {byte: 13, kind: enum, enum: program, name: program, label: Programme number, status: confirmed}
       - {byte: 1, kind: u8, name: flags_b1, label: Varies with programme, status: unknown}

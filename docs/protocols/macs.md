@@ -83,3 +83,19 @@ both are marked *assumed*. No end-of-programme marker and no remaining-time mess
 Use `firmware/macs-analysis.example.yaml` with `firmware/macs_recorder.h`. The recorder assembles frames by their length
 byte and writes one `RAW1` burst per frame (with its ACK) instead of cutting at a time gap, because the pauses inside a
 frame are not reliably shorter than the pauses between frames. Bytes that fit no frame are kept raw as their own burst.
+
+## Programme numbers (assumed)
+
+Byte 13 of `22/2a50` follows the programme knob. The names come from the order in which the user stepped through the
+programmes on one dryer (display names, translated); no second recording has confirmed them yet.
+
+| Value | Programme | Value | Programme |
+|---|---|---|---|
+| 1 | Mix Dry | 6 | Bedding XL |
+| 2 | Eco | 7 | Sportswear |
+| 3 | Cotton | 8 | Down |
+| 4 | Easy care | 9 | Light ironing |
+| 5 | Delicates | 10 | Refresh |
+
+Option menus (seen on the display, bus encoding not yet analysed): drying time 0 to 2 h in 10-minute steps, delayed
+start from 0 in 30-minute steps up to 2 h, then hourly up to 20 h (then back to 0).

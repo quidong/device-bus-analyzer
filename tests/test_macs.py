@@ -95,9 +95,9 @@ def test_sender_is_read_from_the_wire_with_device_status():
 
 
 def test_program_number_is_decoded():
-    for p in (1, 4, 10):
+    for p, name in ((1, "Mix Dry"), (2, "Eco"), (3, "Cotton"), (4, "Easy care"), (10, "Refresh")):
         d = spec.decode("macs", 0x22, 0x2A50, prog(p)[1:])
-        assert d["values"]["program"] == f"Programme {p}" and d["status"] == "confirmed"
+        assert d["values"]["program"] == name and d["status"] == "confirmed"
     assert spec.decode("macs", 0x22, 0x2A50, prog(0x33)[1:])["values"]["program"] == "0x33"
 
 
@@ -143,12 +143,12 @@ def test_store_decodes_frames_and_detects_a_run(store):
     _ingest(store, sid, 5010.0, next(seq), 0x22, 0x2A, START)
     rows = store.frames("tr", limit=100)
     assert len(rows) == 12 and all(r["crc_ok"] and r["ack"] == 0x98 for r in rows)
-    assert rows[1]["decoded"]["values"]["program"] == "Programme 5" and rows[1]["decoded"]["sender"]["value"].startswith("user panel")
+    assert rows[1]["decoded"]["values"]["program"] == "Delicates" and rows[1]["decoded"]["sender"]["value"].startswith("user panel")
     runs = store.runs("tr")
     assert len(runs) == 2
     r = runs[0]
-    assert r["program"] == "Programme 5" and r["start_status"] == "assumed" and r["end_status"] == "assumed" and r["open"] is False
-    assert r["frames"] == 8 and runs[1]["program"] == "Programme 7"
+    assert r["program"] == "Delicates" and r["start_status"] == "assumed" and r["end_status"] == "assumed" and r["open"] is False
+    assert r["frames"] == 8 and runs[1]["program"] == "Sportswear"
     assert runs[1]["from_ts"] > r["end_ts"]
 
 
@@ -160,7 +160,7 @@ def test_programme_chosen_between_two_merged_starts_names_the_run(store):
     _ingest(store, sid, 110.0, 3, 0x22, 0x2A, prog(2))
     _ingest(store, sid, 140.0, 4, 0x22, 0x2A, START)
     runs = store.runs("tr")
-    assert len(runs) == 1 and runs[0]["program"] == "Programme 2"
+    assert len(runs) == 1 and runs[0]["program"] == "Eco"
 
 
 def test_resume_after_pause_continues_the_same_run(store):
