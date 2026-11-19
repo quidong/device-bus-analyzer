@@ -253,7 +253,7 @@ def test_runs_are_detected_and_marked_assumed(store):
     assert runs[1]["from_ts"] > r["end_ts"]                          # context never reaches into the previous run
 
 
-def test_macs_has_no_runs_yet(store):
+def test_macs_source_without_frames_has_no_runs(store):
     store.source("tr", "macs")
     assert store.runs("tr") == []
 
@@ -277,3 +277,20 @@ def test_api_and_html_run_filter(store):
     assert "Läufe" in t and "angenommen" in t and "Chef 70 C" in t and f"run={first}" in t
     assert "Lauf #" in c.get(f"/s/dw2/frames?run={first}&lang=de").text
     assert c.get("/s/dw2/runs?lang=en").status_code == 200
+
+
+def test_macs_pages_show_devices_and_decoded_frames(store):
+    from device_bus_analyzer.protocols import macs
+    sid = store.source("tr", "macs")
+    hb = macs.build_frame(0x2A, 0x22, bytes.fromhex("5f03"))
+    store.ingest_line(sid, raw1(1, 1_000_000, hb + macs.build_ack(hb)), 1_800_000_001.0)
+    c = TestClient(create_app(Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32, api_token=TOKEN), store),
+                   follow_redirects=False)
+    login(c)
+    en, de = c.get("/findings/macs?lang=en").text, c.get("/findings/macs?lang=de").text
+    assert "Devices" in en and "0x22" in en and "M1IB1606" in en and "Geräte" in de and "Adresse" in de
+    page = c.get("/s/tr/frames?lang=en").text
+    assert "dryer control board" in page and "2a" in page and "225f" in page
+    h = {"Authorization": f"Bearer {TOKEN}"}
+    f = c.get("/api/tr/frames", headers=h).json()
+    assert f[0]["decoded"]["name"] == "heartbeat" and f[0]["decoded"]["sender"]["status"] == "assumed"

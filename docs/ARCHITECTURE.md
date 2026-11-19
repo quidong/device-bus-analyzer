@@ -2,9 +2,9 @@
 
 | Part | Module | Notes |
 |---|---|---|
-| Firmware (device side) | `firmware/` | emits Logformat 1: `RAW1` per burst, `HB1` heartbeat every 60 s |
+| Firmware (device side) | `firmware/` | emits Logformat 1: `RAW1` per burst, `HB1` heartbeat every 60 s; MACS: `macs_recorder.h` makes one burst per frame |
 | Log parser | `logformat.py` | tolerant of ANSI colours and host timestamps; detects sequence gaps |
-| Protocol decoders | `protocols/` | `bshdbus` (framing + CRC16/XMODEM, ACK, resync), `macs` placeholder |
+| Protocol decoders | `protocols/` | `bshdbus` (framing + CRC16/XMODEM, ACK, resync), `macs` (C9 frames, XOR checksum, 98 ACK, source on the wire) |
 | Spec | `spec/*.yaml`, `spec.py` | command catalogue with status + evidence, drives decoding and the findings page |
 | Storage | `store.py` | SQLite (WAL); raw bursts append-only, frames derived, sessions per board boot, gap table |
 | Collector | `collector.py` | aioesphomeapi `subscribe_logs`, reconnect with back-off, never sends |

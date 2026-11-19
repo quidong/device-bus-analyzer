@@ -1,7 +1,7 @@
 # device-bus-analyzer
 
 Collect, store, decode and inspect the internal bus telegrams of household appliances **read-only**.
-First protocols: **BSH D-Bus** (Bosch / Siemens / Neff dishwashers) and a placeholder for the **Electrolux/AEG MACS bus** (dryers).
+Protocols: **BSH D-Bus** (Bosch / Siemens / Neff dishwashers) and the **Electrolux/AEG MACS bus** (heat-pump dryers; findings with confirmed/assumed/unknown status, see `docs/protocols/macs.md`; run detection names the run by the programme chosen before the start).
 
 ```
 ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─▶ SQLite (raw bursts, append-only)
@@ -22,7 +22,7 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 
 ## Quick start (Portainer / Docker)
 
-1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`, example in `firmware/`).
+1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`, examples in `firmware/`: `bshdbus-analysis.example.yaml` for the dishwasher, `macs-analysis.example.yaml` + `macs_recorder.h` for the dryer).
    Enable the API encryption key in ESPHome.
 2. In Portainer create a stack (Web editor: paste `docker-compose.yml`; the image `ghcr.io/quidong/device-bus-analyzer:latest` is built by GitHub Actions on every push to `main`) and set these **stack variables** (nothing secret is stored in the repo):
 

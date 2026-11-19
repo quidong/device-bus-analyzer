@@ -53,7 +53,7 @@ def test_sender_is_derived_with_status():
 def test_unknown_destination_class_gives_unknown_sender():
     d = spec.decode("bshdbus", 0x9F, 0x0001, b"")
     assert d["sender"]["value"] is None and d["sender"]["status"] == "unknown"
-    assert spec.decode("macs", 0x01, 0x0001, b"")["sender"]["status"] == "unknown"
+    assert spec.decode("macs", 0x01, 0x9901, b"")["sender"]["status"] == "unknown"      # source 0x99 is not in the MACS spec
 
 
 def test_exact_node_entry_beats_class_entry(monkeypatch):

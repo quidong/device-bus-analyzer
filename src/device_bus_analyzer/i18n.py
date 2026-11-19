@@ -12,7 +12,8 @@ STR = {
         "confirmed": "confirmed", "assumed": "assumed", "unknown": "unknown", "read_only": "read-only", "next": "Next", "prev": "Previous",
         "burst_hex": "Raw hex", "runs": "Runs", "run": "Run", "start": "Start", "end": "End", "duration": "Duration", "program": "Program", "remaining": "Remaining", "running": "running",
         "runs_note": "A run is derived: it starts at the start command and ends at the last telegram before a silent gap. Both are marked as assumed.", "sender": "Sender", "receiver": "Receiver", "nodes": "Nodes",
-        "sender_note": "The frame carries only the destination; the sender is derived from it and is never better than assumed.", "timezone_note": "Times in", "all": "all",
+        "sender_note": "The frame carries only the destination; the sender is derived from it and is never better than assumed.", "devices": "Devices", "address": "Address", "device": "Device",
+        "devices_note": "Source and destination addresses are read from the frame and are always true; what a device is comes from its traffic and carries a status.", "timezone_note": "Times in", "all": "all",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -26,7 +27,8 @@ STR = {
         "confirmed": "bestätigt", "assumed": "angenommen", "unknown": "unbekannt", "read_only": "nur lesend", "next": "Weiter", "prev": "Zurück",
         "burst_hex": "Rohdaten (hex)", "runs": "Läufe", "run": "Lauf", "start": "Start", "end": "Ende", "duration": "Dauer", "program": "Programm", "remaining": "Restzeit", "running": "läuft",
         "runs_note": "Ein Lauf ist abgeleitet: Er beginnt beim Startbefehl und endet beim letzten Telegramm vor einer längeren Pause. Beides ist als angenommen markiert.", "sender": "Absender", "receiver": "Empfänger", "nodes": "Knoten",
-        "sender_note": "Das Telegramm enthält nur die Zieladresse; der Absender wird daraus abgeleitet und ist höchstens angenommen.", "timezone_note": "Zeiten in", "all": "alle",
+        "sender_note": "Das Telegramm enthält nur die Zieladresse; der Absender wird daraus abgeleitet und ist höchstens angenommen.", "devices": "Geräte", "address": "Adresse", "device": "Gerät",
+        "devices_note": "Quell- und Zieladresse stehen im Telegramm und sind immer sicher; was ein Gerät ist, ergibt sich aus seinem Verkehr und hat einen Status.", "timezone_note": "Zeiten in", "all": "alle",
     },
 }
 

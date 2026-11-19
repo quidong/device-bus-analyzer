@@ -24,6 +24,12 @@ Ein **Burst** sind alle Bytes bis zur ersten Ruhezeit auf dem Bus (BSH: 15 ms be
 diese Ruhe erkannt wurde, das Burstende liegt also etwa um die Ruhezeit früher. Ein Burst kann mehrere Telegramme enthalten.
 Die Zerlegung in Telegramme macht der Sammler aus den Rohbytes. Die Zeilen `FRAME …` der Firmware sind nur eine Hilfe fürs Debuggen.
 
+### MACS (Trockner)
+Beim MACS-Bus sind die Pausen innerhalb eines Frames nicht verlässlich kürzer als die zwischen zwei Frames. Die Firmware
+(`firmware/macs_recorder.h`) bildet Bursts deshalb frame-genau: ein Burst ist ein Frame mit seinem ACK, Bytes ohne Frame
+bilden einen eigenen Burst. `t_us` ist der Zeitpunkt, an dem der Burst vollständig war (bis ca. 40 ms nach Busende, wenn
+kein ACK kam). Das Format der Zeilen ist unverändert.
+
 ## Verlustprüfung
 * `seq` springt in `RAW1`: es fehlen Bursts im Sammler (Verbindung unterbrochen oder Logzeilen verworfen).
 * `HB1.seq` ≠ zuletzt gesehenes `RAW1.seq`: Bursts gingen auf dem Weg verloren.
