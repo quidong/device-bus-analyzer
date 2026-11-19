@@ -128,7 +128,7 @@ commands:
     name: time
     title: Time (controller to panel)
     status: unknown
-evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched, and after the start fell by exactly 1 every 60 s (ae ad ac ab aa, 13:12:53 to 13:16:53), CS = VV + 0x1e in most messages; consistent with the remaining time in minutes, but NOT yet compared with the display. 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32, possibly the programme default; single recording"
+    evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched, and after the start fell by exactly 1 every 60 s (ae ad ac ab aa, 13:12:53 to 13:16:53), CS = VV + 0x1e in most messages; consistent with the remaining time in minutes, but NOT yet compared with the display. 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32, possibly the programme default; single recording"
     fields:
       - {byte: 1, kind: u8, name: layout, label: Layout (00 or 04), status: unknown}
   - key: "2a/2257"
