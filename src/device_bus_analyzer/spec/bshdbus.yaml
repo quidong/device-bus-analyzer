@@ -90,20 +90,20 @@ commands:
   - key: "25/2000"
     name: progress
     title: Program progress
-    status: assumed
-    evidence: "one run (Chef 70 C): 0x13 (19) when 129 min remained, rose in uneven steps to 0x64 (100) when the remaining time hit 0"
+    status: confirmed
+    evidence: "two runs: rises in uneven steps to 0x64 (100) when the remaining time hits 0; Eco 50 C showed 0x5F (95) with 11 of 210 min left"
     fields:
-      - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: assumed}
+      - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: confirmed}
   - key: "25/2012"
     name: after_end
     title: Sent two minutes after the end of a cycle
     status: unknown
-    evidence: "one frame, value 00, 120 s after 27/2007 = 03; may mark the module going to standby"
+    evidence: "one frame, value 00, exactly 120 s after 27/2007 = 03 in both runs; probably marks the module going to standby"
   - key: "25/2013"
     name: end_marker
     title: End-of-cycle marker
     status: unknown
-    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of the run"
+    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of both runs; 25/2005 = 0x28 is sent in the same burst"
   - key: "17/1010"
     name: program_select_early
     title: Program selection (panel, early)
@@ -137,10 +137,10 @@ commands:
   - key: "27/2007"
     name: operating_state
     title: Operating state
-    status: assumed
-    evidence: "02 after power-on, 01 right after start; 03 at the end of a full Chef 70 C run (remaining time 0, door closed); 06 seen in earlier runs, unclear"
+    status: confirmed
+    evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 at the end of two full runs (Chef 70 C, Eco 50 C); 06 seen in earlier runs, unclear"
     fields:
-      - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: assumed}
+      - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: confirmed}
   - key: "17/1007"
     name: power
     title: Power on (panel)
