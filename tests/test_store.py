@@ -110,3 +110,19 @@ def test_frame_filters_and_limits(store):
     assert len(store.frames("dw", cmd=0x1011)) == 3
     assert len(store.frames("dw", limit=2)) == 2
     assert store.frames("nobody") == []
+
+
+def test_legacy_received_and_frame_are_not_double_counted(tmp_path):
+    from device_bus_analyzer.store import Store
+    st = Store(tmp_path / "d.sqlite")
+    sid = st.source("x", "bshdbus")
+    st.ingest_line(sid, "[22:29:46.909][D][main:720]: Received frame dest 0x25 cmd 0x2008: 0x8150", 100.0)
+    st.ingest_line(sid, "[22:29:46.920][D][main:720]: Received frame dest 0x25 cmd 0x2000: 0x13", 100.01)
+    st.ingest_line(sid, "FRAME 252008" "8150 OK ACK 2A", 100.03)
+    st.ingest_line(sid, "FRAME 25200013 OK ACK 2A", 100.04)
+    rows = st.db.execute("SELECT cmd, ack FROM frames ORDER BY id").fetchall()
+    assert [(r["cmd"], r["ack"]) for r in rows] == [(0x2008, 0x2A), (0x2000, 0x2A)]
+    # a RECEIVED line without a partner stays; identical repeats later than 2 s are separate frames
+    st.ingest_line(sid, "[22:29:50.000][D][main:720]: Received frame dest 0x25 cmd 0x2000: 0x13", 110.0)
+    st.ingest_line(sid, "FRAME 25200013 OK ACK 2A", 120.0)
+    assert st.db.execute("SELECT count(*) FROM frames").fetchone()[0] == 4
