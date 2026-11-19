@@ -44,6 +44,15 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   min_auth_mode: WPA2
+  # Das Board hängt am Bus und ist nur kurz an (siehe docs/protocols/macs.md): schnell verbinden, damit die ersten
+  # Telegramme nicht verloren gehen. fast_connect überspringt den Scan, power_save_mode: none senkt die Latenz.
+  fast_connect: true
+  power_save_mode: none
+  # Noch schneller (spart die DHCP-Wartezeit): feste Adresse. Werte an das eigene Netz anpassen, nie ins Repo:
+  # manual_ip:
+  #   static_ip: !secret trockner_static_ip
+  #   gateway: !secret trockner_gateway
+  #   subnet: !secret trockner_subnet
   # Optional, wenn der Name nicht über VLAN-Grenzen aufgelöst wird:
   # use_address: !secret trockner_address
   ap:
