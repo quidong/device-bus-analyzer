@@ -101,7 +101,7 @@ def test_program_number_is_decoded():
     assert spec.decode("macs", 0x22, 0x2A50, prog(0x33)[1:])["values"]["program"] == "0x33"
 
 
-@pytest.mark.parametrize("raw,label", [(0x0B, "off"), (0x01, "on / ready"), (0x02, "running"), (0x04, "paused"), (0x77, "0x77")])
+@pytest.mark.parametrize("raw,label", [(0x0B, "off"), (0x01, "on / ready"), (0x02, "running"), (0x04, "paused"), (0x03, "starting (after power-on)"), (0x77, "0x77")])
 def test_device_state(raw, label):
     d = spec.decode("macs", 0x2A, 0x2252, state(raw)[1:])
     assert d["values"]["state"] == label and d["status"] == "assumed"

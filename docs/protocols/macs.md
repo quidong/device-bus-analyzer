@@ -45,7 +45,7 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 | `2a/225f` | heartbeat `5f 03`, every 3 s, always acknowledged | confirmed |
 | `22/2a50` | programme selection; byte 13 = programme number 1…10 | confirmed (names not mapped) |
 | `22/2a51` | panel command: `60` start, `61` programme selected, `62` stop/pause | assumed |
-| `2a/2252` | device state: `0b` off, `01` ready, `02` running, `04` paused | assumed |
+| `2a/2252` | device state: `0b` off, `03` starting after power-on, `01` ready, `02` running, `04` paused | assumed |
 | `22/2a53` | on/off from the panel (one message, followed by state `0b`) | assumed |
 | `22/3011` | compressor board identification `M1IB1606` | confirmed |
 | `30/2210`, `00/3010`, `30/2214`, `22/3014` | wake-up and query handshake with the compressor board | assumed / unknown |

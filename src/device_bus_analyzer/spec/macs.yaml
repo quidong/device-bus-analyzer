@@ -63,6 +63,7 @@ enums:
     "0x0a": "Programme 10"
   device_state:
     "0x0b": "off"
+    "0x03": "starting (after power-on)"
     "0x01": "on / ready"
     "0x02": "running"
     "0x04": "paused"
@@ -119,11 +120,11 @@ commands:
     name: device_state
     title: Device state (controller to panel)
     status: assumed
-    evidence: "byte 1: 01 after wake-up, 02 after start, 04 after stop, 0b when switched off; single recording"
+    evidence: "byte 1: 03 right after the board gets power (about 5 s, then 01), 01 ready, 02 after start, 04 after stop, 0b when switched off (twice: 22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it); two recordings"
     fields:
       - {byte: 1, kind: enum, enum: device_state, name: state, label: State, status: assumed}
       - {byte: 2, kind: u8, name: run_flag, label: 01 in states running and paused, status: unknown}
-      - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 when off, status: unknown}
+      - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 or 03 when off or starting; toggled 41/43 about every 2.5 s while the door was opened and closed (not yet verified with a single labelled action), status: unknown}
   - key: "2a/2256"
     name: time
     title: Time (controller to panel)
