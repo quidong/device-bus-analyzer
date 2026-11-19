@@ -20,6 +20,16 @@ inserted and again drops after 10 to 15 s, and the same happens after switching 
 measured once, with a multimeter). A board powered only from the bus is online for a few seconds after power-up at best, so
 it needs fast WLAN reconnect (`fast_connect`, optionally a static address) or it misses the first telegrams.
 
+## Pause and resume (second recording)
+Start, pause 4 s later, 3 h of silence, resume, off. During the pause the bus stays powered and carries only the heartbeat
+(about 3760 frames in 3.1 h, no CRC errors, device state stays `04` paused). Pause is `22/2a51` byte 1 = `62`, resume is
+`22/2a51` = `60`, byte-identical to the start message, so a remote start would send the same frame. Not yet tried on the
+bus; nothing in this project transmits. The run detection treats a start while the controller reports paused as a
+continuation of the same run (`resume_after_state` in the spec, assumed).
+
+The programme selection (`22/2a50`) is sent when the dryer is switched on and when the programme button is pressed. A board
+that is still booting at power-up misses it, so the run then has no programme name.
+
 ## Frame (confirmed: 246 of 249 frames in the recording have a valid checksum)
 
 ```

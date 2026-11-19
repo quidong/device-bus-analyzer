@@ -163,6 +163,32 @@ def test_programme_chosen_between_two_merged_starts_names_the_run(store):
     assert len(runs) == 1 and runs[0]["program"] == "Programme 2"
 
 
+def test_resume_after_pause_continues_the_same_run(store):
+    # real recording: start, pause 4 s later, 3 h of heartbeats only (bus stays on), resume (same message as start), off
+    sid = store.source("tr", "macs")
+    n = iter(range(1, 1000))
+    _ingest(store, sid, 100.0, next(n), 0x22, 0x2A, START)
+    _ingest(store, sid, 100.1, next(n), 0x2A, 0x22, state(2))
+    _ingest(store, sid, 104.0, next(n), 0x22, 0x2A, STOP)
+    _ingest(store, sid, 104.1, next(n), 0x2A, 0x22, state(4))
+    for k in range(10):
+        _ingest(store, sid, 110.0 + 300 * k, next(n), 0x2A, 0x22, HEARTBEAT)
+    _ingest(store, sid, 3200.0, next(n), 0x22, 0x2A, START)          # resume
+    _ingest(store, sid, 3200.1, next(n), 0x2A, 0x22, state(2))
+    runs = store.runs("tr")
+    assert len(runs) == 1 and runs[0]["frames"] == 16
+
+
+def test_start_after_a_stopped_programme_is_a_new_run(store):
+    sid = store.source("tr", "macs")
+    n = iter(range(1, 1000))
+    _ingest(store, sid, 100.0, next(n), 0x22, 0x2A, START)
+    _ingest(store, sid, 100.1, next(n), 0x2A, 0x22, state(2))
+    _ingest(store, sid, 400.0, next(n), 0x2A, 0x22, state(1))        # back to ready, not paused
+    _ingest(store, sid, 500.0, next(n), 0x22, 0x2A, START)
+    assert len(store.runs("tr")) == 2
+
+
 def test_rebuild_frames_reproduces_the_same_result(store):
     sid = store.source("tr", "macs")
     _ingest(store, sid, 10.0, 1, 0x2A, 0x22, HEARTBEAT)

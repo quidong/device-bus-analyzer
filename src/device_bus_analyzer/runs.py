@@ -33,10 +33,19 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
         starts = [s for s in starts if len(s["data"]) > byte and s["data"][byte] == value]
         # one start command is sent several times in a burst series: merge starts that are closer than 60 s
         merged: list[dict] = []
+        resume = rules["start"].get("resume_after_state")   # a start while the device is paused resumes the run
+        if resume:
+            res_ds, res_cmd = _split_key(resume["key"])
         for s in starts:
             if merged and s["ts"] - merged[-1]["last_ts"] < 60:
                 merged[-1]["last_ts"] = s["ts"]      # the programme may be chosen between the first and the last start
                 continue
+            if merged and resume:
+                st = db.execute("SELECT data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND ts<? AND ts>=? AND crc_ok=1 "
+                                "ORDER BY ts DESC LIMIT 1", (source_id, res_ds, res_cmd, s["ts"], merged[-1]["ts"])).fetchone()
+                if st and len(st["data"]) > resume.get("byte", 0) and st["data"][resume.get("byte", 0)] == resume["value"]:
+                    merged[-1]["last_ts"] = s["ts"]  # resume after a pause: same run
+                    continue
             s["last_ts"] = s["ts"]
             merged.append(s)
         last_ts_all = (db.execute("SELECT MAX(ts) m FROM frames WHERE source_id=?", (source_id,)).fetchone()["m"] or 0)

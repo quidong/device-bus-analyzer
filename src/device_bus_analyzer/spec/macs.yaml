@@ -41,8 +41,9 @@ runs:
     key: "22/2a51"          # command message from the panel
     byte: 1
     value: 0x60
+    resume_after_state: {key: "2a/2252", byte: 1, value: 0x04}   # a start while the controller reports paused resumes the run
     status: assumed
-    evidence: "51 00 60 00 00 1b 03 was sent when the start button was pressed; the controller then reported state 02 (running); repeated start messages within 60 s are merged; single recording"
+    evidence: "51 00 60 00 00 1b 03 was sent when the start button was pressed; the controller then reported state 02 (running); repeated start messages within 60 s are merged; a start while the controller reports state 04 (paused) continues the same run (resume after a 3 h pause, 23:20; the resume message is identical to the start message); two recordings"
   end:
     gap_minutes: 10         # the board is powered from the bus: when the dryer switches off, telegrams stop
     status: assumed
@@ -106,7 +107,8 @@ commands:
     name: panel_command
     title: Panel command (start / stop)
     status: assumed
-    evidence: "60 = start, 62 = stop or pause, 61 = programme selected after power-on; matches the start and stop pressed during the recording and the controller states 02 and 04 that followed; single recording"
+    evidence: "60 = start, 62 = stop or pause, 61 = programme selected after power-on; matches the start and stop pressed during the recording and the controller states 02 and 04 that followed; second recording: start, pause 4 s later (62), 3 h of silence, resume (60, byte-identical to the start message), off. Pause and stop share the value 62"
+    # note: start and resume cannot be told apart on the wire
     fields:
       - {byte: 1, kind: enum, enum: panel_action, name: action, label: Action, status: assumed}
   - key: "22/2a53"
