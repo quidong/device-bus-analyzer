@@ -166,4 +166,11 @@ class Recorder {
   }
 };
 
+// Einziges Rekorder-Objekt. Bewusst KEINE ESPHome-`globals`-Variable: ESPHome legt deren Typ vor den eigenen
+// Includes in main.cpp an, der Typ wäre dort noch unbekannt ("'macs' was not declared in this scope").
+inline Recorder &rec() {
+  static Recorder r;
+  return r;
+}
+
 }  // namespace macs

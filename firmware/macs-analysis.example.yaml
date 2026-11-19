@@ -78,10 +78,6 @@ time:
   - platform: homeassistant
     id: ha_time
 
-globals:
-  - id: macs_rec
-    type: macs::Recorder
-
 uart:
   id: uart_macs
   rx_pin:
@@ -101,20 +97,20 @@ uart:
     after:
       timeout: 5ms          # nur Stückelung der UART-Callbacks; Frames setzt der Rekorder anhand der Länge zusammen
     sequence:
-      - lambda: id(macs_rec).on_bytes(bytes, micros(), millis());
+      - lambda: macs::rec().on_bytes(bytes, micros(), millis());
       - script.execute: blink_act
 
 interval:
   # Bytes, die nach 40 ms Ruhe noch festhängen (Frame ohne ACK, Rauschen), freigeben
   - interval: 20ms
     then:
-      - lambda: id(macs_rec).on_idle(micros(), millis());
+      - lambda: macs::rec().on_idle(micros(), millis());
   # Heartbeat: Zähler und absolute Zeit (zeigt Lücken im Sammler)
   - interval: 60s
     then:
       - lambda: |-
           auto t = id(ha_time).now();
-          id(macs_rec).heartbeat(micros(), t.is_valid() ? (long long) t.timestamp : 0);
+          macs::rec().heartbeat(micros(), t.is_valid() ? (long long) t.timestamp : 0);
 
 sensor:
   - platform: adc
@@ -134,8 +130,8 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     lambda: |-
-      if (id(macs_rec).program < 0) return {};
-      return (float) id(macs_rec).program;
+      if (macs::rec().program < 0) return {};
+      return (float) macs::rec().program;
   # ANALYSE: Zähler seit Neustart – zeigt in HA, ob der Bus schweigt oder gestört ist
   - platform: template
     name: "MACS Frames gültig"
@@ -143,28 +139,28 @@ sensor:
     state_class: total_increasing
     accuracy_decimals: 0
     update_interval: 60s
-    lambda: return (float) id(macs_rec).c.ok;
+    lambda: return (float) macs::rec().c.ok;
   - platform: template
     name: "MACS Frames Prüfsummenfehler"
     entity_category: diagnostic
     state_class: total_increasing
     accuracy_decimals: 0
     update_interval: 60s
-    lambda: return (float) id(macs_rec).c.crc;
+    lambda: return (float) macs::rec().c.crc;
   - platform: template
     name: "MACS Frames ohne ACK"
     entity_category: diagnostic
     state_class: total_increasing
     accuracy_decimals: 0
     update_interval: 60s
-    lambda: return (float) id(macs_rec).c.noack;
+    lambda: return (float) macs::rec().c.noack;
   - platform: template
     name: "MACS Restbytes"
     entity_category: diagnostic
     state_class: total_increasing
     accuracy_decimals: 0
     update_interval: 60s
-    lambda: return (float) id(macs_rec).c.rest;
+    lambda: return (float) macs::rec().c.rest;
   - platform: wifi_signal
     name: "WLAN-Signal"
     update_interval: 60s
@@ -179,11 +175,11 @@ binary_sensor:
   - platform: template
     name: "Läuft"
     device_class: running
-    lambda: return id(macs_rec).state == 0x02;
+    lambda: return macs::rec().state == 0x02;
   - platform: template
     name: "Kompressor-Board aktiv"
     entity_category: diagnostic
-    lambda: return id(macs_rec).inverter_seen;
+    lambda: return macs::rec().inverter_seen;
 
 text_sensor:
   - platform: template
@@ -191,13 +187,13 @@ text_sensor:
     icon: mdi:state-machine
     update_interval: 5s
     lambda: |-
-      switch (id(macs_rec).state) {
+      switch (macs::rec().state) {
         case 0x0B: return std::string("aus");
         case 0x01: return std::string("bereit");
         case 0x02: return std::string("läuft");
         case 0x04: return std::string("pausiert");
         case -1: return {};
-        default: return str_sprintf("unbekannt (0x%02X)", id(macs_rec).state);
+        default: return str_sprintf("unbekannt (0x%02X)", macs::rec().state);
       }
   - platform: debug
     reset_reason:
