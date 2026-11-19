@@ -36,7 +36,7 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 |---|---|---|
 | `0x22` | dryer control board (main controller) | sends heartbeat, state and time; wakes and polls `0x30` |
 | `0x2A` | user panel | sends programme, start/stop, on/off; acknowledges the heartbeat |
-| `0x30` | compressor / inverter board | silent while idle; identifies as ASCII `M1IB1606` during a run |
+| `0x30` | compressor / inverter board | answers status queries from power-on, also while idle; identifies as ASCII `M1IB1606` |
 | `0x00` | broadcast | target of the compressor board's wake-up |
 
 ## Messages seen
@@ -49,7 +49,8 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 | `22/2a53` | on/off from the panel (one message, followed by state `0b`) | assumed |
 | `22/3011` | compressor board identification `M1IB1606` | confirmed |
 | `30/2210`, `00/3010`, `30/2214`, `22/3014` | wake-up and query handshake with the compressor board | assumed / unknown |
-| `2a/2256` | time (two layouts, values not mapped to a duration yet) | unknown |
+| `2a/2256` | time: falls by 1 per minute during a run, probably remaining minutes (not yet compared with the display) | unknown |
+| `22/2a11` | panel identification (ASCII `U1CB820GZ`), sent once at power-on | assumed |
 | `22/2a55`, `2a/2255` | programme data / option bits | unknown |
 | `30/2211`, `30/2212`, `22/3012` | compressor parameters, inverter command and status | unknown |
 

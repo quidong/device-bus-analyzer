@@ -152,6 +152,17 @@ def test_store_decodes_frames_and_detects_a_run(store):
     assert runs[1]["from_ts"] > r["end_ts"]
 
 
+def test_programme_chosen_between_two_merged_starts_names_the_run(store):
+    # real recording: start, stop 3 s later, programme chosen, start again within 60 s
+    sid = store.source("tr", "macs")
+    _ingest(store, sid, 100.0, 1, 0x22, 0x2A, START)
+    _ingest(store, sid, 103.0, 2, 0x22, 0x2A, STOP)
+    _ingest(store, sid, 110.0, 3, 0x22, 0x2A, prog(2))
+    _ingest(store, sid, 140.0, 4, 0x22, 0x2A, START)
+    runs = store.runs("tr")
+    assert len(runs) == 1 and runs[0]["program"] == "Programme 2"
+
+
 def test_rebuild_frames_reproduces_the_same_result(store):
     sid = store.source("tr", "macs")
     _ingest(store, sid, 10.0, 1, 0x2A, 0x22, HEARTBEAT)

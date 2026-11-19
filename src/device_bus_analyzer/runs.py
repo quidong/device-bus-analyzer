@@ -34,8 +34,10 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
         # one start command is sent several times in a burst series: merge starts that are closer than 60 s
         merged: list[dict] = []
         for s in starts:
-            if merged and s["ts"] - merged[-1]["ts"] < 60:
+            if merged and s["ts"] - merged[-1]["last_ts"] < 60:
+                merged[-1]["last_ts"] = s["ts"]      # the programme may be chosen between the first and the last start
                 continue
+            s["last_ts"] = s["ts"]
             merged.append(s)
         last_ts_all = (db.execute("SELECT MAX(ts) m FROM frames WHERE source_id=?", (source_id,)).fetchone()["m"] or 0)
         runs: list[dict[str, Any]] = []
@@ -55,7 +57,8 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
             program = None
             if prog_cmd is not None:
                 p = db.execute("SELECT ds, cmd, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND ts<=? AND ts>=? "
-                               "AND crc_ok=1 ORDER BY ts DESC LIMIT 1", (source_id, prog_ds, prog_cmd, s["ts"], s["ts"] - 3600)).fetchone()
+                               "AND crc_ok=1 ORDER BY ts DESC LIMIT 1",
+                               (source_id, prog_ds, prog_cmd, s["last_ts"], s["ts"] - 3600)).fetchone()
                 if p:
                     d = decode(protocol, p["ds"], p["cmd"], p["data"])
                     program = d["values"].get("program")

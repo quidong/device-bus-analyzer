@@ -25,7 +25,7 @@ devices:
   "30":
     name: "compressor / inverter board"
     status: assumed
-    evidence: "silent while the dryer is idle; during a run it announces itself and answers status queries; identifies itself with the ASCII text M1IB1606 (message 22/3011)"
+    evidence: "answers the controller's status queries (22/3012 every 2 s) as soon as the bus is powered, also while no programme runs; announces itself with a wake-up when a run starts; identifies itself with the ASCII text M1IB1606 (message 22/3011)"
   "00":
     name: "broadcast"
     status: assumed
@@ -34,7 +34,7 @@ acks:
   "9":
     node: "addressed node (receiver of the acknowledged message)"
     status: assumed
-    evidence: "98 is followed by the checksum byte of the message just seen (228 of 228 ACKs in the recording); who sends the ACK electrically was not measured"
+    evidence: "98 is followed by the checksum byte of the message just seen (612 of 612 ACKs in the second recording); broadcast and wake-up messages (00/3010, 00/2210, 00/2a10, 30/2210) get no ACK (28 of 28 unacknowledged frames); who sends the ACK electrically was not measured"
 # How telegrams are grouped into runs (program cycles). Detection is a heuristic and always marked as such.
 runs:
   start:
@@ -128,7 +128,7 @@ commands:
     name: time
     title: Time (controller to panel)
     status: unknown
-    evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched; 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32. Possibly durations in minutes or tens of minutes, not verified; no remaining-time reading was recorded"
+evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched, and after the start fell by exactly 1 every 60 s (ae ad ac ab aa, 13:12:53 to 13:16:53), CS = VV + 0x1e in most messages; consistent with the remaining time in minutes, but NOT yet compared with the display. 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32, possibly the programme default; single recording"
     fields:
       - {byte: 1, kind: u8, name: layout, label: Layout (00 or 04), status: unknown}
   - key: "2a/2257"
@@ -137,6 +137,13 @@ commands:
     status: unknown
     evidence: "type is listed as alarm in third-party notes for the washing machine; not seen on this dryer"
     fields: []
+  - key: "22/2a11"
+    name: panel_identification
+    title: Identification (panel)
+    status: assumed
+    evidence: "sent once at power-on: 11 00 followed by the ASCII text U1CB820GZ and 12 more bytes (meaning unknown); same layout as the compressor board identification; single recording"
+    fields:
+      - {byte: 1, kind: ascii, length: 9, name: ident, label: Identification text, status: assumed}
   - key: "30/2210"
     name: wakeup_to_compressor
     title: Wake-up (controller to compressor board)

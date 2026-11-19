@@ -1,7 +1,7 @@
 # device-bus-analyzer
 
 Collect, store, decode and inspect the internal bus telegrams of household appliances **read-only**.
-Protocols: **BSH D-Bus** (Bosch / Siemens / Neff dishwashers) and the **Electrolux/AEG MACS bus** (heat-pump dryers; first findings, see `docs/protocols/macs.md`).
+Protocols: **BSH D-Bus** (Bosch / Siemens / Neff dishwashers) and the **Electrolux/AEG MACS bus** (heat-pump dryers; findings with confirmed/assumed/unknown status, see `docs/protocols/macs.md`; run detection names the run by the programme chosen before the start).
 
 ```
 ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─▶ SQLite (raw bursts, append-only)
