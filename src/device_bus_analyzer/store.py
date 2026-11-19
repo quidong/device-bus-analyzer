@@ -45,6 +45,7 @@ class Store:
             self.db.execute("PRAGMA journal_mode=WAL")
             self.db.executescript(SCHEMA)
         self._sessions: dict[int, dict] = {}
+        self._pending_rx: dict[int, list] = {}
 
     def close(self):
         with self.lock:
@@ -115,11 +116,27 @@ class Store:
             elif e["typ"] == "HB1":
                 self._ingest_hb(source_id, e, recv_ts)
             else:                                    # legacy FRAME / RECEIVED: frames only, no raw burst
-                self.db.execute(
-                    "INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
-                    (source_id, None, None, recv_ts, e["ds"], e["cmd"], e["data"], int(e["crc_ok"]), e["ack"]))
+                self._ingest_legacy(source_id, e, recv_ts)
             self.db.commit()
         return e["typ"]
+
+    def _ingest_legacy(self, source_id: int, e: dict, recv_ts: float) -> None:
+        """The same frame is logged twice by the old firmware: 'Received frame ...' (component) and 'FRAME ...' (dbus_raw,
+        with ACK info). A FRAME line replaces the RECEIVED row of the same bytes logged within 2 s before it."""
+        key = (e["ds"], e["cmd"], bytes(e["data"]))
+        pend = self._pending_rx.setdefault(source_id, [])
+        pend[:] = [p for p in pend if recv_ts - p[2] <= 2.0]
+        if e["typ"] == "FRAME":
+            for i, (rid, k, _t) in enumerate(pend):
+                if k == key:
+                    self.db.execute("DELETE FROM frames WHERE id=?", (rid,))
+                    del pend[i]
+                    break
+        cur = self.db.execute(
+            "INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+            (source_id, None, None, recv_ts, e["ds"], e["cmd"], e["data"], int(e["crc_ok"]), e["ack"]))
+        if e["typ"] == "RECEIVED":
+            pend.append((cur.lastrowid, key, recv_ts))
 
     def _proto(self, source_id: int):
         name = self.db.execute("SELECT protocol FROM sources WHERE id=?", (source_id,)).fetchone()["protocol"]

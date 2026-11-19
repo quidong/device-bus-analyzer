@@ -66,6 +66,7 @@ enums:
   operating_state:
     "0x01": "running"
     "0x02": "on / idle"
+    "0x03": "finished (cycle ended)"
     "0x06": "seen during or after a run, meaning unclear"
 commands:
   - key: "24/2006"
@@ -84,6 +85,25 @@ commands:
     evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later)"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
+      - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: assumed}
+      - {byte: 4, kind: u8, name: remaining_m, label: Remaining minutes part, unit: min, status: assumed}
+  - key: "25/2000"
+    name: progress
+    title: Program progress
+    status: assumed
+    evidence: "one run (Chef 70 C): 0x13 (19) when 129 min remained, rose in uneven steps to 0x64 (100) when the remaining time hit 0"
+    fields:
+      - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: assumed}
+  - key: "25/2012"
+    name: after_end
+    title: Sent two minutes after the end of a cycle
+    status: unknown
+    evidence: "one frame, value 00, 120 s after 27/2007 = 03; may mark the module going to standby"
+  - key: "25/2013"
+    name: end_marker
+    title: End-of-cycle marker
+    status: unknown
+    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of the run"
   - key: "17/1010"
     name: program_select_early
     title: Program selection (panel, early)
@@ -118,7 +138,7 @@ commands:
     name: operating_state
     title: Operating state
     status: assumed
-    evidence: "02 after power-on, 01 right after start; 06 seen later in earlier runs; end-of-run value not yet captured"
+    evidence: "02 after power-on, 01 right after start; 03 at the end of a full Chef 70 C run (remaining time 0, door closed); 06 seen in earlier runs, unclear"
     fields:
       - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: assumed}
   - key: "17/1007"
