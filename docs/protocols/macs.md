@@ -15,6 +15,10 @@ The expansion of the abbreviation "MACS" could not be verified and is not used h
 RAST 2.5 connector, 4 pins: 1 = +12 V, 2 = +5 V, 3 = DATA, 4 = GND. 9600 baud, 8 data bits, even parity, 1 stop bit,
 **inverted** logic (idle = 0 V). The ESP32 board is powered from the bus and is therefore only online while the dryer is
 on; the dryer switches itself off a few minutes after the last use. The collector copes with that (reconnect with back-off).
+The bus supply is NOT permanent: measured on a neighbouring connector of the same bus, +12 V appears when the mains plug is
+inserted and again drops after 10 to 15 s, and the same happens after switching the dryer off (+12 V for 10 to 15 s, then dead;
+measured once, with a multimeter). A board that must stay online therefore needs its own supply (USB-C, decoupled by diodes)
+and fast WLAN reconnect (static address, `fast_connect`), otherwise it misses the first telegrams after power-up.
 
 ## Frame (confirmed: 246 of 249 frames in the recording have a valid checksum)
 
