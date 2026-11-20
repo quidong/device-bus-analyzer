@@ -26,6 +26,10 @@ class Settings:
     api_token: str = ""
     knowledge_url: str = ""          # override of the manifest URL for knowledge updates (default: the project repository)
     cookie_secure: bool = False
+    tls: bool = True                 # serve HTTPS (DBA_TLS=0 only behind your own TLS proxy)
+    tls_hosts: list[str] = field(default_factory=list)   # extra names/addresses in the server certificate
+    tls_cert: str = ""
+    tls_key: str = ""
     session_hours: int = 12
 
 
@@ -56,7 +60,10 @@ def load(env: dict[str, str] | None = None) -> Settings:
         session_secret=env.get("SESSION_SECRET", ""),
         api_token=env.get("API_TOKEN", ""),
         knowledge_url=env.get("KNOWLEDGE_URL", ""),
-        cookie_secure=env.get("COOKIE_SECURE", "0") == "1",
+        cookie_secure=env.get("COOKIE_SECURE", "1" if env.get("DBA_TLS", "1") != "0" else "0") == "1",
+        tls=env.get("DBA_TLS", "1") != "0",
+        tls_hosts=[h for h in re.split(r"[,\s]+", env.get("DBA_TLS_HOSTS", "")) if h],
+        tls_cert=env.get("DBA_TLS_CERT", ""), tls_key=env.get("DBA_TLS_KEY", ""),
         session_hours=int(env.get("SESSION_HOURS", "12")),
     )
 

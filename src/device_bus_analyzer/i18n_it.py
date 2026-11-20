@@ -296,4 +296,23 @@ kn_res_error | Non riuscito
 kn_res_needs_app_update | L'aggiornamento richiede una versione più recente dell'app (nuova immagine).
 kn_note | Vengono scaricati solo file di dati (YAML), controllati e attivati solo se tutto è valido. Il container ha bisogno dell'accesso HTTPS in uscita verso GitHub.
 backup_err_active_content | Il file contiene trigger o viste e non viene ripristinato per motivi di sicurezza.
+tls_link | HTTPS
+tls_title | HTTPS nella rete locale
+tls_intro | L'analizzatore usa HTTPS con un certificato di una propria autorità di certificazione (CA) locale. Installa il certificato della CA una volta sui tuoi dispositivi e l'avviso del browser scompare.
+tls_state | Connessione
+tls_not_https | questa pagina è stata caricata senza cifratura
+tls_hosts | Valido per
+tls_expires | Scade
+tls_fp | Impronta della CA (SHA-256)
+tls_download | Scarica il certificato della CA
+tls_no_ca | Non c'è una CA locale: HTTPS è disattivato o usa il tuo certificato.
+tls_how | Installare il certificato della CA
+tls_how_ios | scarica il file, installa il profilo in Impostazioni e attivalo in Generali > Info > Impostazioni di attendibilità dei certificati.
+tls_how_android | Impostazioni > Sicurezza > Crittografia e credenziali > Installa un certificato > Certificato CA.
+tls_how_windows | doppio clic sul file > Installa certificato > Computer locale > Autorità di certificazione radice attendibili.
+tls_how_mac | apri il file (Accesso Portachiavi), doppio clic sul certificato > Affidabilità > Autorizza sempre.
+tls_how_firefox | Impostazioni > Privacy e sicurezza > Visualizza certificati > Autorità > Importa (oppure usa i certificati di sistema).
+tls_names | Nomi e indirizzi nel certificato
+tls_names_note | Perché corrisponda l'indirizzo con cui apri l'analizzatore, inseriscilo in DBA_TLS_HOSTS (separato da virgole, nomi e indirizzi IP) e riavvia il container; il certificato viene riemesso e la CA resta la stessa.
+mcp_ca | Se l'analizzatore usa HTTPS con una propria CA, scegli anche il certificato della CA come file CA durante l'installazione (download nella pagina HTTPS).
 """

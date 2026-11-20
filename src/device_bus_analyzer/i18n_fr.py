@@ -296,4 +296,23 @@ kn_res_error | Échec
 kn_res_needs_app_update | La mise à jour nécessite une version plus récente de l'appli (nouvelle image).
 kn_note | Seuls des fichiers de données (YAML) sont téléchargés, vérifiés et activés uniquement si tout est valide. Le conteneur a besoin d'un accès HTTPS sortant vers GitHub.
 backup_err_active_content | Le fichier contient des déclencheurs ou des vues et n'est pas restauré pour des raisons de sécurité.
+tls_link | HTTPS
+tls_title | HTTPS dans le réseau local
+tls_intro | L'analyseur utilise HTTPS avec un certificat de sa propre autorité de certification (CA) locale. Installez le certificat de la CA une fois sur vos appareils et l'avertissement du navigateur disparaît.
+tls_state | Connexion
+tls_not_https | cette page a été chargée sans chiffrement
+tls_hosts | Valable pour
+tls_expires | Expire
+tls_fp | Empreinte de la CA (SHA-256)
+tls_download | Télécharger le certificat de la CA
+tls_no_ca | Il n'y a pas de CA locale : HTTPS est désactivé ou utilise votre propre certificat.
+tls_how | Installer le certificat de la CA
+tls_how_ios | téléchargez le fichier, installez le profil dans Réglages, puis activez-le sous Général > Informations > Réglages de confiance des certificats.
+tls_how_android | Paramètres > Sécurité > Chiffrement et identifiants > Installer un certificat > Certificat d'autorité.
+tls_how_windows | double-cliquez sur le fichier > Installer le certificat > Ordinateur local > Autorités de certification racines de confiance.
+tls_how_mac | ouvrez le fichier (Trousseau d'accès), double-cliquez sur le certificat > Confiance > Toujours approuver.
+tls_how_firefox | Paramètres > Vie privée et sécurité > Afficher les certificats > Autorités > Importer (ou utiliser les certificats du système).
+tls_names | Noms et adresses dans le certificat
+tls_names_note | Pour que l'adresse utilisée pour ouvrir l'analyseur corresponde, indiquez-la dans DBA_TLS_HOSTS (séparée par des virgules, noms et adresses IP) et redémarrez le conteneur ; le certificat est réémis et la CA reste la même.
+mcp_ca | Si l'analyseur utilise HTTPS avec sa propre CA, choisissez aussi le certificat de la CA comme fichier CA pendant l'installation (téléchargement sur la page HTTPS).
 """

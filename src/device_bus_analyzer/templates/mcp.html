@@ -6,6 +6,7 @@
 <section class="card"><h2>{{ t.mcp_url }}</h2>
 <section class="fw"><header><strong>URL</strong><button type="button" class="copy" data-target="mcp-url" data-ok="{{ t.copied }}">{{ t.copy }}</button></header><pre class="code" id="mcp-url" tabindex="0"><code>{{ base_url }}</code></pre></section>
 <p class="muted">{{ t.mcp_url_note }}</p>
+<p class="muted">{{ t.mcp_ca }} <a href="/tls">HTTPS</a> · <a href="/tls/ca.crt">CA</a></p>
 <h2>{{ t.mcp_token }}</h2>
 {% if token %}<details><summary>{{ t.mcp_token_show }}</summary>
 <section class="fw"><header><strong>Token</strong><button type="button" class="copy" data-target="mcp-token" data-ok="{{ t.copied }}">{{ t.copy }}</button></header><pre class="code" id="mcp-token" tabindex="0"><code>{{ token }}</code></pre></section>

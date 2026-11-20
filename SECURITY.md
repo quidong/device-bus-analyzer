@@ -13,6 +13,12 @@ Meant for a trusted home network. Do not publish the analyzer through a reverse 
 - **Knowledge updates** fetch only data files named in a manifest, over https (redirects to http are refused), verify SHA-256, cap sizes and YAML aliases, validate with the normal spec/catalogue checks and roll back on any problem.
 - **Container:** runs as a non-root user; secrets only through environment variables.
 
+## HTTPS
+The web UI and API are served over HTTPS by default. A local CA and a server certificate (EC P-256) are created in the data volume
+(`tls/`); the private keys stay there (mode 600), only `/tls/ca.crt` is public. Session cookies are `Secure` when TLS is on. The MCP
+extension verifies the certificate against the system roots plus the optional CA file and never disables verification.
+`DBA_TLS=0` is meant for a TLS-terminating reverse proxy; HSTS is deliberately not sent (self-signed click-through).
+
 ## Things to know
 - The ESPHome API keys are stored in clear text in the SQLite file and therefore also in every backup. Keep backups private.
 - The API token lives in the Claude Desktop extension settings on your computer.

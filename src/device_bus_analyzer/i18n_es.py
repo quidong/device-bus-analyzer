@@ -296,4 +296,23 @@ kn_res_error | Error
 kn_res_needs_app_update | La actualización necesita una versión más nueva de la app (imagen nueva).
 kn_note | Solo se descargan archivos de datos (YAML), se comprueban y se activan solo si todo es válido. El contenedor necesita acceso HTTPS saliente a GitHub.
 backup_err_active_content | El archivo contiene disparadores o vistas y no se restaura por motivos de seguridad.
+tls_link | HTTPS
+tls_title | HTTPS en la red local
+tls_intro | El analizador usa HTTPS con un certificado de su propia autoridad certificadora (CA) local. Instala el certificado de la CA una vez en tus dispositivos y desaparece la advertencia del navegador.
+tls_state | Conexión
+tls_not_https | esta página se cargó sin cifrar
+tls_hosts | Válido para
+tls_expires | Caduca
+tls_fp | Huella de la CA (SHA-256)
+tls_download | Descargar el certificado de la CA
+tls_no_ca | No hay CA local: HTTPS está desactivado o usa tu propio certificado.
+tls_how | Instalar el certificado de la CA
+tls_how_ios | descarga el archivo, instala el perfil en Ajustes y actívalo en General > Información > Ajustes de confianza de certificados.
+tls_how_android | Ajustes > Seguridad > Cifrado y credenciales > Instalar un certificado > Certificado de CA.
+tls_how_windows | haz doble clic en el archivo > Instalar certificado > Equipo local > Entidades de certificación raíz de confianza.
+tls_how_mac | abre el archivo (Acceso a Llaveros), haz doble clic en el certificado > Confianza > Confiar siempre.
+tls_how_firefox | Ajustes > Privacidad y seguridad > Ver certificados > Autoridades > Importar (o usar los certificados del sistema).
+tls_names | Nombres y direcciones en el certificado
+tls_names_note | Para que coincida la dirección con la que abres el analizador, indícala en DBA_TLS_HOSTS (separada por comas, nombres y direcciones IP) y reinicia el contenedor; el certificado se vuelve a emitir y la CA no cambia.
+mcp_ca | Si el analizador usa HTTPS con su propia CA, selecciona también el certificado de la CA como archivo de CA durante la instalación (descarga en la página HTTPS).
 """

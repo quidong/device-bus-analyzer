@@ -3,20 +3,40 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import http from "node:http";
+import https from "node:https";
+import tls from "node:tls";
+import { readFileSync } from "node:fs";
 
 const BASE = (process.env.DBA_URL || "").replace(/\/+$/, "");
 const TOKEN = process.env.DBA_TOKEN || "";
+const CA_FILE = process.env.DBA_CA_FILE || "";
 const TIMEOUT_MS = 20000;
 
-export async function api(path, params = {}, { base = BASE, token = TOKEN, method = "GET" } = {}) {
+// http(s) without fetch: lets the analyzer's own CA (DBA_CA_FILE) verify its HTTPS certificate. Verification is never switched off.
+export async function api(path, params = {}, { base = BASE, token = TOKEN, method = "GET", caFile = CA_FILE } = {}) {
   if (!base || !token) throw new Error("DBA_URL and DBA_TOKEN must be configured in the extension settings");
   const url = new URL(base + path);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== "" && v !== false) url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Analyzer answered ${res.status}: ${text.slice(0, 300)}`);
+  const secure = url.protocol === "https:";
+  if (!secure && url.protocol !== "http:") throw new Error("DBA_URL must start with https:// or http://");
+  const options = { method, headers: { Authorization: `Bearer ${token}` }, timeout: TIMEOUT_MS };
+  if (secure && caFile) options.ca = [...tls.rootCertificates, readFileSync(caFile, "utf8")];
+  const { status, text } = await new Promise((resolve, reject) => {
+    const req = (secure ? https : http).request(url, options, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => resolve({ status: res.statusCode, text: Buffer.concat(chunks).toString("utf8") }));
+    });
+    req.on("timeout", () => req.destroy(new Error("timeout")));
+    req.on("error", (e) => reject(new Error(e.code === "DEPTH_ZERO_SELF_SIGNED_CERT" || /certificate|self.signed/i.test(e.message)
+      ? `HTTPS certificate not trusted (${e.message}); select the analyzer's CA certificate as CA file in the extension settings`
+      : e.message)));
+    req.end();
+  });
+  if (status < 200 || status >= 300) throw new Error(`Analyzer answered ${status}: ${text.slice(0, 300)}`);
   return JSON.parse(text);
 }
 

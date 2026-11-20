@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block body %}
+<div class="pagehead"><h1>{{ t.tls_title }}</h1></div>
+<p class="lead">{{ t.tls_intro }}</p>
+<section class="card"><dl class="kv">
+<dt>{{ t.tls_state }}</dt><dd>{% if info.https %}<b>HTTPS</b>{% else %}HTTP — {{ t.tls_not_https }}{% endif %}</dd>
+{% if info.hosts %}<dt>{{ t.tls_hosts }}</dt><dd>{{ info.hosts|join(', ') }}</dd><dt>{{ t.tls_expires }}</dt><dd>{{ info.expires }}</dd>{% endif %}
+{% if info.fingerprint %}<dt>{{ t.tls_fp }}</dt><dd><code>{{ info.fingerprint }}</code></dd>{% endif %}</dl>
+{% if info.ca %}<p><a class="btn primary" href="/tls/ca.crt">{{ t.tls_download }}</a></p>{% else %}<p class="muted">{{ t.tls_no_ca }}</p>{% endif %}</section>
+{% if info.ca %}<section class="card"><h2>{{ t.tls_how }}</h2><ul class="plain">
+<li><b>iPhone / iPad</b>: {{ t.tls_how_ios }}</li><li><b>Android</b>: {{ t.tls_how_android }}</li><li><b>Windows</b>: {{ t.tls_how_windows }}</li>
+<li><b>macOS</b>: {{ t.tls_how_mac }}</li><li><b>Firefox</b>: {{ t.tls_how_firefox }}</li></ul>
+<h2>{{ t.tls_names }}</h2><p>{{ t.tls_names_note }}</p></section>{% endif %}
+{% endblock %}

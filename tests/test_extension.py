@@ -55,6 +55,6 @@ def test_manifest_is_consistent_with_server():
     for t in m["tools"]:
         assert f'"{t["name"]}"' in src
     assert m["user_config"]["token"]["sensitive"] is True
-    assert set(m["user_config"]) == {"url", "token"}
+    assert set(m["user_config"]) == {"url", "token", "ca_file"} and not m["user_config"]["ca_file"]["required"]
     env = m["server"]["mcp_config"]["env"]
-    assert env == {"DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}"}
+    assert env == {"DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}", "DBA_CA_FILE": "${user_config.ca_file}"}

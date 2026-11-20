@@ -5,7 +5,7 @@ services:
     image: ghcr.io/quidong/device-bus-analyzer:latest   # built by GitHub Actions (.github/workflows/image.yml)
     restart: unless-stopped
     ports:
-      - "${DBA_PORT:-8080}:8080"            # LAN only: do not publish through a reverse proxy
+      - "${DBA_PORT:-8080}:8080"            # LAN only, HTTPS (https://<host>:8089)
     environment:
       # Devices are managed in the web UI ("Devices" > "New device") and stored in the data volume.
       # The three variables below are OPTIONAL and only imported once, at start, for devices that are not in the UI yet
@@ -18,6 +18,10 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}                    # alternative: plain password
       SESSION_SECRET: ${SESSION_SECRET}                      # 32+ random characters
       API_TOKEN: ${API_TOKEN:-}                              # for the local MCP extension / scripts
+      # HTTPS is on by default (local CA in the data volume; install /tls/ca.crt once per device). List every name/IP you
+      # use to open the analyzer, comma separated. DBA_TLS=0 only behind a TLS-terminating proxy; DBA_TLS_CERT/_KEY = own certificate.
+      DBA_TLS_HOSTS: ${DBA_TLS_HOSTS:-}
+      DBA_TLS: ${DBA_TLS:-1}
       DBA_TZ: ${DBA_TZ:-Europe/Berlin}
     volumes:
       - dba-data:/data

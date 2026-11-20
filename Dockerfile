@@ -7,5 +7,5 @@ RUN pip install . && useradd -r -u 10001 dba && mkdir /data && chown dba /data
 USER dba
 VOLUME /data
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request as u;u.urlopen('http://127.0.0.1:8080/healthz',timeout=3)" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD dba healthcheck
 CMD ["dba", "serve", "--port", "8080"]

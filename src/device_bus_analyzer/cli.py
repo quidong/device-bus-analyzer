@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=8080)
     p.add_argument("--no-collector", action="store_true")
+    p.add_argument("--no-tls", action="store_true", help="plain HTTP (same as DBA_TLS=0)")
+    sub.add_parser("healthcheck", help="exit 0 if the local server answers (used by the container health check)")
     a = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     s = config.load()
@@ -50,6 +52,17 @@ def main(argv: list[str] | None = None) -> int:
         problems = validate_spec(a.protocol)
         print("\n".join(problems) or "spec OK")
         return 1 if problems else 0
+    if a.cmd == "healthcheck":
+        import ssl
+        import urllib.request
+        port = int(__import__("os").environ.get("DBA_PORT_INTERNAL", "8080"))
+        for url, ctx in ((f"https://127.0.0.1:{port}/healthz", ssl._create_unverified_context()), (f"http://127.0.0.1:{port}/healthz", None)):  # noqa: S323
+            try:
+                urllib.request.urlopen(url, timeout=3, context=ctx)  # noqa: S310
+                return 0
+            except Exception:
+                continue
+        return 1
     if a.cmd == "build-knowledge":
         from . import knowledge
         print(knowledge.write_manifest()["version"])
@@ -102,8 +115,17 @@ def main(argv: list[str] | None = None) -> int:
         asyncio.run(run_all(store, s.devices))   # env devices are imported into the DB first
     elif a.cmd == "serve":
         import uvicorn
+
         from .web import create_app
-        uvicorn.run(create_app(s, store, start_collectors=not a.no_collector), host=a.host, port=a.port)
+        kw = {}
+        if s.tls and not a.no_tls:
+            from pathlib import Path
+
+            from . import tls
+            files = tls.ensure(Path(db).parent, s.tls_hosts, s.tls_cert, s.tls_key)
+            kw = {"ssl_certfile": files.cert, "ssl_keyfile": files.key}
+            print(f"HTTPS on port {a.port}; certificate valid until {files.expires:%Y-%m-%d} for: {', '.join(files.hosts)}", flush=True)
+        uvicorn.run(create_app(s, store, start_collectors=not a.no_collector), host=a.host, port=a.port, **kw)
     return 0
 
 

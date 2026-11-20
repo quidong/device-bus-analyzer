@@ -26,7 +26,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import __version__, analysis, catalog, i18n, learned, protocols
 from . import contribution as contribution_mod
-from . import homeassistant, knowledge
+from . import homeassistant, knowledge, tls
 from .auth import COOKIE, CSRF_COOKIE, Auth
 from .config import Settings, validate_device_input
 from .spec import load_spec
@@ -507,6 +507,27 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         knowledge.reset()
         store.kv_set("knowledge_check", "null")
         return RedirectResponse("/knowledge", status_code=303)
+
+    # --- HTTPS: the local CA people install once, and what the server certificate covers ------------------------------
+    tls_dir = Path(settings.db_path).parent / "tls"
+
+    @app.get("/tls/ca.crt")
+    def tls_ca():
+        """The public CA certificate (no secret in it): fetched from a phone before it has logged in."""
+        f = tls_dir / "ca.crt"
+        if not f.is_file():
+            raise HTTPException(404, "no local CA (HTTPS is off or uses your own certificate)")
+        return Response(f.read_bytes(), media_type="application/x-x509-ca-cert", headers={"Content-Disposition": 'attachment; filename="device-bus-analyzer-ca.crt"'})
+
+    @app.get("/tls", response_class=HTMLResponse, dependencies=[cfg])
+    def tls_page(request: Request):
+        info = {"https": request.url.scheme == "https", "ca": (tls_dir / "ca.crt").is_file(), "hosts": [], "expires": None, "fingerprint": None}
+        if (tls_dir / "server.crt").is_file():
+            leaf = tls._load(tls_dir / "server.crt")
+            info.update(hosts=tls.san_names(leaf), expires=leaf.not_valid_after_utc.strftime("%Y-%m-%d"))
+        if info["ca"]:
+            info["fingerprint"] = tls.fingerprint(str(tls_dir / "ca.crt"))
+        return page(request, "tls.html", info=info)
 
     @app.get("/mcp", response_class=HTMLResponse, dependencies=[cfg])
     def mcp_page(request: Request):

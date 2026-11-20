@@ -14,7 +14,7 @@
     "mcp_config": {
       "command": "node",
       "args": ["${__dirname}/server/index.js"],
-      "env": { "DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}" }
+      "env": { "DBA_URL": "${user_config.url}", "DBA_TOKEN": "${user_config.token}", "DBA_CA_FILE": "${user_config.ca_file}" }
     }
   },
   "tools": [
@@ -38,7 +38,7 @@
     "url": {
       "type": "string",
       "title": "Analyzer URL",
-      "description": "Address of your Device Bus Analyzer, for example http://192.0.2.10:8089 (no trailing path)",
+      "description": "Address of your Device Bus Analyzer, for example https://analyzer.lan:8089 (no trailing path)",
       "required": true
     },
     "token": {
@@ -47,6 +47,12 @@
       "description": "The value of API_TOKEN from your stack",
       "sensitive": true,
       "required": true
+    },
+    "ca_file": {
+      "type": "file",
+      "title": "CA certificate (HTTPS)",
+      "description": "Optional: the analyzer's CA certificate (download on its HTTPS page) so its HTTPS certificate is trusted",
+      "required": false
     }
   },
   "compatibility": { "platforms": ["darwin", "win32", "linux"], "runtimes": { "node": ">=18.0.0" } }
