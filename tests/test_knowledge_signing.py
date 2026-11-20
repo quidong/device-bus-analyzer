@@ -1,6 +1,7 @@
 """Signed knowledge updates: with a public key in the package an update must carry a valid Ed25519 signature over the manifest."""
 import base64
 import json
+import os
 
 import pytest
 from test_knowledge import URL, Remote, newer_spec
@@ -87,6 +88,7 @@ def test_cli_keygen_and_sign_roundtrip(tmp_path, monkeypatch, capsys):
     assert not knowledge.verify_signature(mani.read_bytes(), b"@@@", pub) and not pubfile.exists()
 
 
+@pytest.mark.skipif(os.environ.get("DBA_MANIFEST_BY_CI") == "1", reason="signed by the knowledge-sign workflow after the push")
 def test_committed_signature_matches_the_manifest_when_a_key_is_shipped():
     key = knowledge.pubkey()
     if not key:
@@ -95,3 +97,15 @@ def test_committed_signature_matches_the_manifest_when_a_key_is_shipped():
     base = resources.files("device_bus_analyzer")
     sig = base.joinpath(knowledge.SIGNATURE).read_text()
     assert knowledge.verify_signature(base.joinpath(knowledge.MANIFEST).read_bytes(), sig, key), "run: dba build-knowledge --sign <key>"
+
+
+def test_sign_workflow_is_wired_up():
+    import yaml
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent / ".github" / "workflows"
+    wf = yaml.safe_load((root / "knowledge-sign.yml").read_text())
+    text = (root / "knowledge-sign.yml").read_text()
+    on = wf.get("on", wf.get(True))
+    assert "src/device_bus_analyzer/catalog.yaml" in on["push"]["paths"] and not any("manifest" in p for p in on["push"]["paths"])   # no loop
+    assert "secrets.DBA_SIGNING_KEY" in text and "--sign" in text and "image.yml" in text and wf["concurrency"] == "knowledge-sign"
+    assert "DBA_SIGNING_KEY" not in (root / "ci.yml").read_text()                                                                       # key never reaches the PR/test workflow

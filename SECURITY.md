@@ -22,7 +22,8 @@ Use HTTP only on a trusted network segment; HSTS is deliberately not sent.
 ## Signed knowledge updates
 Knowledge updates are verified by SHA-256 over HTTPS and, once the project ships a public key (`knowledge-pubkey.txt`), by an
 Ed25519 signature over the manifest (`knowledge-manifest.json.sig`): without a valid signature nothing is downloaded or activated.
-Maintainer: `dba knowledge-keygen <private-key-file>` once (keep the key out of the repository), then after every knowledge change
+The `knowledge-sign` workflow does this on every push that touches specs, catalogue or firmware, using the repository secret `DBA_SIGNING_KEY`
+(anyone who can write to the repository or its secrets can therefore sign). Manually: `dba knowledge-keygen <private-key-file>` once (keep the key out of the repository), then after every knowledge change
 `dba build-knowledge --sign <private-key-file>`; the test suite fails when the committed signature is stale.
 
 ## Things to know

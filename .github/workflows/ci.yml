@@ -18,6 +18,7 @@ jobs:
         with: { node-version: "22" }
       - run: npm ci --prefix extension
       - run: pytest -q
+        env: { DBA_MANIFEST_BY_CI: "1" }        # manifest and signature are produced by the knowledge-sign workflow
       - run: dba validate-spec bshdbus && dba validate-spec macs
       - run: if ls contributions/*/*.json >/dev/null 2>&1; then dba validate-contribution contributions/*/*.json; fi
   docker:

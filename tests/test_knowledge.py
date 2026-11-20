@@ -1,6 +1,7 @@
 """Device knowledge updates from GitHub: manifest, verification, validation with rollback, scheduling state and the page."""
 import hashlib
 import json
+import os
 
 import pytest
 import yaml
@@ -46,8 +47,9 @@ def newer_spec(files):
     files["spec/bshdbus.yaml"] = yaml.safe_dump(d, allow_unicode=True)
 
 
+@pytest.mark.skipif(os.environ.get("DBA_MANIFEST_BY_CI") == "1", reason="the knowledge-sign workflow rebuilds the manifest after the push")
 def test_committed_manifest_matches_the_files():
-    """CI fails when a spec, the catalogue or a firmware file changed without `dba build-knowledge`."""
+    """Fails when a spec, the catalogue or a firmware file changed without `dba build-knowledge` (locally, and after the sign workflow)."""
     assert knowledge.build_manifest(knowledge.bundled_manifest()) == knowledge.bundled_manifest()
 
 
