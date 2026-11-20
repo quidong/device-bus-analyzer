@@ -24,6 +24,7 @@ class Settings:
     admin_password_hash: str = ""
     session_secret: str = ""
     api_token: str = ""
+    knowledge_url: str = ""          # override of the manifest URL for knowledge updates (default: the project repository)
     cookie_secure: bool = False
     session_hours: int = 12
 
@@ -54,6 +55,7 @@ def load(env: dict[str, str] | None = None) -> Settings:
         admin_password_hash=env.get("ADMIN_PASSWORD_HASH", ""),
         session_secret=env.get("SESSION_SECRET", ""),
         api_token=env.get("API_TOKEN", ""),
+        knowledge_url=env.get("KNOWLEDGE_URL", ""),
         cookie_secure=env.get("COOKIE_SECURE", "0") == "1",
         session_hours=int(env.get("SESSION_HOURS", "12")),
     )

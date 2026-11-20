@@ -25,6 +25,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("rebuild", help="re-derive frames from the raw bursts")
     p = sub.add_parser("validate-spec")
     p.add_argument("protocol")
+    sub.add_parser("build-knowledge", help="write knowledge-manifest.json (version and hashes of specs, catalogue, firmware)")
+    sub.add_parser("update-knowledge", help="fetch newer device knowledge from the repository now")
     p = sub.add_parser("sanitize", help="print a log with SSID/MAC/IP/hostnames/keys removed")
     p.add_argument("file")
     p = sub.add_parser("gaps", help="check a log file for lost bursts")
@@ -48,6 +50,18 @@ def main(argv: list[str] | None = None) -> int:
         problems = validate_spec(a.protocol)
         print("\n".join(problems) or "spec OK")
         return 1 if problems else 0
+    if a.cmd == "build-knowledge":
+        from . import knowledge
+        print(knowledge.write_manifest()["version"])
+        return 0
+    if a.cmd == "update-knowledge":
+        from pathlib import Path
+
+        from . import knowledge
+        knowledge.configure(Path(db).parent / "knowledge")
+        res = knowledge.update(s.knowledge_url or knowledge.DEFAULT_URL)
+        print(res["status"], res.get("version") or "", res.get("message") or "")
+        return 1 if res["status"] == "error" else 0
     if a.cmd == "sanitize":
         from .sanitize import sanitize_file
         sanitize_file(a.file)

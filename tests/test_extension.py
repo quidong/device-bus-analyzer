@@ -26,7 +26,7 @@ def live(store):
     sid = store.source("dw", "bshdbus")
     store.ingest_line(sid, raw1(1, 1_000_000, build_frame(0x17, 0x1013, b"\x01")), 1_799_999_990.0)
     store.ingest_line(sid, raw1(2, 2_000_000, build_frame(0x25, 0x2008, bytes([160]) + bytes(7)) + b"\x2a"), 1_800_000_000.0)
-    app = create_app(Settings(admin_email="a@b.de", admin_password="pw-pw-pw-pw", session_secret="s" * 32, api_token="T0K"), store)
+    app = create_app(Settings(admin_email="a@b.de", admin_password="pw-pw-pw-pw", session_secret="s" * 32, api_token="T0K", knowledge_url="https://127.0.0.1:9/none.json"), store)
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]

@@ -277,4 +277,22 @@ mcp_other_note | El servidor se ejecuta localmente con Node (stdio). Ajusta la r
 mcp_local_title | Solo para uso local
 mcp_local | La conexión está pensada para uso local y solo funciona con Claude (Claude Desktop y Claude Code). El analizador no se publica en internet; la extensión se ejecuta en tu ordenador y lee a través de la red local. Otros servicios de IA como ChatGPT no son compatibles.
 copy_cmd | Copiar comando
+kn_link | Conocimiento de dispositivos
+kn_title | Actualizar el conocimiento de dispositivos
+kn_intro | Los hallazgos de protocolo, el catálogo de dispositivos y el firmware recomendado proceden del proyecto de GitHub y se pueden actualizar sin una imagen de contenedor nueva. Los datos grabados no se tocan; la decodificación usa de inmediato el nuevo estado.
+kn_active | Versión activa
+kn_bundled | Incluida en la imagen
+kn_src_update | actualización descargada
+kn_src_bundled | incluida
+kn_last | Última comprobación
+kn_never | nunca
+kn_check | Comprobar ahora
+kn_auto | Comprobar automáticamente cada día
+kn_save | Guardar
+kn_reset | Volver a la versión incluida
+kn_res_updated | Actualizado a
+kn_res_current | Ya está actualizado.
+kn_res_error | Error
+kn_res_needs_app_update | La actualización necesita una versión más nueva de la app (imagen nueva).
+kn_note | Solo se descargan archivos de datos (YAML), se comprueban y se activan solo si todo es válido. El contenedor necesita acceso HTTPS saliente a GitHub.
 """

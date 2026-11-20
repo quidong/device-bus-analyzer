@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// MCP server (stdio) for Claude Desktop. Talks only to the Device Bus Analyzer's read-only HTTP API: every tool is a GET.
+// MCP server (stdio) for Claude Desktop. Talks only to the Device Bus Analyzer's HTTP API: every tool is a GET, except update_knowledge (it asks the analyzer to fetch newer device knowledge from its GitHub project).
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -8,13 +8,13 @@ const BASE = (process.env.DBA_URL || "").replace(/\/+$/, "");
 const TOKEN = process.env.DBA_TOKEN || "";
 const TIMEOUT_MS = 20000;
 
-export async function api(path, params = {}, { base = BASE, token = TOKEN } = {}) {
+export async function api(path, params = {}, { base = BASE, token = TOKEN, method = "GET" } = {}) {
   if (!base || !token) throw new Error("DBA_URL and DBA_TOKEN must be configured in the extension settings");
   const url = new URL(base + path);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== "" && v !== false) url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) });
   const text = await res.text();
   if (!res.ok) throw new Error(`Analyzer answered ${res.status}: ${text.slice(0, 300)}`);
   return JSON.parse(text);
@@ -71,6 +71,14 @@ export function buildServer(call = api) {
     { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/learn`));
   tool("device_state", "Current value of everything taught for a device (door, remaining time ...), as Home Assistant reads it.",
     { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/state`));
+  tool("get_firmware", "The recommended ESPHome firmware for a device: note plus the full text of every file (YAML and header files), as the analyzer's Firmware page shows them. Keys and passwords stay in secrets.yaml.",
+    { source: z.string(), lang: z.enum(["de", "en", "es", "fr", "it"]).default("en") }, ({ source, lang }) => call(`/api/${encodeURIComponent(source)}/firmware`, { lang }));
+  tool("knowledge_status", "Version of the device knowledge (protocol specs, catalogue, firmware) in use, whether it is bundled or a downloaded update, and the last update check.",
+    {}, () => call("/api/knowledge"));
+  server.registerTool("update_knowledge",
+    { description: "Ask the analyzer to check GitHub for newer device knowledge now and activate it if it is valid. Does not touch recorded data and sends nothing to a device. Rate limited to one real check per minute (a repeated call returns the last result with rate_limited true).",
+      inputSchema: {}, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true } },
+    wrap(() => call("/api/knowledge/update", {}, { method: "POST" })));
   return server;
 }
 

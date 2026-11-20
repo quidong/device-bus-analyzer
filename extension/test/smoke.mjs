@@ -16,8 +16,9 @@ const j = (r) => JSON.parse(r.content[0].text);
 const c = await run({ DBA_URL: process.env.DBA_URL, DBA_TOKEN: process.env.DBA_TOKEN });
 const tools = (await c.listTools()).tools;
 assert.deepEqual(tools.map((t) => t.name).sort(),
-  ["command_overview", "command_values", "data_quality", "device_state", "frames", "get_findings", "learn_analysis", "list_markers", "list_runs", "list_sources", "raw_bursts", "timeline"]);
-assert.ok(tools.every((t) => t.annotations?.readOnlyHint === true), "all tools must be read-only");
+  ["command_overview", "command_values", "data_quality", "device_state", "frames", "get_findings", "get_firmware", "knowledge_status", "learn_analysis", "list_markers", "list_runs", "list_sources", "raw_bursts", "timeline", "update_knowledge"]);
+assert.deepEqual(tools.filter((t) => t.annotations?.readOnlyHint !== true).map((t) => t.name), ["update_knowledge"], "only update_knowledge may be non-read-only");
+assert.equal(tools.find((t) => t.name === "update_knowledge").annotations.destructiveHint, false);
 
 assert.equal(j(await c.callTool({ name: "list_sources", arguments: {} }))[0].name, "dw");
 const f = j(await c.callTool({ name: "frames", arguments: { source: "dw", cmd: "2008" } }))[0];
@@ -36,6 +37,14 @@ assert.ok(inRun.length >= 1);
 assert.deepEqual(j(await c.callTool({ name: "device_state", arguments: { source: "dw" } })).fields, []);
 assert.ok(Array.isArray(j(await c.callTool({ name: "list_markers", arguments: { source: "dw" } }))));
 assert.equal(j(await c.callTool({ name: "learn_analysis", arguments: { source: "dw" } })).markers, 0);
+const fw = j(await c.callTool({ name: "get_firmware", arguments: { source: "dw", lang: "de" } }));
+assert.equal(fw.protocol, "bshdbus");
+assert.ok(fw.files[0].name.endsWith(".yaml") && fw.files[0].text.includes("esphome") && fw.note.includes("Mitlesen"));
+const kn = j(await c.callTool({ name: "knowledge_status", arguments: {} }));
+assert.equal(kn.source, "bundled");
+const upd = j(await c.callTool({ name: "update_knowledge", arguments: {} }));
+assert.equal(upd.status, "error");                       // the test analyzer points at an unreachable address: reported, not thrown
+assert.equal(upd.source, "bundled");
 const bad = await c.callTool({ name: "frames", arguments: { source: "nobody" } });
 assert.equal(bad.isError, true);
 assert.match(bad.content[0].text, /404/);

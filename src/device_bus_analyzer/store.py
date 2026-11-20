@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS devices(             -- classification + connection o
   type TEXT, manufacturer TEXT, model TEXT,
   host TEXT, port INTEGER NOT NULL DEFAULT 6053, key TEXT,   -- key: ESPHome API encryption key, never leaves the server
   enabled INTEGER NOT NULL DEFAULT 1, created_ts REAL NOT NULL, updated_ts REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS kv(key TEXT PRIMARY KEY, value TEXT NOT NULL);   -- small app settings (knowledge update state)
 -- Last time the collector held a live connection to the device (an idle appliance sends no telegrams, but is online).
 CREATE TABLE IF NOT EXISTS contact(source_id INTEGER PRIMARY KEY, ts REAL NOT NULL);
 -- Added with the companion mode (again purely additive). Markers are what the person did at the appliance, timed by the server.
@@ -138,6 +139,16 @@ class Store:
         return [dict(r) for r in rows]
 
     # --- devices (classification + connection) ------------------------------------
+    def kv_get(self, key: str, default: str | None = None) -> str | None:
+        with self.lock:
+            r = self.db.execute("SELECT value FROM kv WHERE key=?", (key,)).fetchone()
+        return r["value"] if r else default
+
+    def kv_set(self, key: str, value: str) -> None:
+        with self.lock:
+            self.db.execute("INSERT INTO kv(key, value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, value))
+            self.db.commit()
+
     def touch_contact(self, source_id: int, ts: float | None = None) -> None:
         with self.lock:
             self.db.execute("INSERT INTO contact(source_id, ts) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET ts=excluded.ts",

@@ -70,6 +70,7 @@
 <button id="save" class="primary">{{ t.save }}</button>
 <button type="button" id="dialog-cancel" class="not-wizard">{{ t.cancel }}</button>
 </div></form></dialog>
+<p class="muted foot"><a href="/knowledge">{{ t.kn_link }}</a></p>
 <div id="catalog" hidden data-catalog="{{ catalog|tojson|forceescape }}" data-t="{{ {'new': t.new_device, 'edit': t.edit}|tojson|forceescape }}"></div>
 <script src="/static/devices.js"></script>
 {% endblock %}

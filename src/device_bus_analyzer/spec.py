@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from importlib import resources
 from typing import Any
 
 import yaml
+
+from . import knowledge
 
 STATUS = ("confirmed", "assumed", "unknown")
 
 
 @lru_cache(maxsize=None)
 def load_spec(protocol: str) -> dict[str, Any]:
-    text = resources.files("device_bus_analyzer").joinpath("spec", f"{protocol}.yaml").read_text(encoding="utf-8")
+    text = knowledge.read(f"spec/{protocol}.yaml")
     spec = yaml.safe_load(text)
     spec["_index"] = {c["key"]: c for c in spec.get("commands", [])}
     return spec

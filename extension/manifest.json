@@ -29,7 +29,10 @@
     { "name": "data_quality", "description": "CRC errors, gaps, restarts" },
     { "name": "list_markers", "description": "Companion markers of a device" },
     { "name": "learn_analysis", "description": "Findings derived from the markers" },
-    { "name": "device_state", "description": "Current taught values of a device" }
+    { "name": "device_state", "description": "Current taught values of a device" },
+    { "name": "get_firmware", "description": "Recommended ESPHome firmware files for a device" },
+    { "name": "knowledge_status", "description": "Version of the device knowledge in use" },
+    { "name": "update_knowledge", "description": "Fetch newer device knowledge from GitHub now" }
   ],
   "user_config": {
     "url": {

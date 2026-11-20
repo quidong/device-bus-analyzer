@@ -88,6 +88,15 @@ and `device_state`.
 
 The web interface is available in German, English, Spanish, French and Italian (switcher in the header; the browser language is detected, the choice is remembered).
 
+### Device knowledge updates (no new image needed)
+Protocol specs, the device catalogue and the recommended firmware live in the repository and can be refreshed in a running container:
+**Device knowledge** (link on the start page) checks once a day (switchable) or on demand, and the MCP tool `update_knowledge` does the
+same. Only data files listed in `knowledge-manifest.json` are fetched from GitHub, verified by SHA-256, validated with the normal spec and
+catalogue checks and only then activated; a failed update changes nothing, *Reset* returns to the shipped files. Recorded data is never
+touched and decoding uses the new knowledge at once. Checks are rate limited to one per minute. After changing a spec, the catalogue or a
+firmware file run `dba build-knowledge` (a test fails otherwise). `DBA_KNOWLEDGE_URL` overrides the manifest address. The container needs
+outbound HTTPS to raw.githubusercontent.com. The MCP tool `get_firmware` returns the firmware files of a device.
+
 ## Command line
 
 ```

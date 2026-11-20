@@ -1,0 +1,206 @@
+"""Device knowledge (protocol specs, catalogue, recommended firmware) that can be updated from GitHub without a new container image.
+
+The files ship inside the package, together with ``knowledge-manifest.json`` (version + SHA-256 of every file). An update downloads the
+manifest from the repository, fetches the listed files, verifies the hashes, validates the result with the normal spec and catalogue
+checks and only then makes it active (a directory next to the database; the bundled files stay untouched). Anything that fails leaves
+the previous state in place. Only data files are ever fetched: YAML read with ``safe_load``, never code.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import shutil
+import threading
+import time
+import urllib.request
+from datetime import date
+from importlib import resources
+from pathlib import Path
+from typing import Callable
+
+FORMAT = 1                                   # raised when a spec/catalogue change needs a newer app
+MANIFEST = "knowledge-manifest.json"
+DEFAULT_URL = "https://raw.githubusercontent.com/quidong/device-bus-analyzer/main/src/device_bus_analyzer/" + MANIFEST
+NAME_OK = re.compile(r"^(spec/[a-z0-9_-]+\.yaml|catalog\.yaml|firmware/[A-Za-z0-9][A-Za-z0-9._-]*)$")
+MAX_FILE = 1 << 20
+MIN_INTERVAL = 60                            # seconds between real checks: buttons, the MCP tool and the daily job share this limit
+
+_lock = threading.RLock()
+_dir: Path | None = None                     # <data dir>/knowledge ; None = bundled files only
+
+
+def configure(data_dir: str | Path | None) -> None:
+    global _dir
+    _dir = Path(data_dir) if data_dir else None
+    reload()
+
+
+def reload() -> None:
+    from . import catalog, spec
+    spec.load_spec.cache_clear()
+    catalog._base.cache_clear()
+
+
+def _pkg(rel: str) -> str:
+    return resources.files("device_bus_analyzer").joinpath(rel).read_text(encoding="utf-8")
+
+
+def bundled_manifest() -> dict:
+    return json.loads(_pkg(MANIFEST))
+
+
+def _active_dir() -> Path | None:
+    return _dir / "active" if _dir and (_dir / "active" / MANIFEST).is_file() else None
+
+
+def _vkey(version: str) -> tuple[str, int]:
+    d, _, n = (version or "").partition(".")
+    return d, int(n) if n.isdigit() else 0
+
+
+def active_manifest() -> dict | None:
+    d = _active_dir()
+    if not d:
+        return None
+    try:
+        m = json.loads((d / MANIFEST).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return m if _vkey(m.get("version", "")) > _vkey(bundled_manifest().get("version", "")) else None   # a newer image wins over an old update
+
+
+def read(rel: str) -> str:
+    """A knowledge file: the active update if there is one and it has the file, else the packaged copy."""
+    with _lock:
+        if active_manifest() and rel in active_manifest().get("files", {}):
+            try:
+                return (_active_dir() / rel).read_text(encoding="utf-8")
+            except OSError:
+                pass
+    return _pkg(rel)
+
+
+def info() -> dict:
+    b, a = bundled_manifest(), active_manifest()
+    return {"bundled": b["version"], "active": (a or b)["version"], "source": "update" if a else "bundled", "format": FORMAT}
+
+
+# --- building the manifest (repository side) ---------------------------------------------------------------------------
+def knowledge_files() -> list[str]:
+    root = resources.files("device_bus_analyzer")
+    names = [f"spec/{p.name}" for p in root.joinpath("spec").iterdir() if p.name.endswith(".yaml")]
+    names += [f"firmware/{p.name}" for p in root.joinpath("firmware").iterdir() if p.is_file()]
+    return sorted(names + ["catalog.yaml"])
+
+
+def _digest(files: dict[str, str]) -> str:
+    return hashlib.sha256("\n".join(f"{k} {v}" for k, v in sorted(files.items())).encode()).hexdigest()[:16]
+
+
+def build_manifest(previous: dict | None = None, today: str | None = None) -> dict:
+    files = {n: hashlib.sha256(_pkg(n).encode("utf-8")).hexdigest() for n in knowledge_files()}
+    rev = _digest(files)
+    if previous and previous.get("revision") == rev and previous.get("format") == FORMAT:
+        return previous
+    today = today or date.today().isoformat()
+    d, n = _vkey((previous or {}).get("version", ""))
+    return {"format": FORMAT, "version": f"{today}.{n + 1 if d == today else 1}", "revision": rev, "files": files}
+
+
+def write_manifest() -> dict:
+    path = Path(str(resources.files("device_bus_analyzer").joinpath(MANIFEST)))
+    prev = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+    m = build_manifest(prev)
+    path.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return m
+
+
+# --- updating (installation side) --------------------------------------------------------------------------------------
+Fetch = Callable[[str], bytes]
+
+
+def http_fetch(url: str) -> bytes:
+    if not url.startswith("https://"):
+        raise ValueError("only https is allowed")
+    req = urllib.request.Request(url, headers={"User-Agent": "device-bus-analyzer"})
+    with urllib.request.urlopen(req, timeout=15) as r:           # noqa: S310  (scheme checked above)
+        data = r.read(MAX_FILE + 1)
+    if len(data) > MAX_FILE:
+        raise ValueError("file too large")
+    return data
+
+
+def _problems() -> list[str]:
+    from . import catalog, protocols, spec
+    out = []
+    for p in protocols.PROTOCOLS:
+        try:
+            out += [f"{p}: {x}" for x in spec.validate_spec(p)]
+        except Exception as exc:                                  # missing file, broken YAML ...
+            out.append(f"{p}: {exc}")
+    try:
+        out += catalog.validate_catalog()
+    except Exception as exc:
+        out.append(f"catalog: {exc}")
+    return out
+
+
+def update(url: str = DEFAULT_URL, fetch: Fetch = http_fetch) -> dict:
+    """Check for newer knowledge and activate it. Returns {'status': updated|current|needs_app_update|error, 'version', 'message'}."""
+    from . import protocols
+    with _lock:
+        if _dir is None:
+            return {"status": "error", "version": None, "message": "no data directory"}
+        try:
+            remote = json.loads(fetch(url).decode("utf-8"))
+            files = remote["files"]
+            if remote.get("format", 0) > FORMAT:
+                return {"status": "needs_app_update", "version": remote.get("version"), "message": "newer format"}
+            cur = info()["active"]
+            if _vkey(remote["version"]) <= _vkey(cur):
+                return {"status": "current", "version": cur, "message": ""}
+            need = {f"spec/{p}.yaml" for p in protocols.PROTOCOLS} | {"catalog.yaml"}
+            if not need <= set(files) or not all(NAME_OK.match(n) and re.fullmatch(r"[0-9a-f]{64}", h) for n, h in files.items()):
+                return {"status": "error", "version": remote["version"], "message": "manifest incomplete or invalid"}
+            base = url.rsplit("/", 1)[0] + "/"
+            stage = _dir / "staging"
+            shutil.rmtree(stage, ignore_errors=True)
+            for name, want in files.items():
+                data = fetch(base + name)
+                if hashlib.sha256(data).hexdigest() != want:
+                    shutil.rmtree(stage, ignore_errors=True)
+                    return {"status": "error", "version": remote["version"], "message": f"checksum mismatch: {name}"}
+                (stage / name).parent.mkdir(parents=True, exist_ok=True)
+                (stage / name).write_bytes(data)
+            (stage / MANIFEST).write_text(json.dumps(remote, indent=2, sort_keys=True), encoding="utf-8")
+            active, previous = _dir / "active", _dir / "previous"
+            shutil.rmtree(previous, ignore_errors=True)
+            if active.exists():
+                active.rename(previous)
+            stage.rename(active)
+            reload()
+            bad = _problems()
+            if bad:                                               # roll back: the previous state stays in place
+                shutil.rmtree(active, ignore_errors=True)
+                if previous.exists():
+                    previous.rename(active)
+                reload()
+                return {"status": "error", "version": remote["version"], "message": "validation failed: " + "; ".join(bad[:3])}
+            shutil.rmtree(previous, ignore_errors=True)
+            return {"status": "updated", "version": remote["version"], "message": ""}
+        except Exception as exc:
+            shutil.rmtree(_dir / "staging", ignore_errors=True)
+            return {"status": "error", "version": None, "message": str(exc)[:200]}
+
+
+def reset() -> None:
+    """Back to the packaged knowledge (removes the downloaded update)."""
+    with _lock:
+        if _dir:
+            shutil.rmtree(_dir / "active", ignore_errors=True)
+        reload()
+
+
+def now() -> float:
+    return time.time()

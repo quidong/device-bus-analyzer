@@ -2,21 +2,28 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from importlib import resources
 from typing import Any
 
 import yaml
 
-from . import i18n, protocols
+from . import i18n, knowledge, protocols
 
 
 @lru_cache(maxsize=None)
 def _base() -> dict[str, Any]:
-    return yaml.safe_load(resources.files("device_bus_analyzer").joinpath("catalog.yaml").read_text(encoding="utf-8"))
+    return yaml.safe_load(knowledge.read("catalog.yaml"))
 
 
-def _fw_dir():
-    return resources.files("device_bus_analyzer").joinpath("firmware")
+def _fw_text(name: str) -> str:
+    return knowledge.read(f"firmware/{name}")
+
+
+def _fw_exists(name: str) -> bool:
+    try:
+        _fw_text(name)
+        return True
+    except (OSError, FileNotFoundError):
+        return False
 
 
 def firmware_names() -> set[str]:
@@ -38,7 +45,7 @@ def validate_catalog() -> list[str]:
             problems.append(f"manufacturer {mid}: no firmware profile for protocol {m.get('protocol')!r}")
     for proto, prof in cat.get("firmware", {}).items():
         for f in prof.get("files", []):
-            if "/" in f or not _fw_dir().joinpath(f).is_file():
+            if "/" in f or not _fw_exists(f):
                 problems.append(f"firmware {proto}: file {f!r} missing")
         for lang in i18n.LANGS:
             if not prof.get("note", {}).get(lang):
@@ -106,11 +113,11 @@ def firmware_profile(protocol: str, lang: str = "en") -> dict[str, Any] | None:
     prof = _base().get("firmware", {}).get(protocol)
     if not prof:
         return None
-    files = [{"name": f, "text": _fw_dir().joinpath(f).read_text(encoding="utf-8"), "kind": "yaml" if f.endswith((".yaml", ".yml")) else "code"}
+    files = [{"name": f, "text": _fw_text(f), "kind": "yaml" if f.endswith((".yaml", ".yml")) else "code"}
              for f in prof.get("files", [])]
     note = prof.get("note", {})
     return {"files": files, "note": note.get(lang) or note.get("en") or ""}
 
 
 def firmware_file(name: str) -> str | None:
-    return _fw_dir().joinpath(name).read_text(encoding="utf-8") if name in firmware_names() else None
+    return _fw_text(name) if name in firmware_names() else None

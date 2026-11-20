@@ -1,11 +1,13 @@
 """FastAPI application: GET-only JSON API (/api) and HTML frontend. Nothing here can write to a device."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import secrets
 import shutil
+import threading
 import tempfile
 import time
 from collections import Counter
@@ -23,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import __version__, analysis, catalog, i18n, learned, protocols
 from . import contribution as contribution_mod
-from . import homeassistant
+from . import homeassistant, knowledge
 from .auth import COOKIE, CSRF_COOKIE, Auth
 from .config import Settings, validate_device_input
 from .spec import load_spec
@@ -80,11 +82,36 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     if created:
         log.info("devices imported from the environment: %s", ", ".join(created))
 
+    knowledge.configure(Path(settings.db_path).parent / "knowledge" if settings.db_path != ":memory:" else None)
+
+    knowledge_gate = threading.Lock()
+
+    def knowledge_check() -> dict:
+        """One real check at most every knowledge.MIN_INTERVAL seconds; more often the last result is returned with rate_limited=True."""
+        with knowledge_gate:
+            last = json.loads(store.kv_get("knowledge_check", "null") or "null")
+            if last and time.time() - last["ts"] < knowledge.MIN_INTERVAL:
+                return {**{k: v for k, v in last.items() if k != "ts"}, "rate_limited": True}
+            res = knowledge.update(settings.knowledge_url or knowledge.DEFAULT_URL)
+            store.kv_set("knowledge_check", json.dumps({"ts": time.time(), **res}))
+            return res
+
+    async def knowledge_loop() -> None:
+        """Once a day (and shortly after start) look for newer device knowledge, unless the person turned that off."""
+        await asyncio.sleep(90)
+        while True:
+            if store.kv_get("knowledge_auto", "1") == "1":
+                await asyncio.get_running_loop().run_in_executor(None, knowledge_check)
+            await asyncio.sleep(24 * 3600)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        task = asyncio.create_task(knowledge_loop()) if start_collectors else None
         if start_collectors:
             manager.sync()
         yield
+        if task:
+            task.cancel()
         manager.stop()
 
     app = FastAPI(title="Device Bus Analyzer", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
@@ -442,6 +469,34 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             shutil.rmtree(tmp, ignore_errors=True)
         return RedirectResponse("/backup?msg=restored", status_code=303)
 
+    # --- device knowledge: specs, catalogue and firmware, updatable from GitHub without a new image ----------------------
+    def knowledge_state() -> dict:
+        last = json.loads(store.kv_get("knowledge_check", "null") or "null")
+        return {**knowledge.info(), "auto": store.kv_get("knowledge_auto", "1") == "1", "last": last}
+
+    @app.get("/knowledge", response_class=HTMLResponse, dependencies=[cfg])
+    def knowledge_page(request: Request):
+        return page(request, "knowledge.html", k=knowledge_state(), when=lambda ts: datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d %H:%M"))
+
+    @app.post("/knowledge/check")
+    async def knowledge_now(request: Request, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        await asyncio.get_running_loop().run_in_executor(None, knowledge_check)
+        return RedirectResponse("/knowledge", status_code=303)
+
+    @app.post("/knowledge/auto")
+    async def knowledge_auto(request: Request, csrf: str = Form(...), on: str = Form("")):
+        need_session_csrf(request, csrf)
+        store.kv_set("knowledge_auto", "1" if on == "1" else "0")
+        return RedirectResponse("/knowledge", status_code=303)
+
+    @app.post("/knowledge/reset")
+    async def knowledge_reset(request: Request, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        knowledge.reset()
+        store.kv_set("knowledge_check", "null")
+        return RedirectResponse("/knowledge", status_code=303)
+
     @app.get("/mcp", response_class=HTMLResponse, dependencies=[cfg])
     def mcp_page(request: Request):
         """How to connect Claude: extension download, this installation's address and the API token (session only)."""
@@ -684,6 +739,27 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         fields = homeassistant.state_fields(store, source)
         base = str(request.base_url).rstrip("/")
         return page(request, "homeassistant.html", src=src, fields=fields, yaml_text=homeassistant.render_yaml(source, base, fields))
+
+    @app.get("/api/knowledge", dependencies=[api])
+    def api_knowledge():
+        """Version of the device knowledge in use and the result of the last update check."""
+        return knowledge_state()
+
+    @app.post("/api/knowledge/update", dependencies=[api])
+    async def api_knowledge_update():
+        """Check GitHub for newer device knowledge now (the MCP server calls this; session or API token). Protected by a rate limit, not by
+        a stricter login: it only fetches the configured repository, activates validated data files and runs at most once a minute."""
+        res = await asyncio.get_running_loop().run_in_executor(None, knowledge_check)
+        return {**res, **knowledge.info()}
+
+    @app.get("/api/{source}/firmware", dependencies=[api])
+    def api_firmware(source: str, lang: str = "en"):
+        """The recommended ESPHome files for this device's protocol (the same files the Firmware page shows), with the current knowledge version."""
+        src = source_or_404(source)
+        prof = catalog.firmware_profile(src["protocol"], lang if lang in i18n.STR else "en")
+        if not prof:
+            raise HTTPException(404, "no firmware profile for this protocol")
+        return {"source": source, "protocol": src["protocol"], "knowledge": knowledge.info()["active"], **prof}
 
     @app.get("/api/{source}/markers", dependencies=[api])
     def api_markers(source: str, limit: int = 500):

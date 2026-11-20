@@ -192,7 +192,7 @@ def test_controls_are_valid_and_localised():
 
 def test_new_i18n_keys_exist_in_both_languages():
     assert set(i18n.STR["de"]) == set(i18n.STR["en"])
-    root = open(str(catalog.resources.files("device_bus_analyzer").joinpath("templates/companion.html")), encoding="utf-8").read()
+    root = open(str(__import__("importlib.resources", fromlist=["files"]).files("device_bus_analyzer").joinpath("templates/companion.html")), encoding="utf-8").read()
     for k in set(re.findall(r"\bt\.(\w+)", root)):
         assert k in i18n.STR["de"], k
 
