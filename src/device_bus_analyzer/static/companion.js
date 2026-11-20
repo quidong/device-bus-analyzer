@@ -69,32 +69,39 @@
     b.appendChild(s); b.appendChild(n); b.addEventListener("click", function () { start(g); });
     $("cp-scripts").appendChild(b);
   });
-  function show(step) { $("cp-main").hidden = !!step; $("cp-step").hidden = step !== "step"; $("cp-end").hidden = step !== "end"; }
+  function show(step) { $("cp-lead").hidden = $("cp-tip").hidden = !!step; $("cp-main").hidden = !!step; $("cp-step").hidden = step !== "step"; $("cp-end").hidden = step !== "end"; }
   function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
   function start(g) {
     run = { g: g, i: 0, group: Date.now().toString(36), marker: null, since: 0 };
-    render();
+    idle();
   }
   function current() { return run.g.steps[run.i % run.g.steps.length]; }
-  function render() {
-    stopPoll(); show("step");
-    var total = run.g.steps.length * run.g.repeat, st = current(), ev = events[st.event];
-    $("cp-progress").textContent = fill(T.step, [run.i + 1, total]) + " · " + fill(T.round, [Math.floor(run.i / run.g.steps.length) + 1]);
-    $("cp-text").textContent = st.text;
-    $("cp-hint").hidden = true; $("cp-note-wrap").hidden = true; $("cp-note").value = "";
-    $("cp-go").hidden = false; $("cp-done").hidden = true; run.marker = null;
-    if (st.ask) { $("cp-note-label").textContent = T.note_label; }
+  // First screen of a run: only "Go". After it every step shows its instruction straight away and ends with "Done"
+  // (the Done of one step starts the next one), so "Go" is tapped once per run, not once per step.
+  function idle() {
+    stopPoll(); show("step"); run.marker = null;
+    $("cp-progress").hidden = true; $("cp-text").hidden = true; $("cp-hint").hidden = true; $("cp-note-wrap").hidden = true;
+    $("cp-go").hidden = false; $("cp-done").hidden = true;
   }
-  $("cp-go").addEventListener("click", function () {
-    var st = current();
+  function beginStep() {
+    var st = current(), total = run.g.steps.length * run.g.repeat;
+    stopPoll(); show("step");
+    $("cp-go").hidden = true; $("cp-done").hidden = true;
+    $("cp-progress").hidden = false; $("cp-progress").textContent = fill(T.step, [run.i + 1, total]) + " \u00b7 " + fill(T.round, [Math.floor(run.i / run.g.steps.length) + 1]);
+    $("cp-text").hidden = false; $("cp-text").textContent = st.text + " \u2014 " + T.doing;
+    $("cp-note").value = ""; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
+    if (st.ask) { $("cp-note-label").textContent = T.note_label; }
+    var me = run;
     post(base + "/markers", { kind: st.event, menu: menuValue(), step_group: run.group }).then(function (m) {
+      if (run !== me) { return; }                                         // aborted meanwhile
       run.marker = m.id; run.since = m.ts; remember(m);
-      $("cp-go").hidden = true; $("cp-done").hidden = false; $("cp-text").textContent = st.text + " — " + T.doing;
+      $("cp-done").hidden = false;
       if (st.ask) { $("cp-note-wrap").hidden = false; $("cp-note").value = events[st.event].by_note ? lastNote : ""; }
       $("cp-hint").hidden = false; $("cp-hint").textContent = "";
       poll = setInterval(hint, 2500);
     }, fail);
-  });
+  }
+  $("cp-go").addEventListener("click", beginStep);
   function hint() {
     if (!run || !run.marker) { return; }
     fetch(base + "/activity?since=" + run.since, { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (a) {
@@ -109,7 +116,7 @@
     post(base + "/markers/" + run.marker + "/end", { note: note }).then(function (m) {
       recent = recent.map(function (r) { return r.id === m.id ? m : r; }); renderList();
       run.i += 1;
-      if (run.i >= run.g.steps.length * run.g.repeat) { run = null; $("cp-end-text").textContent = T.finished; show("end"); } else { render(); }
+      if (run.i >= run.g.steps.length * run.g.repeat) { run = null; $("cp-end-text").textContent = T.finished; show("end"); } else { beginStep(); }
     }, fail);
   });
   $("cp-abort").addEventListener("click", function () {

@@ -59,11 +59,16 @@ def test_guided_run_and_pages_without_overflow(server, width):
         assert kinds == ["start", "program"] and store.markers("dw")[0]["menu"] == "Main menu"
         # guided door check: 3 rounds x (open, close)
         pg.click("#cp-scripts button:has-text('Open and close the door')")
-        for i in range(6):
-            assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-done")
-            pg.click("#cp-go"); pg.wait_for_selector("#cp-done:visible"); pg.click("#cp-done")
+        assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-done") and not pg.is_visible("#cp-text")      # first screen: only "Go", no instruction
+        assert not pg.is_visible("#cp-lead")
+        pg.click("#cp-go")
+        for i in range(6):                                          # "Go" once; every step then shows its instruction and "Done"
+            pg.wait_for_selector("#cp-done:visible")
+            assert pg.is_visible("#cp-text") and not pg.is_visible("#cp-go")
+            assert ("Open the door" if i % 2 == 0 else "Close the door") in pg.inner_text("#cp-text")
+            pg.click("#cp-done")
             if i < 5:
-                pg.wait_for_selector("#cp-go:visible")
+                pg.wait_for_selector("#cp-progress:has-text('Step %d of')" % (i + 2))
         pg.wait_for_selector("#cp-end:visible")
         done = store.markers("dw")[2:]
         assert [m["kind"] for m in done] == ["door_open", "door_close"] * 3 and all(m["ts_end"] and m["step_group"] for m in done)
