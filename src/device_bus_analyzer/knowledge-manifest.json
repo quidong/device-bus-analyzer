@@ -1,6 +1,6 @@
 {
   "files": {
-    "catalog.yaml": "42cee2833107f891caf0875ad64caf1ca248c74c232eb02e69bea927636dcae7",
+    "catalog.yaml": "10ff452625d9008d21fbc8e7a27525d042cea3d19155b284061f25991f4efec3",
     "firmware/bshdbus-analysis.example.yaml": "41810ae6e7404dc6bf1fdb7d17cc1934b513d46e3e52da4c62eef7a75ab17e49",
     "firmware/macs-analysis.example.yaml": "08671d81f8a4498e14f77ff67b2a924d3785be20719c70d949749f98ff3c607b",
     "firmware/macs_recorder.h": "06110ab41c7e2aab73c02f89bdc3e6ec7e6d668b138ad80eec788a7f0192148d",
@@ -8,6 +8,6 @@
     "spec/macs.yaml": "2096000d7aaa74e1fc7e6f562efcfe0a2eaa9fec621558ce263ca12e9454918a"
   },
   "format": 1,
-  "revision": "99b894b2c1ab7e91",
-  "version": "2026-11-20.2"
+  "revision": "0f8010677a710f46",
+  "version": "2026-11-20.3"
 }

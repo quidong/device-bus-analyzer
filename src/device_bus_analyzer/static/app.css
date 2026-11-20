@@ -137,3 +137,21 @@ details summary{cursor:pointer;margin:8px 0}
 dl .now{grid-column:1/-1}
 .onboarding .checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}.onboarding .done{color:var(--mut)}.onboarding .todo{font-weight:600}
 .right a{color:var(--mut);text-decoration:none;font-size:14px}.right a:hover{color:var(--fg)}
+
+/* account menu, language select, uniform buttons */
+.usermenu{margin-left:auto;position:relative}.usermenu>summary{list-style:none;cursor:pointer;display:flex;align-items:center;min-height:44px}.usermenu>summary::-webkit-details-marker{display:none}
+.avatar{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--acc-soft);color:var(--acc-ink);font-weight:700}
+.usermenu[open]>summary .avatar,.usermenu>summary:hover .avatar{box-shadow:0 0 0 2px var(--acc)}
+.pop.menu{position:absolute;right:0;top:48px;z-index:30;min-width:230px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.menu .who{padding:8px 12px;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--line);margin-bottom:4px}
+.menu a,.menu .menu-item{display:flex;align-items:center;min-height:44px;padding:0 12px;color:var(--fg);text-decoration:none;border:0;background:transparent;border-radius:8px;width:100%;text-align:left;justify-content:flex-start;font-weight:400}
+.menu a:hover,.menu .menu-item:hover{background:var(--acc-soft)}.menu form{margin:0;border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 12px;font-size:14px}
+select.langsel{min-height:36px;padding:0 8px}
+.top>.right{margin-left:auto}
+details.more{position:relative;display:inline-block}details.more>summary{list-style:none;cursor:pointer}details.more>summary::-webkit-details-marker{display:none}
+details.more .pop{position:absolute;right:0;bottom:48px;z-index:15;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.actions .btn,.actions button{min-height:44px}
+.menu a.danger-item{color:var(--bad)}
+.bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden;max-width:420px}.bar span{display:block;height:100%;width:0;background:var(--acc);transition:width .3s linear}

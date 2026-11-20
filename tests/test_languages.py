@@ -39,8 +39,8 @@ def test_pages_render_in_the_new_languages_and_the_switcher_lists_all(client, la
     login(client)
     html = client.get("/devices", params={"lang": lang}).text
     assert i18n.STR[lang]["devices_title"] in html and i18n.STR[lang]["help_link"] in html
-    for code in ("DE", "EN", "ES", "FR", "IT"):
-        assert f">{code}</a>" in html
-    assert f'?lang={lang}" class="on"' in html
+    for name in ("Deutsch", "English", "Español", "Français", "Italiano"):
+        assert f">{name}</option>" in html
+    assert f'<option value="{lang}" selected>' in html
     assert word in client.get("/s/dw/frames", params={"lang": lang}).text
     assert i18n.STR[lang]["cp_title"] in client.get("/s/dw/companion", params={"lang": lang}).text

@@ -320,4 +320,12 @@ kn_sig_on | Gli aggiornamenti devono essere firmati con la chiave del progetto (
 kn_sig_off | non imposta: solo checksum via HTTPS
 cp_rest | Non toccare nulla: si misura il rumore proprio dell'apparecchio.
 cp_wait | Ancora {} s
+account | Account e impostazioni
+language | Lingua
+live_note | Si aggiorna automaticamente
+cp_check | Verifica guidata: {}
+cp_waiting | Attendi: non toccare nulla
+cp_phase_rest | Misura a riposo
+cp_manual | Segna manualmente
+cp_manual_hint | Per osservazioni libere sull'apparecchio. Suggerimento: lascia l'apparecchio a riposo per circa due minuti prima, così l'analisi sa quali valori cambiano da soli.
 """

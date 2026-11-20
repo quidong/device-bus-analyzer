@@ -1,9 +1,9 @@
 {% extends "base.html" %}{% import "_macros.html" as m %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
 <h1>{{ src.name }} · {{ t.commands }}</h1>
-{% if not stats %}<p>{{ t.no_data }}</p>{% else %}
+<div data-live="commands" data-live-every="10">{% if not stats %}<p>{{ t.no_data }}</p>{% else %}
 <div class="tbl"><table class="stack"><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.count }}</th><th>{{ t.distinct }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th><th>{{ t.sender }}</th><th>{{ t.status }}</th><th>{{ t.decoded }}</th></tr>
 {% for r in stats %}<tr><td data-label="{{ t.dest }}/{{ t.cmd }}"><a href="?ds={{ '%02x' % r.ds }}&cmd={{ '%04x' % r.cmd }}">{{ '%02x' % r.ds }}/{{ '%04x' % r.cmd }}</a></td><td data-label="{{ t.count }}">{{ r.n }}</td><td data-label="{{ t.distinct }}">{{ r.distinct_values }}</td><td data-label="{{ t.first }}">{{ fmt(r.first_ts) }}</td><td data-label="{{ t.last }}">{{ fmt(r.last_ts) }}</td>
-<td data-label="{{ t.sender }}">{{ m.who(r.decoded.sender, t) }}</td><td data-label="{{ t.status }}">{{ m.badge(r.decoded.status, t) }}</td><td data-label="{{ t.decoded }}">{{ r.decoded.title or '' }}</td></tr>{% endfor %}</table></div>{% endif %}
+<td data-label="{{ t.sender }}">{{ m.who(r.decoded.sender, t) }}</td><td data-label="{{ t.status }}">{{ m.badge(r.decoded.status, t) }}</td><td data-label="{{ t.decoded }}">{{ r.decoded.title or '' }}</td></tr>{% endfor %}</table></div>{% endif %}</div>
 {% if values %}<h2>{{ sel[0] }}/{{ sel[1] }} · {{ t.values }}</h2>
 <div class="tbl"><table class="stack"><tr><th>{{ t.data }}</th><th>{{ t.count }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th></tr>
 {% for v in values %}<tr><td class="mono wide" data-label="{{ t.data }}">{{ hexs(v.data) }}</td><td data-label="{{ t.count }}">{{ v.n }}</td><td data-label="{{ t.first }}">{{ fmt(v.first_ts) }}</td><td data-label="{{ t.last }}">{{ fmt(v.last_ts) }}</td></tr>{% endfor %}</table></div>{% endif %}

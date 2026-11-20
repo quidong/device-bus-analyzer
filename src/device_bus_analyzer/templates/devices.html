@@ -5,30 +5,32 @@
 {% elif kind == 'dryer' %}<circle cx="13" cy="14" r="6" stroke="currentColor" stroke-width="1.8"/><circle cx="7" cy="7" r="1" fill="currentColor"/>
 {% else %}<path d="M8 13h10M8 9h10M8 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>{% endif %}</svg>{% endmacro %}
 {% block body %}
-<div class="pagehead"><h1>{{ t.devices_title }}</h1><a class="btn soft" href="/mcp">{{ t.mcp_link }}</a> <button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
+<div class="pagehead"><h1>{{ t.devices_title }}</h1><button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
 <p class="lead">{{ t.dev_note }}</p>
 {% if error %}<p class="err" role="alert">{{ t[error] }}</p>{% endif %}
-{% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {{ t['onb_' ~ key] }}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}
-<div class="cards">
+{% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks" data-live="onboarding">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {{ t['onb_' ~ key] }}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}
+<div class="cards" data-live-keys="{{ devices|map(attribute='name')|join(',') }}">
 {% for d in devices %}<article class="dev">
 <div class="head"><div class="tile">{{ tile(d.type) }}</div>
 <div><div class="name">{{ d.name }}</div>
 <div class="sub">{% if d.type or d.manufacturer %}{% if d.type %}{{ catalog.types[d.type][lang] if d.type in catalog.types else d.type }}{% endif %}{% if d.manufacturer or d.model %} · {{ d.manufacturer or '' }} {{ d.model or '' }}{% endif %}{% else %}{{ t.unclassified }}{% endif %}</div></div>
-<span class="badge b-{{ d.state }}">{{ t['st_' ~ d.state] }}</span></div>
+<span data-live="state-{{ d.name }}"><span class="badge b-{{ d.state }}">{{ t['st_' ~ d.state] }}</span></span></div>
 {% if not d.type or not d.manufacturer %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
-<dl><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
+<dl data-live="values-{{ d.name }}"><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
 <div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
 <div><dt>{{ t.frames }}</dt><dd><b>{{ d.frames }}</b></dd></div>
 <div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div>
 {% if d.now %}<div class="now"><dt>{{ t.state_now }}</dt><dd>{% for x in d.now %}<span class="tag learned">{{ x }}</span> {% endfor %}</dd></div>{% endif %}</dl>
 <div class="actions">
 <a class="btn primary" href="/s/{{ d.name }}/companion">{{ t.companion }}</a>
-<a class="btn soft" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
-{% if d.now %}<a class="btn soft" href="/s/{{ d.name }}/homeassistant">{{ t.ha_title }}</a>{% endif %}
-<a class="btn" href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
+<a class="btn" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
+{% if d.now %}<a class="btn" href="/s/{{ d.name }}/homeassistant">{{ t.ha_title }}</a>{% endif %}
 <button type="button" class="edit-device" {{ editdata(d) }}>{{ t.edit }}</button>
-{% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button>{{ t.pause if d.enabled else t.resume }}</button></form>{% endif %}
-<a class="btn dangerlink" href="/devices/{{ d.name }}/delete">{{ t.delete }}</a></div>
+<details class="more"><summary class="btn" aria-label="{{ t.more }}" title="{{ t.more }}">&#8943;</summary><div class="pop menu">
+<a href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
+{% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button class="menu-item">{{ t.pause if d.enabled else t.resume }}</button></form>{% endif %}
+<a class="danger-item" href="/devices/{{ d.name }}/delete">{{ t.delete }}</a></div></details>
+</div>
 </article>{% endfor %}
 <button type="button" class="dev add" id="add-tile"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 5v18M5 14h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><strong>{{ t.new_device }}</strong><span class="fld">{{ t.device_type }}, {{ t.manufacturer }}, {{ t.model }}, {{ t.connection }}</span></button>
 </div>
@@ -70,7 +72,6 @@
 <button id="save" class="primary">{{ t.save }}</button>
 <button type="button" id="dialog-cancel" class="not-wizard">{{ t.cancel }}</button>
 </div></form></dialog>
-<p class="muted foot"><a href="/knowledge">{{ t.kn_link }}</a> · <a href="/tls">{{ t.tls_link }}</a></p>
 <div id="catalog" hidden data-catalog="{{ catalog|tojson|forceescape }}" data-t="{{ {'new': t.new_device, 'edit': t.edit}|tojson|forceescape }}"></div>
 <script src="/static/devices.js"></script>
 {% endblock %}

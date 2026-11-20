@@ -4,7 +4,7 @@ Meant for a trusted home network. Do not publish the analyzer through a reverse 
 
 ## What protects what
 - **Login:** one admin from the environment, argon2id, signed session cookie (HttpOnly, SameSite=Strict), CSRF token on every state-changing form, rate limit per address. Sign-out revokes the session cookie.
-- **API token:** read-only access to recordings (plus the rate-limited knowledge update). Guessing is throttled like password guessing. Use 16+ random characters; `SESSION_SECRET` needs 32+ (below 16 the app refuses to start).
+- **API token:** read-only access to recordings (plus the rate-limited knowledge update). Guessing is throttled like password guessing. Both are created on the first start (random, kept in the data volume as `secrets.json`, mode 600) unless the environment sets them; environment values are adopted and win. Own values: 16+ random characters for the token, `SESSION_SECRET` 32+ (below 16 the app refuses to start).
 - **Configuration, deletion, backup, restore, device keys** need a real login session, never only the API token.
 - **Nothing is sent to appliances.** The collector only connects and subscribes to the ESPHome log stream.
 - **Browser:** strict CSP (no inline scripts), no `innerHTML` in the scripts, `frame-ancestors 'none'`, `no-store`, `nosniff`, no referrer.

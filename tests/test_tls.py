@@ -123,3 +123,60 @@ def test_node_extension_trusts_only_the_analyzers_own_ca(tls_server):
     r = subprocess.run(["node", "test/tls.mjs"], cwd=ext, capture_output=True, text=True, timeout=60,
                        env={**os.environ, "DBA_URL": f"https://127.0.0.1:{port}", "DBA_TOKEN": "tok-123456789012345", "DBA_CA": f.ca})
     assert r.returncode == 0 and "tls OK" in r.stdout, r.stdout + r.stderr
+
+
+# --- secrets created on the first start ---------------------------------------------------------------------
+def test_secrets_are_created_once_and_kept(tmp_path):
+    s = Settings(admin_email=MAIL, db_path=str(tmp_path / "bus.sqlite"))
+    config.ensure_secrets(s)
+    assert len(s.session_secret) >= 32 and len(s.api_token) >= 16
+    f = tmp_path / "secrets.json"
+    assert f.stat().st_mode & 0o777 == 0o600
+    again = config.ensure_secrets(Settings(admin_email=MAIL, db_path=str(tmp_path / "bus.sqlite")))
+    assert (again.session_secret, again.api_token) == (s.session_secret, s.api_token)         # a restart keeps sessions and the token valid
+
+
+def test_secrets_from_the_stack_are_adopted_and_win(tmp_path):
+    import json
+    db = str(tmp_path / "bus.sqlite")
+    s = config.ensure_secrets(Settings(admin_email=MAIL, db_path=db, session_secret="e" * 40, api_token="old-token-from-yaml-123"))
+    assert (s.session_secret, s.api_token) == ("e" * 40, "old-token-from-yaml-123")
+    assert json.loads((tmp_path / "secrets.json").read_text()) == {"session_secret": "e" * 40, "api_token": "old-token-from-yaml-123"}
+    gone = config.ensure_secrets(Settings(admin_email=MAIL, db_path=db))                       # the lines were removed from the YAML later
+    assert (gone.session_secret, gone.api_token) == ("e" * 40, "old-token-from-yaml-123")      # same values: nothing breaks
+    changed = config.ensure_secrets(Settings(admin_email=MAIL, db_path=db, api_token="new-token-from-yaml-4567"))
+    assert changed.api_token == "new-token-from-yaml-4567" and changed.session_secret == "e" * 40
+    assert config.ensure_secrets(Settings(admin_email=MAIL, db_path=db)).api_token == "new-token-from-yaml-4567"
+
+
+def test_unwritable_data_directory_keeps_the_old_behaviour(tmp_path):
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    s = config.ensure_secrets(Settings(admin_email=MAIL, db_path=str(blocker / "sub" / "bus.sqlite")))
+    assert s.session_secret == "" and s.api_token == ""
+
+
+def test_mcp_page_shows_the_generated_token(tmp_path):
+    from fastapi.testclient import TestClient
+    store = Store(tmp_path / "m.sqlite")
+    s = config.ensure_secrets(Settings(admin_email=MAIL, admin_password=PW, db_path=str(tmp_path / "m.sqlite")))
+    c = TestClient(create_app(s, store), follow_redirects=False)
+    login(c)
+    assert s.api_token in c.get("/mcp").text
+
+
+# --- header menu and live regions ---------------------------------------------------------------------------
+def test_header_has_account_menu_with_language_select_and_pages_are_live(tmp_path):
+    from fastapi.testclient import TestClient
+    store = Store(tmp_path / "h.sqlite")
+    store.source("dw", "bshdbus")
+    store.save_device("dw", "bshdbus", "dishwasher", "Neff", "S413K60S0E", None)
+    c = TestClient(create_app(Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32, api_token="tok-1234567890abcdef"), store), follow_redirects=False)
+    login(c)
+    html = c.get("/devices").text
+    assert 'class="usermenu"' in html and "data-lang-select" in html and "?lang=" not in html.split("</header>")[0]
+    for href in ("/help", "/mcp", "/knowledge", "/tls", "/backup"):
+        assert f'href="{href}"' in html.split("</header>")[0]
+    assert 'data-live="state-dw"' in html and 'data-live="values-dw"' in html and "data-live-keys=" in html
+    assert 'data-live="runs"' in c.get("/s/dw/runs").text
+    assert c.get("/static/ui.js").status_code == 200

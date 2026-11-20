@@ -34,8 +34,8 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 | `ADMIN_EMAIL` | the single admin account (login = e-mail address) |
 | `ADMIN_PASSWORD_HASH` | argon2id hash, create with `echo -n 'your password' \| docker run -i --rm ghcr.io/quidong/device-bus-analyzer:latest dba hash-password` |
 | `ADMIN_PASSWORD` | alternative to the hash (plain text in the stack; the hash is preferred) |
-| `SESSION_SECRET` | 32+ random characters, signs the session cookie |
-| `API_TOKEN` | token for the MCP extension and scripts (optional) |
+| `SESSION_SECRET` | optional: created on the first start and kept in the data volume; a value set here wins and is adopted (32+ random characters) |
+| `API_TOKEN` | optional: created on the first start (shown on the *AI connection* page); a value set here wins and is adopted |
 | `DBA_TZ` | display timezone, default `Europe/Berlin` |
 
 3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type, manufacturer and model (suggestions from
@@ -141,3 +141,9 @@ Please do not commit logs, MAC/IP addresses, SSIDs or serial numbers.
 
 ## Licenses
 Code: MIT (`LICENSE`). Protocol documentation and spec files: CC BY 4.0 (`LICENSE-DOCS.md`).
+
+## Design principles of the UI
+
+- **Everything that can change is live.** Regions marked `data-live="…"` are refreshed from the server every few seconds (paused while the tab is hidden or a field in the region has focus); a changed list of devices reloads the page. New pages must mark their changing parts the same way (`static/ui.js`).
+- **One account menu** (avatar, top right) holds language (a select), help, AI connection, knowledge, HTTPS, backup and logout.
+- **Guided checks** run in phases: rest (countdown + progress bar) → action (instruction, "Done") → waiting (countdown + progress bar). The page splits guided checks from manual marking.

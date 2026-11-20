@@ -135,7 +135,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     def ctx(request: Request, **kw: Any) -> dict[str, Any]:
         lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
         return {"request": request, "t": i18n.STR[lang], "logout_csrf": auth.csrf_for(request.cookies.get(COOKIE, "")),
-                "logged_in": auth.valid_session(request.cookies.get(COOKIE)), "lang": lang, "langs": i18n.LANGS, "tz": str(tz), "version": __version__,
+                "logged_in": auth.valid_session(request.cookies.get(COOKIE)), "lang": lang, "langs": i18n.LANGS, "lang_names": i18n.NAMES, "user": settings.admin_email, "tz": str(tz), "version": __version__,
                 "has_src": "src" in kw, "fmt": lambda ts: datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] if ts else "-",
                 "hexs": lambda b: bytes(b).hex() if b is not None else "", **kw}
 

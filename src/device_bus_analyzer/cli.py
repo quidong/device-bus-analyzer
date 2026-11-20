@@ -128,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         import uvicorn
 
         from .web import create_app
+        s = config.ensure_secrets(s)                       # first start: session secret and API token are created and kept in the data volume
         kw = {}
         if s.tls and not a.no_tls:
             from pathlib import Path

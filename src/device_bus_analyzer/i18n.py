@@ -203,6 +203,14 @@ STR = {
         "kn_sig_off": "not enforced: checksums over HTTPS only",
         "cp_rest": "Hands off: measuring the appliance's own noise.",
         "cp_wait": "{} s left",
+        "account": "Account and settings",
+        "language": "Language",
+        "live_note": "Updates automatically",
+        "cp_check": "Guided check: {}",
+        "cp_waiting": "Wait – don't touch anything",
+        "cp_phase_rest": "Measuring rest",
+        "cp_manual": "Mark manually",
+        "cp_manual_hint": "For free observations at the appliance. Tip: let the appliance idle for about two minutes first, so the analysis knows which values change on their own.",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -407,6 +415,14 @@ STR = {
         "kn_sig_off": "nicht erzwungen: nur Prüfsummen über HTTPS",
         "cp_rest": "Nichts anfassen: das Grundrauschen des Geräts wird gemessen.",
         "cp_wait": "Noch {} s",
+        "account": "Konto und Einstellungen",
+        "language": "Sprache",
+        "live_note": "Aktualisiert sich automatisch",
+        "cp_check": "Geführte Prüfung: {}",
+        "cp_waiting": "Warten – nichts anfassen",
+        "cp_phase_rest": "Ruhe messen",
+        "cp_manual": "Manuell markieren",
+        "cp_manual_hint": "Für freie Beobachtungen am Gerät. Tipp: Lass das Gerät vorher etwa zwei Minuten in Ruhe, damit die Auswertung weiß, welche Werte sich von allein ändern.",
     },
 }
 
@@ -424,6 +440,7 @@ from . import i18n_es, i18n_fr, i18n_it  # noqa: E402
 STR["es"], STR["fr"], STR["it"] = _parse(i18n_es.RAW), _parse(i18n_fr.RAW), _parse(i18n_it.RAW)
 LANGS = ("de", "en", "es", "fr", "it")
 LABELS = {"de": "DE", "en": "EN", "es": "ES", "fr": "FR", "it": "IT"}
+NAMES = {"de": "Deutsch", "en": "English", "es": "Español", "fr": "Français", "it": "Italiano"}
 
 
 def pick(accept_language: str | None, cookie: str | None, query: str | None) -> str:

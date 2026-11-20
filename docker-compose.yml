@@ -16,7 +16,9 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}          # preferred: argon2id hash (see README)
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}                    # alternative: plain password
-      SESSION_SECRET: ${SESSION_SECRET}                      # 32+ random characters
+      # Optional: created automatically on the first start and kept in the data volume (shown on the "AI connection" page).
+      # Values set here win and are adopted, so they keep working if you remove the lines later.
+      SESSION_SECRET: ${SESSION_SECRET:-}                    # 32+ random characters
       API_TOKEN: ${API_TOKEN:-}                              # for the local MCP extension / scripts
       # Plain HTTP is the default in the LAN. Optional HTTPS: DBA_TLS=1 (local CA in the data volume, install /tls/ca.crt once per device),
       # DBA_TLS_HOSTS = every name/IP you use to open it (comma separated); DBA_TLS_CERT/_KEY = your own certificate.

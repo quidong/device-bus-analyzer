@@ -6,10 +6,16 @@
 <header class="top">
 {% if logged_in and has_src %}<a class="back" href="/" aria-label="{{ t.sources }}"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>{% endif %}
 <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="var(--acc)"/><path d="M5 9h5l2 4 3-8 2 4h4M5 17h16" stroke="var(--on-acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ t.title }}</a>
+{% macro langsel() %}<select class="langsel" data-lang-select aria-label="{{ t.language }}">{% for code in langs %}<option value="{{ code }}" {% if lang == code %}selected{% endif %}>{{ lang_names[code] }}</option>{% endfor %}</select>{% endmacro %}
 {% if logged_in %}
-<span class="right"><a href="/help">{{ t.help_link }}</a><a href="/mcp">{{ t.mcp_link }}</a><a href="/backup">{{ t.backup_link }}</a><span class="lang">{% for code in langs %}{% if not loop.first %} · {% endif %}<a href="?lang={{ code }}" {% if lang == code %}class="on"{% endif %}>{{ code|upper }}</a>{% endfor %}</span>
-<form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.logout }}</button></form></span>
+<details class="usermenu"><summary aria-label="{{ t.account }}" title="{{ user }}"><span class="avatar" aria-hidden="true">{{ (user or '?')[:1]|upper }}</span></summary>
+<div class="pop menu"><div class="who">{{ user }}</div>
+<label class="menu-row">{{ t.language }}{{ langsel() }}</label>
+<a href="/help">{{ t.help_link }}</a><a href="/mcp">{{ t.mcp_link }}</a><a href="/knowledge">{{ t.kn_link }}</a><a href="/tls">{{ t.tls_link }}</a><a href="/backup">{{ t.backup_link }}</a>
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button class="menu-item">{{ t.logout }}</button></form></div></details>
+{% else %}<span class="right">{{ langsel() }}</span>
 {% endif %}</header>
 {% block nav %}{% endblock %}
 <main>{% block body %}{% endblock %}</main>
+<script src="/static/ui.js"></script>
 <footer>v{{ version }} · {{ t.timezone_note }} {{ tz }}</footer></body></html>

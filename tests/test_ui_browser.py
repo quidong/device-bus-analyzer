@@ -133,7 +133,7 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         assert store.device("dry1")["model"] == "T8DEE-2"
         assert store.db.execute("SELECT d.key FROM devices d JOIN sources s ON s.id=d.source_id WHERE s.name='dry1'").fetchone()[0] == key           # an empty key field keeps the key
         # --- pause keeps the device, resume
-        pg.goto(base + "/devices?lang=en"); pg.click("form[action='/devices/dry1/enabled'] button")
+        pg.goto(base + "/devices?lang=en"); pg.click("article.dev:has(a[href='/devices/dry1/delete']) details.more summary"); pg.click("form[action='/devices/dry1/enabled'] button")
         pg.wait_for_url("**/devices**"); assert store.device("dry1")["enabled"] is False
         # --- learn: companion data on the other device, accept a finding
         put_frames(store, "dw", series(door))
@@ -145,7 +145,7 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         pg.wait_for_url("**/learn#learned")
         assert [f["meaning"] for f in store.learned("dw")] == ["Door state"]
         # --- delete: typed name required
-        pg.goto(base + "/devices?lang=en"); pg.click("a[href='/devices/dry1/delete']")
+        pg.goto(base + "/devices?lang=en"); pg.click("article.dev:has(a[href='/devices/dry1/delete']) details.more summary"); pg.click("a[href='/devices/dry1/delete']")
         pg.fill("input[name=confirm]", "wrong"); pg.click("button.danger")
         assert store.device("dry1") is not None
         pg.fill("input[name=confirm]", "dry1"); pg.click("button.danger"); pg.wait_for_url("**/devices")

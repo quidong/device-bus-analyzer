@@ -88,6 +88,17 @@ controls:
         rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
+      - id: programs
+        de: "Programme durchlaufen und Anzeige ablesen"
+        en: "Run through programs and read the display"
+        es: "Recorrer programas y leer la pantalla"
+        fr: "Parcourir les programmes et lire l'affichage"
+        it: "Scorrere i programmi e leggere il display"
+        repeat: 4
+        rest: 90
+        steps:
+          - {event: program, ask: true, de: "Das nächste Programm wählen (noch nicht starten) und dessen Namen eintragen.", en: "Select the next program (do not start it) and enter its name.", es: "Elige el siguiente programa (sin iniciarlo) y escribe su nombre.", fr: "Choisissez le programme suivant (sans le démarrer) et saisissez son nom.", it: "Scegli il programma successivo (senza avviarlo) e inserisci il suo nome."}
+          - {event: display, ask: true, de: "Anzeige ablesen (z. B. Dauer oder Restzeit, Temperatur) und eintragen.", en: "Read the display (e.g. duration or remaining time, temperature) and enter it.", es: "Lee la pantalla (p. ej. duración o tiempo restante, temperatura) e introdúcelo.", fr: "Lisez l'affichage (p. ex. durée ou temps restant, température) et saisissez-le.", it: "Leggi il display (es. durata o tempo rimanente, temperatura) e inseriscilo."}
   dryer:
     events:
       - {id: door_open,  de: "Tür geöffnet",        en: "Door opened", es: "Puerta abierta", fr: "Porte ouverte", it: "Sportello aperto",        pair: door_close}
@@ -154,6 +165,17 @@ controls:
         rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
+      - id: programs
+        de: "Programme durchlaufen und Anzeige ablesen"
+        en: "Run through programs and read the display"
+        es: "Recorrer programas y leer la pantalla"
+        fr: "Parcourir les programmes et lire l'affichage"
+        it: "Scorrere i programmi e leggere il display"
+        repeat: 4
+        rest: 90
+        steps:
+          - {event: program, ask: true, de: "Das nächste Programm wählen (noch nicht starten) und dessen Namen eintragen.", en: "Select the next program (do not start it) and enter its name.", es: "Elige el siguiente programa (sin iniciarlo) y escribe su nombre.", fr: "Choisissez le programme suivant (sans le démarrer) et saisissez son nom.", it: "Scegli il programma successivo (senza avviarlo) e inserisci il suo nome."}
+          - {event: display, ask: true, de: "Anzeige ablesen (z. B. Dauer oder Restzeit, Temperatur) und eintragen.", en: "Read the display (e.g. duration or remaining time, temperature) and enter it.", es: "Lee la pantalla (p. ej. duración o tiempo restante, temperatura) e introdúcelo.", fr: "Lisez l'affichage (p. ex. durée ou temps restant, température) et saisissez-le.", it: "Leggi il display (es. durata o tempo rimanente, temperatura) e inseriscilo."}
   generic:                      # any other device type
     events:
       - {id: door_open,  de: "Tür geöffnet",    en: "Door opened", es: "Puerta abierta", fr: "Porte ouverte", it: "Sportello aperto",    pair: door_close}
@@ -184,3 +206,14 @@ controls:
         rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
+      - id: programs
+        de: "Programme durchlaufen und Anzeige ablesen"
+        en: "Run through programs and read the display"
+        es: "Recorrer programas y leer la pantalla"
+        fr: "Parcourir les programmes et lire l'affichage"
+        it: "Scorrere i programmi e leggere il display"
+        repeat: 4
+        rest: 90
+        steps:
+          - {event: program, ask: true, de: "Das nächste Programm wählen (noch nicht starten) und dessen Namen eintragen.", en: "Select the next program (do not start it) and enter its name.", es: "Elige el siguiente programa (sin iniciarlo) y escribe su nombre.", fr: "Choisissez le programme suivant (sans le démarrer) et saisissez son nom.", it: "Scegli il programma successivo (senza avviarlo) e inserisci il suo nome."}
+          - {event: display, ask: true, de: "Anzeige ablesen (z. B. Dauer oder Restzeit, Temperatur) und eintragen.", en: "Read the display (e.g. duration or remaining time, temperature) and enter it.", es: "Lee la pantalla (p. ej. duración o tiempo restante, temperatura) e introdúcelo.", fr: "Lisez l'affichage (p. ex. durée ou temps restant, température) et saisissez-le.", it: "Leggi il display (es. durata o tempo rimanente, temperatura) e inseriscilo."}

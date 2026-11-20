@@ -320,4 +320,12 @@ kn_sig_on | Les mises à jour doivent être signées avec la clé du projet (Ed2
 kn_sig_off | non imposée : seulement des sommes de contrôle via HTTPS
 cp_rest | Ne touchez à rien : le bruit propre de l'appareil est mesuré.
 cp_wait | Encore {} s
+account | Compte et réglages
+language | Langue
+live_note | Se met à jour automatiquement
+cp_check | Vérification guidée : {}
+cp_waiting | Attendez : ne touchez à rien
+cp_phase_rest | Mesure du repos
+cp_manual | Marquer manuellement
+cp_manual_hint | Pour des observations libres sur l'appareil. Astuce : laissez l'appareil au repos environ deux minutes avant, pour que l'analyse sache quelles valeurs changent d'elles-mêmes.
 """

@@ -85,19 +85,21 @@
   }
   var K = /[?&]fast=1/.test(location.search) ? 0.25 : 1;                  // test hook: ?fast=1 shortens every timer
   var timer = null;
-  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } $("cp-wait").hidden = true; }
-  function countdown(sec, onEnd) {                                          // visible countdown; onEnd fires once at 0
-    var left = Math.max(1, Math.round(sec * K)), w = $("cp-wait");
-    stopTimer(); w.hidden = false; w.textContent = fill(T.wait, [left]);
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } $("cp-timer").hidden = true; }
+  function countdown(sec, onEnd) {                                          // visible countdown with progress bar; onEnd fires once at 0
+    var total = Math.max(1, Math.round(sec * K)), left = total, w = $("cp-wait"), bar = $("cp-bar");
+    stopTimer(); $("cp-timer").hidden = false; w.textContent = fill(T.wait, [left]); bar.style.width = "0%";
     timer = setInterval(function () {
-      left -= 1;
+      left -= 1; bar.style.width = Math.round((total - left) * 100 / total) + "%";
       if (left <= 0) { stopTimer(); onEnd(); } else { w.textContent = fill(T.wait, [left]); }
     }, K < 1 ? 100 : 1000);
   }
-  function beginRest() {                                                    // hands off first: the noise of exactly this appliance state
+  function header() { $("cp-check").textContent = fill(T.check, [run.g.label]); }
+  function beginRest() {                                                    // phase 1: hands off, the noise of exactly this appliance state
     var me = run;
-    stopPoll(); show("step");
-    $("cp-go").hidden = true; $("cp-done").hidden = true; $("cp-progress").hidden = true; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
+    stopPoll(); show("step"); header();
+    $("cp-go").hidden = true; $("cp-done").hidden = true; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
+    $("cp-progress").hidden = false; $("cp-progress").textContent = T.phase_rest;
     $("cp-text").hidden = false; $("cp-text").textContent = T.rest;
     post(base + "/markers", { kind: "rest", menu: menuValue(), step_group: run.group }).then(function (m) {
       if (run !== me) { post(base + "/markers/" + m.id + "/delete").then(function () {}, function () {}); return; }
@@ -110,25 +112,22 @@
       });
     }, fail);
   }
-  function beginStep() {
+  function beginStep() {                                                    // phase 2: the action; ends with "Done", then (if needed) phase 3: waiting
     var st = current(), total = run.g.steps.length * run.g.repeat;
-    stopPoll(); stopTimer(); show("step");
+    stopPoll(); stopTimer(); show("step"); header();
     $("cp-go").hidden = true; $("cp-done").hidden = true;
     $("cp-progress").hidden = false; $("cp-progress").textContent = fill(T.step, [run.i + 1, total]) + " \u00b7 " + fill(T.round, [Math.floor(run.i / run.g.steps.length) + 1]);
-    $("cp-text").hidden = false; $("cp-text").textContent = st.text + (st.hold ? "" : " \u2014 " + T.doing);
+    $("cp-text").hidden = false; $("cp-text").textContent = st.text;
     $("cp-note").value = ""; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
     if (st.ask) { $("cp-note-label").textContent = T.note_label; }
     var me = run;
     post(base + "/markers", { kind: st.event, menu: menuValue(), step_group: run.group }).then(function (m) {
       if (run !== me) { return; }                                         // aborted meanwhile
       run.marker = m.id; run.since = m.ts; remember(m);
-      var ready = function () {
-        $("cp-done").hidden = false;
-        if (st.ask) { $("cp-note-wrap").hidden = false; $("cp-note").value = events[st.event].by_note ? lastNote : ""; }
-        $("cp-hint").hidden = false; $("cp-hint").textContent = "";
-        poll = setInterval(hint, 2500);
-      };
-      if (st.hold) { countdown(st.hold, function () { if (run === me) { $("cp-text").textContent = st.text + " \u2014 " + T.doing; ready(); } }); } else { ready(); }
+      $("cp-done").hidden = false;
+      if (st.ask) { $("cp-note-wrap").hidden = false; $("cp-note").value = events[st.event].by_note ? lastNote : ""; }
+      $("cp-hint").hidden = false; $("cp-hint").textContent = T.hint_none;   // immediately: nothing seen so far
+      poll = setInterval(hint, 2500);
     }, fail);
   }
   $("cp-go").addEventListener("click", function () { if (run.g.rest > 0) { beginRest(); } else { beginStep(); } });
@@ -138,17 +137,24 @@
       $("cp-hint").textContent = a.baseline < 5 ? T.hint_nobase : (a.changes ? fill(T.hint_some, [a.changes]) : T.hint_none);
     }, function () {});
   }
+  function nextStep() {
+    run.i += 1;
+    if (run.i >= run.g.steps.length * run.g.repeat) { run = null; $("cp-end-text").textContent = T.finished; show("end"); } else { beginStep(); }
+  }
   $("cp-done").addEventListener("click", function () {
-    var st = current(), note = $("cp-note").value.trim();
+    var st = current(), note = $("cp-note").value.trim(), me = run;
     if (st.ask && !note) { $("cp-hint").hidden = false; $("cp-hint").textContent = T.note_needed; $("cp-note").focus(); return; }
     if (note) { lastNote = note; }
-    stopPoll();
+    stopPoll(); $("cp-done").hidden = true;
     post(base + "/markers/" + run.marker + "/end", { note: note }).then(function (m) {
-      recent = recent.map(function (r) { return r.id === m.id ? m : r; }); renderList();
-      run.i += 1;
-      if (run.i >= run.g.steps.length * run.g.repeat) { run = null; $("cp-end-text").textContent = T.finished; show("end"); } else { beginStep(); }
+      recent = recent.map(function (r) { return r.id === m.id ? e2(m) : r; }); renderList(); run.marker = null;
+      if (st.hold) {                                                      // after the action: hold still and wait, with a progress bar
+        $("cp-text").textContent = T.waiting; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
+        countdown(st.hold, function () { if (run === me) { nextStep(); } });
+      } else { nextStep(); }
     }, fail);
   });
+  function e2(m) { return m; }
   $("cp-abort").addEventListener("click", function () {
     stopPoll(); stopTimer();
     var m = run && run.marker; run = null;

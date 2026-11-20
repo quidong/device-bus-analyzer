@@ -175,14 +175,18 @@ def test_guided_timers_in_the_real_browser(tmp_path, fast):
             pg.click("#cp-go")
             pg.wait_for_selector("#cp-text:has-text('Hands off')")                                          # rest phase with a countdown, no Done button
             assert not pg.is_visible("#cp-done") and pg.is_visible("#cp-wait")
-            pg.wait_for_selector("#cp-progress:has-text('Step 1 of 6')")                                    # rest is over, the first step starts by itself
-            assert pg.is_visible("#cp-wait") and not pg.is_visible("#cp-done")                              # door step: the hold timer runs first
-            pg.wait_for_selector("#cp-done:visible")
-            assert not pg.is_visible("#cp-wait") and "Open the door" in pg.inner_text("#cp-text")
-            pg.click("#cp-done"); pg.wait_for_selector("#cp-progress:has-text('Step 2 of 6')")
+            assert "Guided check" in pg.inner_text("#cp-check") and "Open and close the door" in pg.inner_text("#cp-check")
+            pg.wait_for_selector("#cp-progress:has-text('Step 1 of 6')")                                    # rest is over: the action comes first, no timer
+            assert pg.is_visible("#cp-done") and not pg.is_visible("#cp-wait") and "Open the door" in pg.inner_text("#cp-text")
+            assert "Nothing unusual" in pg.inner_text("#cp-hint")                                           # hint says "nothing so far" at once
+            pg.click("#cp-done")
+            pg.wait_for_selector("#cp-text:has-text('Wait')")                                               # after the action: labelled waiting + progress bar
+            assert pg.is_visible("#cp-wait") and pg.is_visible("#cp-timer .bar") and not pg.is_visible("#cp-done")
+            pg.wait_for_selector("#cp-progress:has-text('Step 2 of 6')")
+            assert pg.is_visible("#cp-done") and not pg.is_visible("#cp-wait")
             kinds = [(m["kind"], bool(m["ts_end"])) for m in store.markers("dw")]
             assert kinds[0] == ("rest", True) and kinds[1] == ("door_open", True) and kinds[2] == ("door_close", False)
-            n = len(store.markers("dw")); pg.click("#cp-abort")                                              # abort during the hold leaves no open step behind
+            n = len(store.markers("dw")); pg.click("#cp-abort")                                              # abort leaves no open step behind
             pg.wait_for_selector("#cp-main:visible")
             assert len(store.markers("dw")) == n - 1 and errors == []
     finally:

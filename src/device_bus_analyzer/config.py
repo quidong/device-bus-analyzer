@@ -1,9 +1,12 @@
 """Configuration from environment variables (Portainer stack variables)."""
 from __future__ import annotations
 
+import json
 import os
 import re
+import secrets
 from dataclasses import dataclass, field
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -66,6 +69,33 @@ def load(env: dict[str, str] | None = None) -> Settings:
         tls_cert=env.get("DBA_TLS_CERT", ""), tls_key=env.get("DBA_TLS_KEY", ""),
         session_hours=int(env.get("SESSION_HOURS", "12")),
     )
+
+
+def ensure_secrets(s: Settings) -> Settings:
+    """Session secret and API token for a stack that does not set them: created on first start and kept in the data volume
+    (``secrets.json``, mode 600). Values that exist in the environment (the stack's YAML) are adopted and stored too, so they keep
+    working when the variables are removed later; as long as they are set, the environment wins. If the data directory is not
+    writable the settings stay as they are (random session secret per start, no token)."""
+    path = Path(s.db_path).parent / "secrets.json"
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, ValueError):
+        saved = {}
+    if not isinstance(saved, dict):
+        saved = {}
+    new = {"session_secret": s.session_secret or saved.get("session_secret") or secrets.token_urlsafe(48),
+           "api_token": s.api_token or saved.get("api_token") or secrets.token_urlsafe(32)}
+    if new != {k: saved.get(k) for k in new}:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(new, f)
+            path.chmod(0o600)
+        except OSError:
+            return s
+    s.session_secret, s.api_token = new["session_secret"], new["api_token"]
+    return s
 
 
 _NAME = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
