@@ -86,6 +86,8 @@ under `contributions/<protocol>/`; CI checks the file (`dba validate-contributio
 keys, keep it private). **Help** explains how to record a good run. The MCP extension also offers `list_markers`, `learn_analysis`
 and `device_state`.
 
+The web interface is available in German, English, Spanish, French and Italian (switcher in the header; the browser language is detected, the choice is remembered).
+
 ## Command line
 
 ```

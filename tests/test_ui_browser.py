@@ -45,8 +45,9 @@ def test_guided_run_and_pages_without_overflow(server, width):
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.goto(base + "/login?lang=en"); pg.fill("input[name=email]", MAIL); pg.fill("input[name=password]", PW); pg.click("button")
         for path in ("/", "/devices", "/s/dw/companion", "/s/dw/learn", "/s/dw/timeline", "/firmware/bshdbus", "/help", "/backup", "/s/dw/homeassistant"):
-            pg.goto(base + path + "?lang=en")
-            assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0, (path, width)
+            for lang in ("en", "fr"):               # fr: the longest strings
+                pg.goto(base + path + "?lang=" + lang)
+                assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0, (path, width, lang)
         pg.goto(base + "/s/dw/companion?lang=en")
         pg.fill("#cp-menu", "Main menu")
         pg.click("button.ev:has-text('Start pressed')")

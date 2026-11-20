@@ -7,7 +7,7 @@ from typing import Any
 
 import yaml
 
-from . import protocols
+from . import i18n, protocols
 
 
 @lru_cache(maxsize=None)
@@ -40,21 +40,21 @@ def validate_catalog() -> list[str]:
         for f in prof.get("files", []):
             if "/" in f or not _fw_dir().joinpath(f).is_file():
                 problems.append(f"firmware {proto}: file {f!r} missing")
-        for lang in ("de", "en"):
+        for lang in i18n.LANGS:
             if not prof.get("note", {}).get(lang):
                 problems.append(f"firmware {proto}: note.{lang} missing")
     for ctype, ctl in cat.get("controls", {}).items():
         ids = {e.get("id") for e in ctl.get("events", [])}
         for e in ctl.get("events", []):
-            if not (e.get("de") and e.get("en")):
+            if not all(e.get(x) for x in i18n.LANGS):
                 problems.append(f"controls {ctype}: event {e.get('id')!r} needs de and en")
             if e.get("pair") and e["pair"] not in ids:
                 problems.append(f"controls {ctype}: event {e['id']!r} pairs with unknown {e['pair']!r}")
         for g in ctl.get("guided", []):
-            if not (g.get("de") and g.get("en") and g.get("steps")) or int(g.get("repeat", 1)) < 1:
+            if not (all(g.get(x) for x in i18n.LANGS) and g.get("steps")) or int(g.get("repeat", 1)) < 1:
                 problems.append(f"controls {ctype}: guided {g.get('id')!r} incomplete")
             for st in g.get("steps", []):
-                if st.get("event") not in ids or not (st.get("de") and st.get("en")):
+                if st.get("event") not in ids or not all(st.get(x) for x in i18n.LANGS):
                     problems.append(f"controls {ctype}: guided {g.get('id')!r} has a bad step {st.get('event')!r}")
     if "generic" not in cat.get("controls", {}):
         problems.append("controls: 'generic' is missing")
@@ -90,7 +90,7 @@ def build(used: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     for u in used or []:
         t, man, mod, proto = u.get("type"), u.get("manufacturer"), u.get("model"), u.get("protocol")
         if t and t not in types:
-            types[t] = {"de": t, "en": t}
+            types[t] = {x: t for x in i18n.LANGS}
         if not man:
             continue
         e = mans.setdefault(man, {"name": man, "protocol": proto, "types": [], "models": [], "known": False})

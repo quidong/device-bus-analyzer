@@ -1,4 +1,4 @@
-"""Tiny DE/EN string table for the frontend."""
+"""String tables for the frontend: de and en inline, es, fr and it as `key | text` lines in their own modules."""
 STR = {
     "en": {
         "title": "Device Bus Analyzer", "login": "Sign in", "email": "E-mail", "password": "Password", "logout": "Sign out",
@@ -291,8 +291,24 @@ STR = {
 }
 
 
+def _parse(raw: str) -> dict[str, str]:
+    out = {}
+    for line in raw.strip().splitlines():
+        key, _, text = line.partition(" | ")
+        out[key.strip()] = text.strip()
+    return out
+
+
+from . import i18n_es, i18n_fr, i18n_it  # noqa: E402
+
+STR["es"], STR["fr"], STR["it"] = _parse(i18n_es.RAW), _parse(i18n_fr.RAW), _parse(i18n_it.RAW)
+LANGS = ("de", "en", "es", "fr", "it")
+LABELS = {"de": "DE", "en": "EN", "es": "ES", "fr": "FR", "it": "IT"}
+
+
 def pick(accept_language: str | None, cookie: str | None, query: str | None) -> str:
     for cand in (query, cookie):
         if cand in STR:
             return cand
-    return "de" if (accept_language or "").lower().startswith("de") else "en"
+    first = (accept_language or "").lower().replace(" ", "").split(",")[0][:2]
+    return first if first in STR else "en"

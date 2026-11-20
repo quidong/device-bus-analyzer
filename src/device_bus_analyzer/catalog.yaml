@@ -4,8 +4,8 @@
 # Values typed freely in the dialog are stored with the device and offered again; add them here (pull request) when they
 # should become suggestions for everybody. `firmware` points to the recommended ESPHome files in `firmware/`.
 types:
-  dishwasher: {de: "Geschirrspüler", en: "Dishwasher"}
-  dryer: {de: "Trockner", en: "Tumble dryer"}
+  dishwasher: {de: "Geschirrspüler", en: "Dishwasher", es: "Lavavajillas", fr: "Lave-vaisselle", it: "Lavastoviglie"}
+  dryer: {de: "Trockner", en: "Tumble dryer", es: "Secadora", fr: "Sèche-linge", it: "Asciugatrice"}
 manufacturers:
   bosch:     {name: "Bosch",     protocol: bshdbus, types: [dishwasher], models: []}
   siemens:   {name: "Siemens",   protocol: bshdbus, types: [dishwasher], models: []}
@@ -18,11 +18,17 @@ firmware:
     note:
       de: "Beispiel für die BSH-Platine (ESP32-C6), nur Mitlesen. Angepasst für den Neff S413K60S0E: Programm-IDs und Options-Bits bei anderen Modellen prüfen. Schlüssel und Passwörter gehören in die secrets.yaml."
       en: "Example for the BSH board (ESP32-C6), listen only. Adapted for the Neff S413K60S0E: check program ids and option bits on other models. Keys and passwords belong in secrets.yaml."
+      es: "Ejemplo para la placa BSH (ESP32-C6), solo escucha. Adaptado al Neff S413K60S0E: en otros modelos revisa los ID de programa y los bits de opciones. Las claves y contraseñas van en secrets.yaml."
+      fr: "Exemple pour la carte BSH (ESP32-C6), écoute seule. Adapté au Neff S413K60S0E : vérifiez les ID de programme et les bits d'options sur d'autres modèles. Les clés et mots de passe vont dans secrets.yaml."
+      it: "Esempio per la scheda BSH (ESP32-C6), solo ascolto. Adattato al Neff S413K60S0E: su altri modelli controlla gli ID dei programmi e i bit delle opzioni. Chiavi e password vanno in secrets.yaml."
   macs:
     files: [macs-analysis.example.yaml, macs_recorder.h]
     note:
       de: "Beispiel für die MACS-Platine (ESP32-C6), nur Mitlesen. macs_recorder.h muss im selben Ordner wie die YAML liegen. Bisher nur an einem AEG-Wärmepumpentrockner aufgenommen: Electrolux-Modelle können abweichen."
       en: "Example for the MACS board (ESP32-C6), listen only. macs_recorder.h must sit next to the YAML. So far recorded on one AEG heat-pump dryer only: Electrolux models may differ."
+      es: "Ejemplo para la placa MACS (ESP32-C6), solo escucha. macs_recorder.h debe estar junto al YAML. Hasta ahora solo se ha grabado en una secadora con bomba de calor AEG: los modelos Electrolux pueden diferir."
+      fr: "Exemple pour la carte MACS (ESP32-C6), écoute seule. macs_recorder.h doit se trouver à côté du YAML. Jusqu'ici enregistré uniquement sur un sèche-linge à pompe à chaleur AEG : les modèles Electrolux peuvent différer."
+      it: "Esempio per la scheda MACS (ESP32-C6), solo ascolto. macs_recorder.h deve stare accanto allo YAML. Finora registrato solo su un'asciugatrice a pompa di calore AEG: i modelli Electrolux possono differire."
 # Companion mode: what the person can mark while standing at the appliance (events) and the guided checks (scripts).
 # An event with `pair` is the opposite action (door open <-> door closed): a change that flips back and forth between a pair is
 # strong evidence. `ask` = the person types what the display shows / which option it was; `by_note` = analyse per typed name.
@@ -30,106 +36,139 @@ firmware:
 controls:
   dishwasher: &dishwasher
     events:
-      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened",        pair: door_close}
-      - {id: door_close, de: "Tür geschlossen",     en: "Door closed",        pair: door_open}
-      - {id: program,    de: "Programm gewählt",    en: "Program selected",   ask: true}
-      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", ask: true, by_note: true, pair: option_off}
-      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", ask: true, by_note: true, pair: option_on}
-      - {id: start,      de: "Start gedrückt",      en: "Start pressed"}
-      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset"}
-      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …",    ask: true}
+      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened", es: "Puerta abierta", fr: "Porte ouverte", it: "Sportello aperto",        pair: door_close}
+      - {id: door_close, de: "Tür geschlossen",     en: "Door closed", es: "Puerta cerrada", fr: "Porte fermée", it: "Sportello chiuso",        pair: door_open}
+      - {id: program,    de: "Programm gewählt",    en: "Program selected", es: "Programa elegido", fr: "Programme choisi", it: "Programma scelto",   ask: true}
+      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", es: "Opción activada", fr: "Option activée", it: "Opzione attivata", ask: true, by_note: true, pair: option_off}
+      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", es: "Opción desactivada", fr: "Option désactivée", it: "Opzione disattivata", ask: true, by_note: true, pair: option_on}
+      - {id: start,      de: "Start gedrückt",      en: "Start pressed", es: "Inicio pulsado", fr: "Départ appuyé", it: "Avvio premuto"}
+      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset", es: "Cancelar / restablecer", fr: "Annuler / réinitialiser", it: "Annulla / reimposta"}
+      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …", es: "La pantalla muestra …", fr: "L'affichage indique …", it: "Il display mostra …",    ask: true}
     guided:
       - id: door
         de: "Tür öffnen und schließen"
         en: "Open and close the door"
+        es: "Abrir y cerrar la puerta"
+        fr: "Ouvrir et fermer la porte"
+        it: "Aprire e chiudere lo sportello"
         repeat: 3
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open."}
-          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again."}
+          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
+        es: "Recorrer los programas"
+        fr: "Faire défiler les programmes"
+        it: "Scorrere i programmi"
         repeat: 4
         steps:
-          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown."}
+          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown.", es: "Pulsa una vez el botón de programa y escribe el programa que aparece.", fr: "Appuyez une fois sur la touche de programme, puis saisissez le programme affiché.", it: "Premi una volta il tasto programma, poi inserisci il programma mostrato."}
       - id: option
         de: "Zusatzoption ein- und ausschalten"
         en: "Switch an extra option on and off"
+        es: "Activar y desactivar una opción adicional"
+        fr: "Activer et désactiver une option supplémentaire"
+        it: "Attivare e disattivare un'opzione aggiuntiva"
         repeat: 2
         steps:
-          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
-          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name.", es: "Activa una opción adicional y escribe su nombre.", fr: "Activez une option supplémentaire et saisissez son nom.", it: "Attiva un'opzione aggiuntiva e inserisci il suo nome."}
+          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name).", es: "Vuelve a desactivar la misma opción (mismo nombre).", fr: "Désactivez à nouveau la même option (même nom).", it: "Disattiva di nuovo la stessa opzione (stesso nome)."}
       - id: display
         de: "Anzeige ablesen"
         en: "Read the display"
+        es: "Leer la pantalla"
+        fr: "Lire l'affichage"
+        it: "Leggere il display"
         repeat: 5
         steps:
-          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
   dryer:
     events:
-      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened",        pair: door_close}
-      - {id: door_close, de: "Tür geschlossen",     en: "Door closed",        pair: door_open}
-      - {id: tank_out,   de: "Wasserbehälter entnommen", en: "Water tank removed", pair: tank_in}
-      - {id: tank_in,    de: "Wasserbehälter eingesetzt", en: "Water tank inserted", pair: tank_out}
-      - {id: program,    de: "Programm gewählt",    en: "Program selected",   ask: true}
-      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", ask: true, by_note: true, pair: option_off}
-      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", ask: true, by_note: true, pair: option_on}
-      - {id: start,      de: "Start gedrückt",      en: "Start pressed"}
-      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset"}
-      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …",    ask: true}
+      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened", es: "Puerta abierta", fr: "Porte ouverte", it: "Sportello aperto",        pair: door_close}
+      - {id: door_close, de: "Tür geschlossen",     en: "Door closed", es: "Puerta cerrada", fr: "Porte fermée", it: "Sportello chiuso",        pair: door_open}
+      - {id: tank_out,   de: "Wasserbehälter entnommen", en: "Water tank removed", es: "Depósito de agua retirado", fr: "Réservoir d'eau retiré", it: "Serbatoio dell'acqua rimosso", pair: tank_in}
+      - {id: tank_in,    de: "Wasserbehälter eingesetzt", en: "Water tank inserted", es: "Depósito de agua colocado", fr: "Réservoir d'eau remis", it: "Serbatoio dell'acqua inserito", pair: tank_out}
+      - {id: program,    de: "Programm gewählt",    en: "Program selected", es: "Programa elegido", fr: "Programme choisi", it: "Programma scelto",   ask: true}
+      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", es: "Opción activada", fr: "Option activée", it: "Opzione attivata", ask: true, by_note: true, pair: option_off}
+      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", es: "Opción desactivada", fr: "Option désactivée", it: "Opzione disattivata", ask: true, by_note: true, pair: option_on}
+      - {id: start,      de: "Start gedrückt",      en: "Start pressed", es: "Inicio pulsado", fr: "Départ appuyé", it: "Avvio premuto"}
+      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset", es: "Cancelar / restablecer", fr: "Annuler / réinitialiser", it: "Annulla / reimposta"}
+      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …", es: "La pantalla muestra …", fr: "L'affichage indique …", it: "Il display mostra …",    ask: true}
     guided:
       - id: door
         de: "Tür öffnen und schließen"
         en: "Open and close the door"
+        es: "Abrir y cerrar la puerta"
+        fr: "Ouvrir et fermer la porte"
+        it: "Aprire e chiudere lo sportello"
         repeat: 3
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open."}
-          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again."}
+          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: tank
         de: "Wasserbehälter entnehmen und einsetzen"
         en: "Remove and insert the water tank"
+        es: "Quitar y colocar el depósito de agua"
+        fr: "Retirer et remettre le réservoir d'eau"
+        it: "Togliere e rimettere il serbatoio dell'acqua"
         repeat: 3
         steps:
-          - {event: tank_out, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out."}
-          - {event: tank_in,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back."}
+          - {event: tank_out, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out.", es: "Saca el depósito de agua.", fr: "Retirez le réservoir d'eau.", it: "Togli il serbatoio dell'acqua."}
+          - {event: tank_in,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back.", es: "Vuelve a colocar el depósito de agua.", fr: "Remettez le réservoir d'eau en place.", it: "Rimetti a posto il serbatoio dell'acqua."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
+        es: "Recorrer los programas"
+        fr: "Faire défiler les programmes"
+        it: "Scorrere i programmi"
         repeat: 4
         steps:
-          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown."}
+          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown.", es: "Pulsa una vez el botón de programa y escribe el programa que aparece.", fr: "Appuyez une fois sur la touche de programme, puis saisissez le programme affiché.", it: "Premi una volta il tasto programma, poi inserisci il programma mostrato."}
       - id: option
         de: "Zusatzoption ein- und ausschalten"
         en: "Switch an extra option on and off"
+        es: "Activar y desactivar una opción adicional"
+        fr: "Activer et désactiver une option supplémentaire"
+        it: "Attivare e disattivare un'opzione aggiuntiva"
         repeat: 2
         steps:
-          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
-          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name.", es: "Activa una opción adicional y escribe su nombre.", fr: "Activez une option supplémentaire et saisissez son nom.", it: "Attiva un'opzione aggiuntiva e inserisci il suo nome."}
+          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name).", es: "Vuelve a desactivar la misma opción (mismo nombre).", fr: "Désactivez à nouveau la même option (même nom).", it: "Disattiva di nuovo la stessa opzione (stesso nome)."}
       - id: display
         de: "Anzeige ablesen"
         en: "Read the display"
+        es: "Leer la pantalla"
+        fr: "Lire l'affichage"
+        it: "Leggere il display"
         repeat: 5
         steps:
-          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
   generic:                      # any other device type
     events:
-      - {id: door_open,  de: "Tür geöffnet",    en: "Door opened",    pair: door_close}
-      - {id: door_close, de: "Tür geschlossen", en: "Door closed",    pair: door_open}
-      - {id: program,    de: "Programm gewählt", en: "Program selected", ask: true}
-      - {id: start,      de: "Start gedrückt",  en: "Start pressed"}
-      - {id: cancel,     de: "Abbruch / Reset", en: "Cancel / reset"}
-      - {id: display,    de: "Anzeige zeigt …", en: "Display shows …", ask: true}
+      - {id: door_open,  de: "Tür geöffnet",    en: "Door opened", es: "Puerta abierta", fr: "Porte ouverte", it: "Sportello aperto",    pair: door_close}
+      - {id: door_close, de: "Tür geschlossen", en: "Door closed", es: "Puerta cerrada", fr: "Porte fermée", it: "Sportello chiuso",    pair: door_open}
+      - {id: program,    de: "Programm gewählt", en: "Program selected", es: "Programa elegido", fr: "Programme choisi", it: "Programma scelto", ask: true}
+      - {id: start,      de: "Start gedrückt",  en: "Start pressed", es: "Inicio pulsado", fr: "Départ appuyé", it: "Avvio premuto"}
+      - {id: cancel,     de: "Abbruch / Reset", en: "Cancel / reset", es: "Cancelar / restablecer", fr: "Annuler / réinitialiser", it: "Annulla / reimposta"}
+      - {id: display,    de: "Anzeige zeigt …", en: "Display shows …", es: "La pantalla muestra …", fr: "L'affichage indique …", it: "Il display mostra …", ask: true}
     guided:
       - id: door
         de: "Tür öffnen und schließen"
         en: "Open and close the door"
+        es: "Abrir y cerrar la puerta"
+        fr: "Ouvrir et fermer la porte"
+        it: "Aprire e chiudere lo sportello"
         repeat: 3
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open."}
-          - {event: door_close, de: "Tür wieder schließen.",        en: "Close the door again."}
+          - {event: door_open,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, de: "Tür wieder schließen.",        en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: display
         de: "Anzeige ablesen"
         en: "Read the display"
+        es: "Leer la pantalla"
+        fr: "Lire l'affichage"
+        it: "Leggere il display"
         repeat: 5
         steps:
-          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
