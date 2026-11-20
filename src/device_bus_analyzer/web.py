@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import secrets
 import shutil
 import threading
@@ -123,6 +124,10 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         resp.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; form-action 'self'"
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["Referrer-Policy"] = "no-referrer"
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        resp.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        resp.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
@@ -145,6 +150,10 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return auth.valid_session(request.cookies.get(COOKIE)) or auth.valid_token(request.headers.get("authorization"))
 
     def need_user(request: Request) -> None:
+        header = request.headers.get("authorization")
+        if header and not auth.valid_session(request.cookies.get(COOKIE)):
+            if not auth.token_attempt(client_ip(request), auth.valid_token(header)):
+                raise HTTPException(429, "too many failed attempts, try again later")
         if not authed(request):
             if request.url.path.startswith("/api/"):
                 raise HTTPException(401, "authentication required", headers={"WWW-Authenticate": "Bearer"})
@@ -201,6 +210,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         if not auth.valid_session(request.cookies.get(COOKIE)) or not secrets.compare_digest(
                 auth.csrf_for(request.cookies.get(COOKIE, "")), csrf):
             raise HTTPException(403, "bad CSRF token")
+        auth.revoke(request.cookies.get(COOKIE))
         resp = RedirectResponse("/login", status_code=303)
         resp.delete_cookie(COOKIE)
         return resp
@@ -370,7 +380,8 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return RedirectResponse(target, status_code=303)
 
     def device_form(type, manufacturer, model, protocol, host, port, key, clear_key, enabled) -> dict:
-        return {"type": type.strip(), "manufacturer": manufacturer.strip(), "model": model.strip(), "protocol": protocol,
+        tidy = lambda v: re.sub(r"[\x00-\x1f\x7f]", "", v).strip()[:60]          # noqa: E731  free text: no control characters, bounded
+        return {"type": tidy(type), "manufacturer": tidy(manufacturer), "model": tidy(model), "protocol": protocol,
                 "host": host.strip(), "port": port.strip(), "key": key, "clear_key": clear_key == "1", "enabled": enabled == "1"}
 
     @app.post("/devices")

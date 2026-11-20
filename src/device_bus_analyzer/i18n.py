@@ -178,6 +178,7 @@ STR = {
         "kn_res_error": "Failed",
         "kn_res_needs_app_update": "The update needs a newer app version (new image).",
         "kn_note": "Only data files (YAML) are downloaded, checked and activated only if everything is valid. The container needs outbound HTTPS access to GitHub.",
+        "backup_err_active_content": "The file contains triggers or views and is not restored for security reasons.",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -357,6 +358,7 @@ STR = {
         "kn_res_error": "Fehlgeschlagen",
         "kn_res_needs_app_update": "Das Update braucht eine neuere App-Version (neues Image).",
         "kn_note": "Es werden nur Datendateien geladen (YAML), geprüft und erst bei Erfolg aktiviert. Dafür braucht der Container ausgehenden HTTPS-Zugriff auf GitHub.",
+        "backup_err_active_content": "Die Datei enthält Trigger oder Views und wird aus Sicherheitsgründen nicht eingespielt.",
     },
 }
 

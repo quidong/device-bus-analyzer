@@ -295,4 +295,5 @@ kn_res_current | Déjà à jour.
 kn_res_error | Échec
 kn_res_needs_app_update | La mise à jour nécessite une version plus récente de l'appli (nouvelle image).
 kn_note | Seuls des fichiers de données (YAML) sont téléchargés, vérifiés et activés uniquement si tout est valide. Le conteneur a besoin d'un accès HTTPS sortant vers GitHub.
+backup_err_active_content | Le fichier contient des déclencheurs ou des vues et n'est pas restauré pour des raisons de sécurité.
 """

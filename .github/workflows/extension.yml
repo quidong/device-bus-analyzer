@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths: ["extension/**"]
   workflow_dispatch:
+permissions:
+  contents: read
+
 jobs:
   pack:
     runs-on: ubuntu-latest

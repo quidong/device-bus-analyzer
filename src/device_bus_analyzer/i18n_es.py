@@ -295,4 +295,5 @@ kn_res_current | Ya está actualizado.
 kn_res_error | Error
 kn_res_needs_app_update | La actualización necesita una versión más nueva de la app (imagen nueva).
 kn_note | Solo se descargan archivos de datos (YAML), se comprueban y se activan solo si todo es válido. El contenedor necesita acceso HTTPS saliente a GitHub.
+backup_err_active_content | El archivo contiene disparadores o vistas y no se restaura por motivos de seguridad.
 """

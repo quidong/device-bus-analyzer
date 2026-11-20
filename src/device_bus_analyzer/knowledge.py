@@ -24,6 +24,8 @@ MANIFEST = "knowledge-manifest.json"
 DEFAULT_URL = "https://raw.githubusercontent.com/quidong/device-bus-analyzer/main/src/device_bus_analyzer/" + MANIFEST
 NAME_OK = re.compile(r"^(spec/[a-z0-9_-]+\.yaml|catalog\.yaml|firmware/[A-Za-z0-9][A-Za-z0-9._-]*)$")
 MAX_FILE = 1 << 20
+MAX_FILES = 64
+MAX_ALIASES = 40                             # YAML aliases per file: keeps a hostile file from expanding into gigabytes ("billion laughs")
 MIN_INTERVAL = 60                            # seconds between real checks: buttons, the MCP tool and the daily job share this limit
 
 _lock = threading.RLock()
@@ -120,11 +122,18 @@ def write_manifest() -> dict:
 Fetch = Callable[[str], bytes]
 
 
+class _HttpsOnly(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not newurl.startswith("https://"):
+            raise ValueError("redirect to a non-https address refused")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def http_fetch(url: str) -> bytes:
     if not url.startswith("https://"):
         raise ValueError("only https is allowed")
     req = urllib.request.Request(url, headers={"User-Agent": "device-bus-analyzer"})
-    with urllib.request.urlopen(req, timeout=15) as r:           # noqa: S310  (scheme checked above)
+    with urllib.request.build_opener(_HttpsOnly).open(req, timeout=15) as r:           # noqa: S310  (scheme checked above)
         data = r.read(MAX_FILE + 1)
     if len(data) > MAX_FILE:
         raise ValueError("file too large")
@@ -160,6 +169,8 @@ def update(url: str = DEFAULT_URL, fetch: Fetch = http_fetch) -> dict:
             cur = info()["active"]
             if _vkey(remote["version"]) <= _vkey(cur):
                 return {"status": "current", "version": cur, "message": ""}
+            if len(files) > MAX_FILES:
+                return {"status": "error", "version": remote["version"], "message": "too many files"}
             need = {f"spec/{p}.yaml" for p in protocols.PROTOCOLS} | {"catalog.yaml"}
             if not need <= set(files) or not all(NAME_OK.match(n) and re.fullmatch(r"[0-9a-f]{64}", h) for n, h in files.items()):
                 return {"status": "error", "version": remote["version"], "message": "manifest incomplete or invalid"}
@@ -171,6 +182,9 @@ def update(url: str = DEFAULT_URL, fetch: Fetch = http_fetch) -> dict:
                 if hashlib.sha256(data).hexdigest() != want:
                     shutil.rmtree(stage, ignore_errors=True)
                     return {"status": "error", "version": remote["version"], "message": f"checksum mismatch: {name}"}
+                if name.endswith(".yaml") and len(re.findall(rb"(?m)(?:^|[\s:\[,{-])\*[A-Za-z0-9_-]+", data)) > MAX_ALIASES:
+                    shutil.rmtree(stage, ignore_errors=True)
+                    return {"status": "error", "version": remote["version"], "message": f"too many YAML aliases: {name}"}
                 (stage / name).parent.mkdir(parents=True, exist_ok=True)
                 (stage / name).write_bytes(data)
             (stage / MANIFEST).write_text(json.dumps(remote, indent=2, sort_keys=True), encoding="utf-8")

@@ -95,6 +95,9 @@ class Store:
             try:
                 if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                     return "integrity"
+                # data only: a file with triggers, views or virtual tables could run SQL of its own once restored
+                if con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('trigger','view') OR sql LIKE 'CREATE VIRTUAL%' LIMIT 1").fetchone():
+                    return "active_content"
                 have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             finally:
                 con.close()

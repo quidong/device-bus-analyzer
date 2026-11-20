@@ -97,6 +97,8 @@ touched and decoding uses the new knowledge at once. Checks are rate limited to 
 firmware file run `dba build-knowledge` (a test fails otherwise). `DBA_KNOWLEDGE_URL` overrides the manifest address. The container needs
 outbound HTTPS to raw.githubusercontent.com. The MCP tool `get_firmware` returns the firmware files of a device.
 
+Security notes and what is protected how: see [SECURITY.md](SECURITY.md).
+
 ## Command line
 
 ```

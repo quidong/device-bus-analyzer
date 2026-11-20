@@ -1,6 +1,7 @@
 """Single admin account from environment variables: argon2id, signed cookie sessions, CSRF token, login rate limit."""
 from __future__ import annotations
 
+import hashlib
 import hmac
 import logging
 import secrets
@@ -22,6 +23,12 @@ class Auth:
     def __init__(self, s: Settings):
         if not s.admin_email or not (s.admin_password or s.admin_password_hash):
             raise RuntimeError("ADMIN_EMAIL and ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) must be set")
+        if s.session_secret and len(s.session_secret) < 16:
+            raise RuntimeError("SESSION_SECRET is too short: use 32+ random characters (anyone could forge session cookies otherwise)")
+        if s.session_secret and len(s.session_secret) < 32:
+            log.warning("SESSION_SECRET has fewer than 32 characters; use 32+ random characters")
+        if s.api_token and len(s.api_token) < 16:
+            log.warning("API_TOKEN has fewer than 16 characters; use a long random token (it gives read access to all recordings)")
         self.email = s.admin_email
         self.ph = PasswordHasher()
         self.hash = self._pick_hash(s)
@@ -29,6 +36,7 @@ class Auth:
         self.max_age = s.session_hours * 3600
         self.token = s.api_token
         self._fails: dict[str, deque] = defaultdict(deque)
+        self._revoked: dict[str, float] = {}                 # digests of signed-out session cookies, kept until they would expire anyway
         self.max_fails, self.window = 5, 300.0
         self._dummy = self.ph.hash("dummy-password-for-timing")
 
@@ -70,11 +78,29 @@ class Auth:
             self._fails.pop(ip, None)
         return ok
 
+    def revoke(self, cookie: str | None) -> None:
+        """Sign-out really ends the session: a copied cookie stops working too (kept in memory until its normal expiry)."""
+        now = time.time()
+        for d, ts in list(self._revoked.items()):
+            if now - ts > self.max_age:
+                del self._revoked[d]
+        if cookie:
+            self._revoked[hashlib.sha256(cookie.encode()).hexdigest()] = now
+
+    def token_attempt(self, ip: str, ok: bool) -> bool:
+        """Throttle guessing of the API token like password guessing. Returns False while this address is locked out."""
+        key = "t:" + ip
+        if self.locked(key):
+            return False
+        if not ok:
+            self._fails[key].append(time.time())
+        return True
+
     def make_session(self) -> str:
         return self.ser.dumps({"u": self.email})
 
     def valid_session(self, cookie: str | None) -> bool:
-        if not cookie:
+        if not cookie or hashlib.sha256(cookie.encode()).hexdigest() in self._revoked:
             return False
         try:
             return self.ser.loads(cookie, max_age=self.max_age).get("u") == self.email
