@@ -57,9 +57,8 @@ Devices that are only online sometimes (a dryer that connects when switched on) 
 with back-off and the data model records board restarts and gaps explicitly.
 
 ## Companion: learn the buttons and menus of your appliance
-Open **Companion** on a device (made for the phone, while you stand at the appliance). Let the appliance idle for about two minutes
-first. Then either run a **guided check** (open and close the door three times, step through the programs, switch an option on and
-off; each step is timed from *Go* to *Done*, so your reaction time does not matter) or **mark actions freely** (door opened, program
+Open **Companion** on a device (made for the phone, while you stand at the appliance). Switch the appliance on first. Then either run a **guided check** (tap *Go* once: a 90 s hands-off phase measures the appliance's own noise in exactly that state, then every step shows its instruction, waits where the appliance only reports every few seconds, and ends with *Done*) (open and close the door three times, step through the programs, switch an option on and
+off; each step is timed, so your reaction time does not matter; the analysis judges noise per bit, so a flapping bit next to the door bit does not hide it) or **mark actions freely** (door opened, program
 selected, start pressed, display shows ..., or your own text, optionally with the menu level you are in). Every action is timed on the
 server and shown between the telegrams in the timeline.
 

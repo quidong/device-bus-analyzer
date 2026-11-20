@@ -60,6 +60,9 @@ def validate_catalog() -> list[str]:
         for g in ctl.get("guided", []):
             if not (all(g.get(x) for x in i18n.LANGS) and g.get("steps")) or int(g.get("repeat", 1)) < 1:
                 problems.append(f"controls {ctype}: guided {g.get('id')!r} incomplete")
+            for x in (g.get("rest", 0), *(st.get("hold", 0) for st in g.get("steps", []))):
+                if not isinstance(x, int) or not 0 <= x <= 600:
+                    problems.append(f"controls {ctype}: guided {g.get('id')!r} has a bad rest/hold time {x!r}")
             for st in g.get("steps", []):
                 if st.get("event") not in ids or not all(st.get(x) for x in i18n.LANGS):
                     problems.append(f"controls {ctype}: guided {g.get('id')!r} has a bad step {st.get('event')!r}")
@@ -75,8 +78,9 @@ def controls(dev_type: str | None, lang: str = "en") -> dict[str, Any]:
     pick = lambda d: d.get(lang) or d.get("en") or ""                           # noqa: E731
     events = [{"id": e["id"], "label": pick(e), "pair": e.get("pair"), "ask": bool(e.get("ask")), "by_note": bool(e.get("by_note"))}
               for e in ctl.get("events", [])]
-    guided = [{"id": g["id"], "label": pick(g), "repeat": int(g.get("repeat", 1)),
-               "steps": [{"event": s["event"], "text": pick(s), "ask": bool(s.get("ask"))} for s in g["steps"]]} for g in ctl.get("guided", [])]
+    guided = [{"id": g["id"], "label": pick(g), "repeat": int(g.get("repeat", 1)), "rest": int(g.get("rest", 0)),
+               "steps": [{"event": s["event"], "text": pick(s), "ask": bool(s.get("ask")), "hold": int(s.get("hold", 0))} for s in g["steps"]]}
+              for g in ctl.get("guided", [])]
     return {"events": events, "guided": guided}
 
 

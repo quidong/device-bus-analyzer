@@ -13,7 +13,7 @@
 <td data-label="{{ t.noise }}">{{ ('%d %%' % (c.noise * 100)) if c.noise is not none else '–' }}</td>
 <td data-label="{{ t.status }}"><span class="st {{ c.status }}">{{ t[c.status] }}</span></td>
 {% if logged_in %}<td class="wide" data-label="">{% if c.status in ('assumed', 'confirmed') %}<form method="post" action="/s/{{ src.name }}/learned" class="inline accept">
-<input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="group" value="{{ g.key }}"><input type="hidden" name="ds" value="{{ c.ds }}"><input type="hidden" name="cmd" value="{{ c.cmd }}"><input type="hidden" name="pos" value="{{ c.pos }}">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="group" value="{{ g.key }}"><input type="hidden" name="ds" value="{{ c.ds }}"><input type="hidden" name="cmd" value="{{ c.cmd }}"><input type="hidden" name="pos" value="{{ c.pos }}"><input type="hidden" name="mask" value="{{ c.mask }}">
 <input name="meaning" value="{{ g.label }}" maxlength="120" aria-label="{{ t.meaning }}"><button>{{ t.accept }}</button></form>{% else %}<span class="fld">{{ t.not_accepted }}</span>{% endif %}</td>{% endif %}</tr>{% endfor %}</table></div>
 {% else %}<p class="fld">{{ t.no_candidates }}</p>{% endif %}
 {% if g.events %}<details><summary>{{ t.events_title }}</summary><div class="tbl"><table class="stack"><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.hits }}</th></tr>

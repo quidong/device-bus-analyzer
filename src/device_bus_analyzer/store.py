@@ -68,6 +68,7 @@ class Store:
         with self.lock:
             self.db.execute("PRAGMA journal_mode=WAL")
             self.db.executescript(SCHEMA)
+            self._migrate()
         self._sessions: dict[int, dict] = {}
         self._pending_rx: dict[int, list] = {}
 
@@ -105,6 +106,12 @@ class Store:
             return "not_sqlite"
         return None if all(t in have for t in cls.REQUIRED_TABLES) else "missing_tables"
 
+    def _migrate(self) -> None:
+        """Additive column changes of older databases (never alters or drops anything)."""
+        if "mask" not in {r[1] for r in self.db.execute("PRAGMA table_info(learned)")}:
+            self.db.execute("ALTER TABLE learned ADD COLUMN mask INTEGER")           # compared bits of the byte (NULL = all 8)
+            self.db.commit()
+
     def restore_from(self, path: str | Path) -> None:
         """Replace the content of the live database with a checked snapshot; missing newer tables are added afterwards."""
         src = sqlite3.connect(str(path))
@@ -112,6 +119,7 @@ class Store:
             with self.lock:
                 src.backup(self.db)
                 self.db.executescript(SCHEMA)
+                self._migrate()
                 self._sessions.clear()
                 self._pending_rx.clear()
         finally:
@@ -469,20 +477,20 @@ class Store:
         return out
 
     def save_learned(self, name: str, meaning: str, kind: str, ds: int, cmd: int, pos: int, from_val: int | None, to_val: int | None,
-                     hits: int, n: int, status: str) -> int | None:
+                     hits: int, n: int, status: str, mask: int | None = None) -> int | None:
         src = self.source_by_name(name)
         if not src:
             return None
         with self.lock:
-            c = self.db.execute("INSERT INTO learned(source_id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts) "
-                                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (src["id"], meaning.strip()[:120], kind, ds, cmd, pos, from_val, to_val,
-                                                                     hits, n, status, time.time()))
+            c = self.db.execute("INSERT INTO learned(source_id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts, mask) "
+                                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", (src["id"], meaning.strip()[:120], kind, ds, cmd, pos, from_val, to_val,
+                                                                     hits, n, status, time.time(), None if mask in (None, 255) else mask))
             self.db.commit()
         return c.lastrowid
 
     def learned(self, name: str) -> list[dict]:
         src = self.source_by_name(name)
-        return self._q("SELECT id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts FROM learned "
+        return self._q("SELECT id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts, mask FROM learned "
                        "WHERE source_id=? ORDER BY ds, cmd, pos, id", (src["id"],)) if src else []
 
     def save_learned_value(self, name: str, meaning: str, unit: str | None, ds: int, cmd: int, pos: int, enc: str, factor: float,

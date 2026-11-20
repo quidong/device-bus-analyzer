@@ -15,7 +15,7 @@ import yaml
 FORMAT = 1
 ENC_KIND = {"u8": "u8", "u16be": "u16", "u16le": "u16le"}
 TOP_KEYS = {"format", "protocol", "type", "manufacturer", "model", "findings", "values", "actions_recorded"}
-FINDING_KEYS = {"meaning", "action", "ds", "cmd", "byte", "from", "to", "repeats", "of", "status"}
+FINDING_KEYS = {"meaning", "action", "ds", "cmd", "byte", "from", "to", "mask", "repeats", "of", "status"}   # mask: compared bits (absent = all)
 VALUE_KEYS = {"meaning", "unit", "ds", "cmd", "byte", "encoding", "factor", "interpretation", "repeats", "of", "status"}
 STATUS = ("assumed", "confirmed")
 PRIVATE = [(re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b"), "an IP address"), (re.compile(r"\b[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5}\b"), "a MAC address"),
@@ -29,7 +29,8 @@ def build_export(store, source: str, protocol: str, device: dict | None) -> dict
     return {
         "format": FORMAT, "protocol": protocol, "type": d.get("type"), "manufacturer": d.get("manufacturer"), "model": d.get("model"),
         "findings": [{"meaning": f["meaning"], "action": f["kind"], "ds": f["ds"], "cmd": f["cmd"], "byte": f["pos"], "from": f["from_val"],
-                      "to": f["to_val"], "repeats": f["hits"], "of": f["n"], "status": f["status"]} for f in store.learned(source)],
+                      "to": f["to_val"], **({"mask": f["mask"]} if f.get("mask") is not None else {}), "repeats": f["hits"], "of": f["n"],
+                      "status": f["status"]} for f in store.learned(source)],
         "values": [{"meaning": v["meaning"], "unit": v["unit"], "ds": v["ds"], "cmd": v["cmd"], "byte": v["pos"], "encoding": v["enc"],
                     "factor": v["factor"], "interpretation": v["interp"], "repeats": v["hits"], "of": v["n"], "status": v["status"]}
                    for v in store.learned_values(source)],
@@ -63,6 +64,8 @@ def validate(doc: Any, known_protocols: tuple[str, ...] = ("bshdbus", "macs")) -
                 problems.append(f"{where}: ds out of range")
             if isinstance(r.get("cmd"), int) and not 0 <= r["cmd"] <= 0xFFFF:
                 problems.append(f"{where}: cmd out of range")
+            if kind == "finding" and r.get("mask") is not None and (not isinstance(r["mask"], int) or isinstance(r["mask"], bool) or not 1 <= r["mask"] <= 255):
+                problems.append(f"{where}: mask must be 1..255")
             if r.get("status") not in STATUS:
                 problems.append(f"{where}: status must be assumed or confirmed")
             if not isinstance(r.get("meaning"), str) or not r["meaning"].strip():

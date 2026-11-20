@@ -23,15 +23,15 @@ def _unique(key: str, used: set[str]) -> str:
 
 def state_fields(store, source: str, now: float | None = None) -> list[dict[str, Any]]:
     now = time.time() if now is None else now
-    groups: dict[tuple[int, int, int], dict[int, str]] = {}
+    groups: dict[tuple[int, int, int, int], dict[int, str]] = {}
     for f in store.learned(source):
         if f["pos"] is not None and f["pos"] >= 0 and f["to_val"] is not None:
-            groups.setdefault((f["ds"], f["cmd"], f["pos"]), {})[f["to_val"]] = f["meaning"]
+            groups.setdefault((f["ds"], f["cmd"], f["pos"], 255 if f.get("mask") is None else f["mask"]), {})[f["to_val"]] = f["meaning"]
     used: set[str] = set()
     out: list[dict[str, Any]] = []
-    for (ds, cmd, pos), mapping in sorted(groups.items()):
+    for (ds, cmd, pos, mask), mapping in sorted(groups.items()):
         last = store.latest_payload(source, ds, cmd)
-        raw = last[1][pos] if last and pos < len(last[1]) else None
+        raw = last[1][pos] & mask if last and pos < len(last[1]) else None             # only the compared bits (a flickering bit is ignored)
         out.append({"key": _unique(_slug(next(iter(mapping.values()))), used), "label": next(iter(mapping.values())), "kind": "state",
                     "raw": raw, "value": raw, "text": mapping.get(raw), "unit": None, "on_values": sorted(mapping),
                     "ts": last[0] if last else None, "age_s": round(now - last[0], 1) if last else None})

@@ -201,6 +201,8 @@ STR = {
         "kn_sig": "Signature",
         "kn_sig_on": "Updates must be signed with the project key (Ed25519)",
         "kn_sig_off": "not enforced: checksums over HTTPS only",
+        "cp_rest": "Hands off: measuring the appliance's own noise.",
+        "cp_wait": "{} s left",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -403,6 +405,8 @@ STR = {
         "kn_sig": "Signatur",
         "kn_sig_on": "Updates müssen mit dem Schlüssel des Projekts signiert sein (Ed25519)",
         "kn_sig_off": "nicht erzwungen: nur Prüfsummen über HTTPS",
+        "cp_rest": "Nichts anfassen: das Grundrauschen des Geräts wird gemessen.",
+        "cp_wait": "Noch {} s",
     },
 }
 

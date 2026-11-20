@@ -48,7 +48,7 @@ def test_guided_run_and_pages_without_overflow(server, width):
             for lang in ("en", "fr"):               # fr: the longest strings
                 pg.goto(base + path + "?lang=" + lang)
                 assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0, (path, width, lang)
-        pg.goto(base + "/s/dw/companion?lang=en")
+        pg.goto(base + "/s/dw/companion?lang=en&fast=1")                   # fast=1: every timer runs at a quarter of the time
         pg.fill("#cp-menu", "Main menu")
         pg.click("button.ev:has-text('Start pressed')")
         pg.wait_for_selector("#cp-list li:has-text('Start pressed')")
@@ -62,6 +62,7 @@ def test_guided_run_and_pages_without_overflow(server, width):
         assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-done") and not pg.is_visible("#cp-text")      # first screen: only "Go", no instruction
         assert not pg.is_visible("#cp-lead")
         pg.click("#cp-go")
+        pg.wait_for_selector("#cp-text:has-text('Hands off')")        # 90 s hands-off phase first (measures the noise), then the steps
         for i in range(6):                                          # "Go" once; every step then shows its instruction and "Done"
             pg.wait_for_selector("#cp-done:visible")
             assert pg.is_visible("#cp-text") and not pg.is_visible("#cp-go")
@@ -70,11 +71,12 @@ def test_guided_run_and_pages_without_overflow(server, width):
             if i < 5:
                 pg.wait_for_selector("#cp-progress:has-text('Step %d of')" % (i + 2))
         pg.wait_for_selector("#cp-end:visible")
-        done = store.markers("dw")[2:]
+        done = store.markers("dw")[3:]
+        assert store.markers("dw")[2]["kind"] == "rest" and store.markers("dw")[2]["ts_end"]
         assert [m["kind"] for m in done] == ["door_open", "door_close"] * 3 and all(m["ts_end"] and m["step_group"] for m in done)
         assert pg.is_visible("#cp-end a[href$='/learn']")
         # a started step that is aborted leaves nothing behind
-        pg.click("#cp-again"); pg.click("#cp-scripts button:has-text('Open and close the door')"); pg.click("#cp-go"); pg.wait_for_selector("#cp-done:visible")
+        pg.click("#cp-again"); pg.click("#cp-scripts button:has-text('Open and close the door')"); pg.click("#cp-go"); pg.wait_for_selector("#cp-done:visible", timeout=15000)
         n = len(store.markers("dw")); pg.click("#cp-abort"); pg.wait_for_function("document.getElementById('cp-step').hidden")
         assert len(store.markers("dw")) == n - 1
         assert errors == []

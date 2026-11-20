@@ -32,7 +32,8 @@ firmware:
 # Companion mode: what the person can mark while standing at the appliance (events) and the guided checks (scripts).
 # An event with `pair` is the opposite action (door open <-> door closed): a change that flips back and forth between a pair is
 # strong evidence. `ask` = the person types what the display shows / which option it was; `by_note` = analyse per typed name.
-# A guided script is a list of steps repeated `repeat` times; each step is timed from "go" to "done", so reaction time does not matter.
+# `rest` = seconds of "hands off" at the start (measures the noise of the appliance state); `hold` = seconds a step must last
+# (the appliance reports state only every few seconds). A guided script is a list of steps repeated `repeat` times; each step is timed from "go" to "done", so reaction time does not matter.
 controls:
   dishwasher: &dishwasher
     events:
@@ -52,9 +53,10 @@ controls:
         fr: "Ouvrir et fermer la porte"
         it: "Aprire e chiudere lo sportello"
         repeat: 3
+        rest: 90
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 12, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
@@ -62,6 +64,7 @@ controls:
         fr: "Faire défiler les programmes"
         it: "Scorrere i programmi"
         repeat: 4
+        rest: 90
         steps:
           - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown.", es: "Pulsa una vez el botón de programa y escribe el programa que aparece.", fr: "Appuyez une fois sur la touche de programme, puis saisissez le programme affiché.", it: "Premi una volta il tasto programma, poi inserisci il programma mostrato."}
       - id: option
@@ -71,6 +74,7 @@ controls:
         fr: "Activer et désactiver une option supplémentaire"
         it: "Attivare e disattivare un'opzione aggiuntiva"
         repeat: 2
+        rest: 90
         steps:
           - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name.", es: "Activa una opción adicional y escribe su nombre.", fr: "Activez une option supplémentaire et saisissez son nom.", it: "Attiva un'opzione aggiuntiva e inserisci il suo nome."}
           - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name).", es: "Vuelve a desactivar la misma opción (mismo nombre).", fr: "Désactivez à nouveau la même option (même nom).", it: "Disattiva di nuovo la stessa opzione (stesso nome)."}
@@ -81,6 +85,7 @@ controls:
         fr: "Lire l'affichage"
         it: "Leggere il display"
         repeat: 5
+        rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
   dryer:
@@ -103,9 +108,10 @@ controls:
         fr: "Ouvrir et fermer la porte"
         it: "Aprire e chiudere lo sportello"
         repeat: 3
+        rest: 90
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 12, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: tank
         de: "Wasserbehälter entnehmen und einsetzen"
         en: "Remove and insert the water tank"
@@ -113,9 +119,10 @@ controls:
         fr: "Retirer et remettre le réservoir d'eau"
         it: "Togliere e rimettere il serbatoio dell'acqua"
         repeat: 3
+        rest: 90
         steps:
-          - {event: tank_out, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out.", es: "Saca el depósito de agua.", fr: "Retirez le réservoir d'eau.", it: "Togli il serbatoio dell'acqua."}
-          - {event: tank_in,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back.", es: "Vuelve a colocar el depósito de agua.", fr: "Remettez le réservoir d'eau en place.", it: "Rimetti a posto il serbatoio dell'acqua."}
+          - {event: tank_out, hold: 12, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out.", es: "Saca el depósito de agua.", fr: "Retirez le réservoir d'eau.", it: "Togli il serbatoio dell'acqua."}
+          - {event: tank_in, hold: 12,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back.", es: "Vuelve a colocar el depósito de agua.", fr: "Remettez le réservoir d'eau en place.", it: "Rimetti a posto il serbatoio dell'acqua."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
@@ -123,6 +130,7 @@ controls:
         fr: "Faire défiler les programmes"
         it: "Scorrere i programmi"
         repeat: 4
+        rest: 90
         steps:
           - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown.", es: "Pulsa una vez el botón de programa y escribe el programa que aparece.", fr: "Appuyez une fois sur la touche de programme, puis saisissez le programme affiché.", it: "Premi una volta il tasto programma, poi inserisci il programma mostrato."}
       - id: option
@@ -132,6 +140,7 @@ controls:
         fr: "Activer et désactiver une option supplémentaire"
         it: "Attivare e disattivare un'opzione aggiuntiva"
         repeat: 2
+        rest: 90
         steps:
           - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name.", es: "Activa una opción adicional y escribe su nombre.", fr: "Activez une option supplémentaire et saisissez son nom.", it: "Attiva un'opzione aggiuntiva e inserisci il suo nome."}
           - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name).", es: "Vuelve a desactivar la misma opción (mismo nombre).", fr: "Désactivez à nouveau la même option (même nom).", it: "Disattiva di nuovo la stessa opzione (stesso nome)."}
@@ -142,6 +151,7 @@ controls:
         fr: "Lire l'affichage"
         it: "Leggere il display"
         repeat: 5
+        rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}
   generic:                      # any other device type
@@ -160,9 +170,10 @@ controls:
         fr: "Ouvrir et fermer la porte"
         it: "Aprire e chiudere lo sportello"
         repeat: 3
+        rest: 90
         steps:
-          - {event: door_open,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, de: "Tür wieder schließen.",        en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 12, de: "Tür wieder schließen.",        en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: display
         de: "Anzeige ablesen"
         en: "Read the display"
@@ -170,5 +181,6 @@ controls:
         fr: "Lire l'affichage"
         it: "Leggere il display"
         repeat: 5
+        rest: 90
         steps:
           - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps.", es: "Mientras corre un programa: lee la pantalla (p. ej. tiempo restante 1:45 o 105) e introdúcelo. Espera 1–2 minutos entre pasos.", fr: "Pendant qu'un programme tourne : lisez l'affichage (p. ex. temps restant 1:45 ou 105) et saisissez-le. Attendez 1 à 2 minutes entre les étapes.", it: "Mentre un programma è in corso: leggi il display (es. tempo rimanente 1:45 o 105) e inseriscilo. Attendi 1–2 minuti tra i passi."}

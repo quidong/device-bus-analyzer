@@ -318,4 +318,6 @@ mcp_ca | Si l'analyseur utilise HTTPS avec sa propre CA, choisissez aussi le cer
 kn_sig | Signature
 kn_sig_on | Les mises à jour doivent être signées avec la clé du projet (Ed25519)
 kn_sig_off | non imposée : seulement des sommes de contrôle via HTTPS
+cp_rest | Ne touchez à rien : le bruit propre de l'appareil est mesuré.
+cp_wait | Encore {} s
 """

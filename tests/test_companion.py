@@ -48,8 +48,7 @@ def test_door_pair_is_confirmed_and_the_counter_is_not():
     assert (best["ds"], best["cmd"], best["pos"], best["from"], best["to"]) == (0x17, 0x1010, 2, 0, 1)
     assert best["status"] == "confirmed" and best["hits"] == best["n"] == 3 and best["noise"] == 0.0 and best["bits"] == ["bit 0: 0→1"]
     assert (g["door_close"]["best"]["from"], g["door_close"]["best"]["to"]) == (1, 0) and g["door_close"]["best"]["status"] == "confirmed"
-    counter = [c for c in g["door_open"]["candidates"] if c["pos"] == 0]
-    assert counter and counter[0]["noise"] > 0.9 and counter[0]["status"] == "unknown"      # changes on its own: never a finding
+    assert not [c for c in g["door_open"]["candidates"] if c["pos"] == 0]                    # a counter changes on its own: never even a candidate
 
 
 def test_one_observation_or_no_quiet_time_never_gives_a_finding():

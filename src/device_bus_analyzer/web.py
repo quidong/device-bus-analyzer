@@ -657,6 +657,8 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         events = {e["id"]: e for e in catalog.controls(d["type"] if d else None, lang_of(request))["events"]}
         if kind in events:
             label = events[kind]["label"]                                     # the server owns the wording of presets
+        elif kind == "rest":
+            label = "Rest"                                                    # the hands-off phase that measures the noise
         elif kind == "custom":
             if not label.strip():
                 raise HTTPException(422, "label required")
@@ -706,15 +708,15 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
 
     @app.post("/s/{source}/learned")
     async def learned_create(request: Request, source: str, csrf: str = Form(...), group: str = Form(...), ds: int = Form(...),
-                             cmd: int = Form(...), pos: int = Form(...), meaning: str = Form("")):
+                             cmd: int = Form(...), pos: int = Form(...), meaning: str = Form(""), mask: int | None = Form(None)):
         need_session_csrf(request, csrf)
         source_or_404(source)
         res = analysis.run(store, source, rules_for(source))              # recomputed: only what the analysis really found is stored
         g = next((x for x in res["groups"] if x["key"] == group), None)
-        c = next((x for x in (g["candidates"] if g else []) if (x["ds"], x["cmd"], x["pos"]) == (ds, cmd, pos)), None)
+        c = next((x for x in (g["candidates"] if g else []) if (x["ds"], x["cmd"], x["pos"]) == (ds, cmd, pos) and (mask is None or x["mask"] == mask)), None)
         if not c or c["status"] not in ("assumed", "confirmed"):
             raise HTTPException(422, "no such finding")
-        store.save_learned(source, meaning.strip() or g["label"], g["kind"], ds, cmd, pos, c["from"], c["to"], c["hits"], c["n"], c["status"])
+        store.save_learned(source, meaning.strip() or g["label"], g["kind"], ds, cmd, pos, c["from"], c["to"], c["hits"], c["n"], c["status"], mask=c.get("mask"))
         return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
 
     @app.post("/s/{source}/values")

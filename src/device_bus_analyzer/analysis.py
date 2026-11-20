@@ -6,7 +6,9 @@ For every marker the state of each (dest, command) payload just before is compar
 become candidates. Three safeguards keep it honest:
 
 * **Noise model.** Counters, timers and sensor values change on their own. The same comparison is run on quiet windows
-  (no marker nearby); a byte that changes in many of those is penalised and can never be confirmed.
+  (no marker nearby, preferably the "rest" phase of a guided check, i.e. the same appliance state); a byte that changes in
+  many of those is penalised and can never be confirmed. The noise is judged **per bit**: a status byte whose bit 1 flickers
+  by itself but whose bit 6 stays quiet is compared on the quiet bits only (``mask`` in the candidate).
 * **Repeats.** A candidate only counts when it shows up again and again for the same action (hits / n).
 * **Pairs.** Door open / door closed (and other opposite actions) must flip the same byte back and forth. Only then is a
   candidate 'confirmed'; consistent repeats alone give 'assumed'.
@@ -26,6 +28,7 @@ SLACK_END = 2.0
 NOISE_WINDOW = PRE + POST
 MIN_BASELINE = 5   # fewer quiet windows than this: the noise is unknown and nothing is confirmed
 MAX_BASELINE = 300
+NOISY_BIT = 0.2    # a bit that flips in more than this share of quiet windows is ignored when comparing
 MAX_NOISE = {"assumed": 0.25, "confirmed": 0.10, "unpaired": 0.05}
 
 Series = dict[tuple[int, int], tuple[list[float], list[bytes]]]
@@ -76,8 +79,9 @@ def _quiet_windows(markers: list[dict], lo: float, hi: float) -> list[tuple[floa
 
 
 def _noise(series: Series, windows: list[tuple[float, float]]):
-    """Per (ds, cmd, pos): share of quiet windows in which the byte changed. Per (ds, cmd): payloads seen and how varied they are."""
-    changed: Counter = Counter()
+    """Per (ds, cmd, pos): share of quiet windows in which the byte changed, the noisy bits and the changes that remain on the quiet
+    bits. Per (ds, cmd): payloads seen and how varied they are."""
+    diffs: dict[tuple[int, int, int], list[int]] = defaultdict(list)       # xor of the byte before/after, one entry per quiet window
     tiles: Counter = Counter()
     seen: dict[tuple[int, int], set[bytes]] = defaultdict(set)
     total: Counter = Counter()
@@ -87,12 +91,29 @@ def _noise(series: Series, windows: list[tuple[float, float]]):
             if s0 is not None and s1 is not None:
                 tiles[key] += 1
                 for pos in _changed(s0, s1):
-                    changed[(*key, pos)] += 1
+                    diffs[(*key, pos)].append(s0[pos] ^ s1[pos] if pos >= 0 else 0xFF)
             i, j = bisect_right(ser[0], a), bisect_right(ser[0], b)
             for d in ser[1][i:j]:
                 seen[key].add(d); total[key] += 1
+    noisy: dict[tuple[int, int, int], int] = {}
+    changed: Counter = Counter()
+    bitchg: Counter = Counter()                                            # (ds, cmd, pos, bit): quiet windows in which this one bit changed
+    for k, xs in diffs.items():
+        if k[2] >= 0:
+            for bit in range(8):
+                bitchg[(*k, bit)] = sum(1 for x in xs if (x >> bit) & 1)
+        n = tiles[k[:2]]
+        mask = 0
+        if n >= MIN_BASELINE and k[2] >= 0:
+            for bit in range(8):
+                if sum(1 for x in xs if (x >> bit) & 1) / n > NOISY_BIT:
+                    mask |= 1 << bit
+            if bin(mask).count("1") >= 3:                          # several flickering bits: a counter or timer, the slow high bits are noise too
+                mask = 0xFF
+        noisy[k] = mask
+        changed[k] = sum(1 for x in xs if x & ~mask & 0xFF) if k[2] >= 0 else len(xs)
     variety = {k: len(seen[k]) / total[k] for k in total}
-    return changed, tiles, seen, variety
+    return changed, tiles, seen, variety, noisy, bitchg
 
 
 def _bits(a: int, b: int) -> list[str]:
@@ -102,13 +123,17 @@ def _bits(a: int, b: int) -> list[str]:
 def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """Candidates per action group. See the module docstring. `rules` = catalogue.event_rules()."""
     rules = rules or {}
-    done = [m for m in markers]
+    rest = [m for m in markers if m.get("kind") == "rest" and m.get("ts_end")]       # "do nothing" phase: noise of the same appliance state
+    done = [m for m in markers if m.get("kind") != "rest"]
     if not done:
         return {"baseline": 0, "groups": [], "frames": sum(len(v[0]) for v in series.values())}
     lo = min((t[0][0] for t in series.values() if t[0]), default=min(window_of(m)[0] for m in done))
     hi = max((t[0][-1] for t in series.values() if t[0]), default=max(window_of(m)[1] for m in done))
     windows = _quiet_windows(done, lo, hi)
-    changed, tiles, seen, variety = _noise(series, windows)
+    rest_windows = [w for w in windows if any(m["ts"] <= w[0] and w[1] <= m["ts_end"] for m in rest)]
+    if len(rest_windows) >= MIN_BASELINE:
+        windows = rest_windows                                      # same state as the action: far better than hours of standby
+    changed, tiles, seen, variety, noisy, bitchg = _noise(series, windows)
     n_base = len(windows)
 
     def noise_rate(key: tuple[int, int], pos: int, length: float) -> float | None:
@@ -117,10 +142,16 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
         p = min(0.999, changed[(*key, pos)] / tiles[key])
         return round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)         # longer windows collect more noise
 
+    def bit_noise(key: tuple[int, int], pos: int, bit: int, length: float) -> float | None:
+        if n_base < MIN_BASELINE or tiles[key] < MIN_BASELINE:
+            return None
+        p = min(0.999, bitchg[(*key, pos, bit)] / tiles[key])
+        return round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)
+
     groups: dict[str, dict[str, Any]] = {}
     for m in sorted(done, key=lambda x: x["ts"]):
         g = groups.setdefault(group_key(m, rules), {"key": group_key(m, rules), "kind": m["kind"], "label": m["label"], "n": 0,
-                                                    "state": defaultdict(list), "events": defaultdict(int), "length": 0.0,
+                                                    "state": defaultdict(list), "bit": defaultdict(list), "events": defaultdict(int), "length": 0.0,
                                                     "pair": rules.get(m["kind"], {}).get("pair"), "note": m.get("note")})
         a, b = window_of(m)
         g["n"] += 1
@@ -131,7 +162,12 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
             before, after = _state_at(ser, a), _state_at(ser, b)
             for pos in _changed(before, after):
                 if pos >= 0:
-                    g["state"][(*key, pos)].append((before[pos], after[pos]))
+                    keep = ~noisy.get((*key, pos), 0) & 0xFF                 # compare the quiet bits only
+                    if before[pos] & keep != after[pos] & keep:
+                        g["state"][(*key, pos)].append((before[pos] & keep, after[pos] & keep))
+                        for bit in range(8):                                  # the same change looked at bit by bit (a byte may carry
+                            if (keep >> bit) & 1 and ((before[pos] ^ after[pos]) >> bit) & 1:     # a consistent bit next to a flapping one)
+                                g["bit"][(*key, pos, bit)].append(((before[pos] >> bit) & 1, (after[pos] >> bit) & 1))
                 else:
                     g["state"][(*key, -1)].append((len(before), len(after)))
             if variety.get(key, 0.0) <= 0.3 and n_base >= MIN_BASELINE:
@@ -148,9 +184,21 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
             noise = noise_rate((ds, cmd), pos, g["length"])
             share = top / hits
             score = round((hits / g["n"]) * (1 - (0.5 if noise is None else noise)) * (0.5 + 0.5 * share), 3)
-            cands.append({"ds": ds, "cmd": cmd, "pos": pos, "hits": hits, "n": g["n"], "from": frm, "to": to, "share": round(share, 2),
+            mask = ~noisy.get((ds, cmd, pos), 0) & 0xFF if pos >= 0 else 0xFF
+            cands.append({"ds": ds, "cmd": cmd, "pos": pos, "mask": mask, "hits": hits, "n": g["n"], "from": frm, "to": to, "share": round(share, 2),
                           "noise": noise, "score": score, "bits": _bits(frm, to) if pos >= 0 and hits else [], "status": "unknown"})
-        cands.sort(key=lambda c: (-c["score"], -c["hits"], c["ds"], c["cmd"], c["pos"]))
+        for (ds, cmd, pos, bit), trans in g["bit"].items():
+            byte = next((c for c in cands if (c["ds"], c["cmd"], c["pos"]) == (ds, cmd, pos) and c["mask"] != 1 << bit), None)
+            if byte and byte["share"] == 1.0 and byte["hits"] == g["n"] and bin(byte["from"] ^ byte["to"]).count("1") == 1:
+                continue                                                      # the byte candidate already is this one bit
+            hits = len(trans)
+            (b0, b1), top = Counter(trans).most_common(1)[0]
+            noise = bit_noise((ds, cmd), pos, bit, g["length"])
+            share = top / hits
+            score = round((hits / g["n"]) * (1 - (0.5 if noise is None else noise)) * (0.5 + 0.5 * share), 3)
+            cands.append({"ds": ds, "cmd": cmd, "pos": pos, "mask": 1 << bit, "hits": hits, "n": g["n"], "from": b0 << bit, "to": b1 << bit,
+                          "share": round(share, 2), "noise": noise, "score": score, "bits": [f"bit {bit}: {b0}→{b1}"], "status": "unknown"})
+        cands.sort(key=lambda c: (-c["score"], -c["hits"], c["ds"], c["cmd"], c["pos"], -c["mask"]))
         events = [{"ds": ds, "cmd": cmd, "data": d.hex(), "hits": h, "n": g["n"]} for (ds, cmd, d), h in g["events"].items() if h >= 2]
         events.sort(key=lambda e: (-e["hits"], e["ds"], e["cmd"]))
         out.append({"key": g["key"], "kind": g["kind"], "label": g["label"], "n": g["n"], "pair": g["pair"], "note": g["note"],
@@ -173,13 +221,15 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
             if not (c["status"] == "assumed" and c["share"] == 1.0 and c["noise"] <= MAX_NOISE["confirmed"]):
                 continue
             if p:                                      # the opposite action must flip the same byte back
-                back = next((x for x in p["_all"] if (x["ds"], x["cmd"], x["pos"]) == (c["ds"], c["cmd"], c["pos"])), None)
-                if back and back["hits"] == back["n"] >= 2 and back["share"] == 1.0 and (back["from"], back["to"]) == (c["to"], c["from"]):
+                back = next((x for x in p["_all"] if (x["ds"], x["cmd"], x["pos"], x["mask"]) == (c["ds"], c["cmd"], c["pos"], c["mask"])
+                             and (x["from"], x["to"]) == (c["to"], c["from"]) and x["hits"] == x["n"] >= 2 and x["share"] == 1.0), None)
+                if back:
                     c["status"] = "confirmed"; c["paired"] = True
             elif not g["pair"] and c["n"] >= 5 and c["noise"] <= MAX_NOISE["unpaired"]:
                 c["status"] = "confirmed"
+    rank = {"confirmed": 0, "assumed": 1, "unknown": 2}
     for g in out:
-        g["candidates"] = [c for c in g.pop("_all") if c in g["candidates"]]
+        g["candidates"] = sorted(g.pop("_all"), key=lambda c: (rank[c["status"]], -c["score"], -c["hits"], c["ds"], c["cmd"], c["pos"], -c["mask"]))[:12]
         g["best"] = g["candidates"][0] if g["candidates"] else None
     out.sort(key=lambda g: (g["kind"], g["key"]))
     return {"baseline": n_base, "groups": out, "frames": sum(len(v[0]) for v in series.values())}

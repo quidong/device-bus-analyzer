@@ -318,4 +318,6 @@ mcp_ca | Se l'analizzatore usa HTTPS con una propria CA, scegli anche il certifi
 kn_sig | Firma
 kn_sig_on | Gli aggiornamenti devono essere firmati con la chiave del progetto (Ed25519)
 kn_sig_off | non imposta: solo checksum via HTTPS
+cp_rest | Non toccare nulla: si misura il rumore proprio dell'apparecchio.
+cp_wait | Ancora {} s
 """

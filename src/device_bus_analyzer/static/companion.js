@@ -83,25 +83,55 @@
     $("cp-progress").hidden = true; $("cp-text").hidden = true; $("cp-hint").hidden = true; $("cp-note-wrap").hidden = true;
     $("cp-go").hidden = false; $("cp-done").hidden = true;
   }
+  var K = /[?&]fast=1/.test(location.search) ? 0.25 : 1;                  // test hook: ?fast=1 shortens every timer
+  var timer = null;
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } $("cp-wait").hidden = true; }
+  function countdown(sec, onEnd) {                                          // visible countdown; onEnd fires once at 0
+    var left = Math.max(1, Math.round(sec * K)), w = $("cp-wait");
+    stopTimer(); w.hidden = false; w.textContent = fill(T.wait, [left]);
+    timer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { stopTimer(); onEnd(); } else { w.textContent = fill(T.wait, [left]); }
+    }, K < 1 ? 100 : 1000);
+  }
+  function beginRest() {                                                    // hands off first: the noise of exactly this appliance state
+    var me = run;
+    stopPoll(); show("step");
+    $("cp-go").hidden = true; $("cp-done").hidden = true; $("cp-progress").hidden = true; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
+    $("cp-text").hidden = false; $("cp-text").textContent = T.rest;
+    post(base + "/markers", { kind: "rest", menu: menuValue(), step_group: run.group }).then(function (m) {
+      if (run !== me) { post(base + "/markers/" + m.id + "/delete").then(function () {}, function () {}); return; }
+      run.marker = m.id; remember(m);
+      countdown(run.g.rest, function () {
+        if (run !== me) { return; }
+        post(base + "/markers/" + m.id + "/end", {}).then(function (e) {
+          recent = recent.map(function (r) { return r.id === e.id ? e : r; }); renderList(); run.marker = null; beginStep();
+        }, fail);
+      });
+    }, fail);
+  }
   function beginStep() {
     var st = current(), total = run.g.steps.length * run.g.repeat;
-    stopPoll(); show("step");
+    stopPoll(); stopTimer(); show("step");
     $("cp-go").hidden = true; $("cp-done").hidden = true;
     $("cp-progress").hidden = false; $("cp-progress").textContent = fill(T.step, [run.i + 1, total]) + " \u00b7 " + fill(T.round, [Math.floor(run.i / run.g.steps.length) + 1]);
-    $("cp-text").hidden = false; $("cp-text").textContent = st.text + " \u2014 " + T.doing;
+    $("cp-text").hidden = false; $("cp-text").textContent = st.text + (st.hold ? "" : " \u2014 " + T.doing);
     $("cp-note").value = ""; $("cp-note-wrap").hidden = true; $("cp-hint").hidden = true;
     if (st.ask) { $("cp-note-label").textContent = T.note_label; }
     var me = run;
     post(base + "/markers", { kind: st.event, menu: menuValue(), step_group: run.group }).then(function (m) {
       if (run !== me) { return; }                                         // aborted meanwhile
       run.marker = m.id; run.since = m.ts; remember(m);
-      $("cp-done").hidden = false;
-      if (st.ask) { $("cp-note-wrap").hidden = false; $("cp-note").value = events[st.event].by_note ? lastNote : ""; }
-      $("cp-hint").hidden = false; $("cp-hint").textContent = "";
-      poll = setInterval(hint, 2500);
+      var ready = function () {
+        $("cp-done").hidden = false;
+        if (st.ask) { $("cp-note-wrap").hidden = false; $("cp-note").value = events[st.event].by_note ? lastNote : ""; }
+        $("cp-hint").hidden = false; $("cp-hint").textContent = "";
+        poll = setInterval(hint, 2500);
+      };
+      if (st.hold) { countdown(st.hold, function () { if (run === me) { $("cp-text").textContent = st.text + " \u2014 " + T.doing; ready(); } }); } else { ready(); }
     }, fail);
   }
-  $("cp-go").addEventListener("click", beginStep);
+  $("cp-go").addEventListener("click", function () { if (run.g.rest > 0) { beginRest(); } else { beginStep(); } });
   function hint() {
     if (!run || !run.marker) { return; }
     fetch(base + "/activity?since=" + run.since, { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (a) {
@@ -120,7 +150,7 @@
     }, fail);
   });
   $("cp-abort").addEventListener("click", function () {
-    stopPoll();
+    stopPoll(); stopTimer();
     var m = run && run.marker; run = null;
     if (m) { post(base + "/markers/" + m + "/delete").then(function () { recent = recent.filter(function (r) { return r.id !== m; }); renderList(); }, fail); }
     show(null);
