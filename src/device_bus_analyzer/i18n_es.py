@@ -358,4 +358,9 @@ cfg_err_url | La dirección debe empezar por http:// o https://.
 cfg_err_hosts | Nombre o dirección no válidos para el certificado.
 cfg_err_pw_current | La contraseña actual no es correcta.
 cfg_err_pw_new | Contraseña nueva demasiado corta o la repetición no coincide.
+nav_data | Grabaciones
+menu_main | Menú principal
+menu_account | Cuenta
+menu_connect | Conexiones
+menu_system | Sistema
 """

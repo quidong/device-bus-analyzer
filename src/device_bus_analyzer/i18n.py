@@ -241,6 +241,11 @@ STR = {
         "cfg_err_hosts": "Invalid name or address for the certificate.",
         "cfg_err_pw_current": "The current password is wrong.",
         "cfg_err_pw_new": "New password too short or the repetition does not match.",
+        "nav_data": "Recordings",
+        "menu_main": "Main menu",
+        "menu_account": "Account",
+        "menu_connect": "Connections",
+        "menu_system": "System",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -483,6 +488,11 @@ STR = {
         "cfg_err_hosts": "Ungültiger Name oder ungültige Adresse im Zertifikat.",
         "cfg_err_pw_current": "Das aktuelle Passwort stimmt nicht.",
         "cfg_err_pw_new": "Neues Passwort zu kurz oder die Wiederholung passt nicht.",
+        "nav_data": "Aufzeichnungen",
+        "menu_main": "Hauptmenü",
+        "menu_account": "Konto",
+        "menu_connect": "Anbindung",
+        "menu_system": "System",
     },
 }
 

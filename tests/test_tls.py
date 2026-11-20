@@ -247,3 +247,15 @@ def test_token_renewal_and_password_change(tmp_path):
 def test_menu_links_to_settings(tmp_path):
     c, s, store = _settings_client(tmp_path)
     assert 'href="/settings"' in c.get("/devices").text
+
+
+def test_menu_is_grouped_and_every_subpage_leads_back_to_the_devices(tmp_path):
+    c, s, store = _settings_client(tmp_path)
+    store.source("dw", "bshdbus")
+    menu = c.get("/devices").text.split("</header>")[0]
+    for group in ("menu_account", "menu_connect", "menu_system"):
+        assert f'<div class="gh">{__import__("device_bus_analyzer.i18n", fromlist=["STR"]).STR["en"][group]}</div>' in menu
+    assert 'class="crumb' not in menu                                                       # the start page itself needs no way back
+    for path in ("/settings", "/help", "/mcp", "/knowledge", "/tls", "/backup", "/s/dw/frames", "/s/dw/companion"):
+        head = c.get(path, params={"lang": "en"}).text.split("</header>")[0]
+        assert 'class="crumb' in head and 'href="/"' in head, path

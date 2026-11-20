@@ -155,3 +155,11 @@ details.more .pop{position:absolute;right:0;bottom:48px;z-index:15;min-width:200
 .actions .btn,.actions button{min-height:44px}
 .menu a.danger-item{color:var(--bad)}
 .bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden;max-width:420px}.bar span{display:block;height:100%;width:0;background:var(--acc);transition:width .3s linear}
+
+.menu .grp{padding:4px 0;border-top:1px solid var(--line)}.menu .who+.grp,.menu .who+.grp.mobile-only{border-top:0}
+.menu .gh{padding:6px 12px 2px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.menu a[aria-current]{font-weight:600;box-shadow:inset 3px 0 0 var(--acc)}
+@media (max-width:700px){.usermenu{margin-left:auto}.top .brand{margin-right:auto}.crumb-src{display:none}}
+.menu-row select{max-width:150px}
+.crumb{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 12px 0 8px;color:var(--acc-ink);text-decoration:none;font-weight:600;border-radius:10px}.crumb:hover{background:var(--acc-soft)}
+.brand{margin-right:4px}
