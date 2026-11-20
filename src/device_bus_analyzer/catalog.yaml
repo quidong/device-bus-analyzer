@@ -32,7 +32,7 @@ firmware:
 # Companion mode: what the person can mark while standing at the appliance (events) and the guided checks (scripts).
 # An event with `pair` is the opposite action (door open <-> door closed): a change that flips back and forth between a pair is
 # strong evidence. `ask` = the person types what the display shows / which option it was; `by_note` = analyse per typed name.
-# `rest` = seconds of "hands off" at the start (measures the noise of the appliance state); `hold` = seconds a step must last
+# `rest` = seconds of "hands off" at the start (measures the noise of the appliance state); `hold` = seconds a step must last (the appliance reports a door change only every ~16-20 s)
 # (the appliance reports state only every few seconds). A guided script is a list of steps repeated `repeat` times; each step is timed from "go" to "done", so reaction time does not matter.
 controls:
   dishwasher: &dishwasher
@@ -55,8 +55,8 @@ controls:
         repeat: 3
         rest: 90
         steps:
-          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, hold: 12, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 25,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 25, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
@@ -121,8 +121,8 @@ controls:
         repeat: 3
         rest: 90
         steps:
-          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, hold: 12, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 25,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 25, de: "Tür wieder schließen.",          en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: tank
         de: "Wasserbehälter entnehmen und einsetzen"
         en: "Remove and insert the water tank"
@@ -132,8 +132,8 @@ controls:
         repeat: 3
         rest: 90
         steps:
-          - {event: tank_out, hold: 12, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out.", es: "Saca el depósito de agua.", fr: "Retirez le réservoir d'eau.", it: "Togli il serbatoio dell'acqua."}
-          - {event: tank_in, hold: 12,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back.", es: "Vuelve a colocar el depósito de agua.", fr: "Remettez le réservoir d'eau en place.", it: "Rimetti a posto il serbatoio dell'acqua."}
+          - {event: tank_out, hold: 25, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out.", es: "Saca el depósito de agua.", fr: "Retirez le réservoir d'eau.", it: "Togli il serbatoio dell'acqua."}
+          - {event: tank_in, hold: 25,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back.", es: "Vuelve a colocar el depósito de agua.", fr: "Remettez le réservoir d'eau en place.", it: "Rimetti a posto il serbatoio dell'acqua."}
       - id: program
         de: "Programmwahl durchschalten"
         en: "Step through the programs"
@@ -194,8 +194,8 @@ controls:
         repeat: 3
         rest: 90
         steps:
-          - {event: door_open, hold: 12,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
-          - {event: door_close, hold: 12, de: "Tür wieder schließen.",        en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
+          - {event: door_open, hold: 25,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open.", es: "Abre la puerta y déjala abierta.", fr: "Ouvrez la porte et laissez-la ouverte.", it: "Apri lo sportello e lascialo aperto."}
+          - {event: door_close, hold: 25, de: "Tür wieder schließen.",        en: "Close the door again.", es: "Vuelve a cerrar la puerta.", fr: "Refermez la porte.", it: "Richiudi lo sportello."}
       - id: display
         de: "Anzeige ablesen"
         en: "Read the display"

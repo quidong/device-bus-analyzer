@@ -112,7 +112,7 @@ def test_catalogue_declares_rest_and_hold_for_the_guided_checks():
         ctl = catalog.controls(dev)
         assert ctl["guided"] and all(g["rest"] == 90 for g in ctl["guided"])
         door = next(g for g in ctl["guided"] if g["id"] == "door")
-        assert [s["hold"] for s in door["steps"]] == [12, 12]
+        assert [s["hold"] for s in door["steps"]] == [25, 25]
     prog = next(g for g in catalog.controls("dishwasher")["guided"] if g["id"] == "program")
     assert [s["hold"] for s in prog["steps"]] == [0]                                                        # typing steps need no timer
 
