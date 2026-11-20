@@ -248,7 +248,11 @@ def test_pages_render_in_both_languages(client):
     login(client)
     assert "Neues Gerät" in client.get("/devices", params={"lang": "de"}).text
     assert "New device" in client.get("/devices", params={"lang": "en"}).text
-    assert "/devices?new=1" in client.get("/").text
+    home = client.get("/").text
+    assert 'id="new-device"' in home and "Sources" not in home and 'class="main"' not in home      # the start page is the device list, no second tab
+    anon = TestClient(client.app, follow_redirects=False)
+    ro = anon.get("/", headers={"Authorization": "Bearer tok-123456"}).text                         # API token: read-only list, no management
+    assert 'href="/s/dw/frames"' in ro and 'id="new-device"' not in ro
 
 
 # --- collector manager ------------------------------------------------------------------------

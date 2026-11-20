@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block body %}
-<div class="pagehead"><h1>{{ t.sources }}</h1><a class="btn primary" href="/devices?new=1">+ {{ t.new_device }}</a></div>
+<div class="pagehead"><h1>{{ t.devices_title }}</h1><a class="btn primary" href="/devices?new=1">+ {{ t.new_device }}</a></div>
 {% if not sources %}<p class="lead">{{ t.no_data }}</p>{% else %}
 <div class="tbl" style="margin-top:1rem"><table class="stack"><tr><th>{{ t.name }}</th><th>{{ t.device_type }}</th><th>{{ t.manufacturer }} / {{ t.model }}</th><th>{{ t.protocol }}</th><th>{{ t.bursts }}</th><th>{{ t.frames }}</th><th>{{ t.first }}</th><th>{{ t.last }}</th></tr>
 {% for s in sources %}<tr><td data-label="{{ t.name }}"><a href="/s/{{ s.name }}/frames">{{ s.name }}</a></td><td data-label="{{ t.device_type }}">{{ s.type or "" }}</td><td data-label="{{ t.manufacturer }} / {{ t.model }}">{{ s.manufacturer or "" }} {{ s.model or "" }}</td><td data-label="{{ t.protocol }}">{{ s.protocol }}</td><td data-label="{{ t.bursts }}">{{ s.bursts }}</td><td data-label="{{ t.frames }}">{{ s.frames }}</td><td data-label="{{ t.first }}">{{ fmt(s.first_ts) }}</td><td data-label="{{ t.last }}">{{ fmt(s.last_ts) }}</td></tr>{% endfor %}</table></div>{% endif %}

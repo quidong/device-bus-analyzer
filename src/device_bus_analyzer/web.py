@@ -387,6 +387,9 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     # --- HTML ---------------------------------------------------------------------
     @app.get("/", response_class=HTMLResponse, dependencies=[api])
     def index(request: Request):
+        # The start page is the device list (there is no separate "sources" tab). Holders of the API token only read the data pages.
+        if auth.valid_session(request.cookies.get(COOKIE)):
+            return devices_page(request)
         return page(request, "index.html", sources=store.sources())
 
     @app.get("/s/{source}/frames", response_class=HTMLResponse, dependencies=[api])
