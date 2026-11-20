@@ -289,7 +289,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         for d in rows:
             d["state"], d["ago"] = device_state(d), ago(d["last_seen"], lang)
             d["now"] = device_state_now(d["name"])
-        steps = [("device", bool(rows)), ("data", any(d["last_seen"] for d in rows)),
+        steps = [("device", bool(rows)), ("data", any(d["frames"] for d in rows)),
                  ("marker", any(store.markers(d["name"], limit=1) for d in rows)),
                  ("learned", any(d["now"] for d in rows))]
         onboarding = None if all(ok for _, ok in steps) else steps

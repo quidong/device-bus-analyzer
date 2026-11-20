@@ -42,6 +42,7 @@ class Collector:
         await client.connect(login=True)
         self.connected = True
         log.info("%s: connected", self.device.name)
+        self.store.touch_contact(self.source_id)
         try:
             unsub = client.subscribe_logs(self.on_log, log_level=_debug_level())
             try:
@@ -49,6 +50,8 @@ class Collector:
                     await asyncio.sleep(5)
                     if not getattr(client, "_connection", True):
                         break
+                    if not self.stopped:
+                        self.store.touch_contact(self.source_id)        # connected = online, even when the bus is silent
             finally:
                 if callable(unsub):
                     unsub()

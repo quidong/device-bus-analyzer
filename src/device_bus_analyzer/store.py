@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS devices(             -- classification + connection o
   type TEXT, manufacturer TEXT, model TEXT,
   host TEXT, port INTEGER NOT NULL DEFAULT 6053, key TEXT,   -- key: ESPHome API encryption key, never leaves the server
   enabled INTEGER NOT NULL DEFAULT 1, created_ts REAL NOT NULL, updated_ts REAL NOT NULL);
+-- Last time the collector held a live connection to the device (an idle appliance sends no telegrams, but is online).
+CREATE TABLE IF NOT EXISTS contact(source_id INTEGER PRIMARY KEY, ts REAL NOT NULL);
 -- Added with the companion mode (again purely additive). Markers are what the person did at the appliance, timed by the server.
 CREATE TABLE IF NOT EXISTS markers(
   id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, ts REAL NOT NULL, ts_end REAL,   -- ts_end set = an action with a duration
@@ -136,14 +138,20 @@ class Store:
         return [dict(r) for r in rows]
 
     # --- devices (classification + connection) ------------------------------------
+    def touch_contact(self, source_id: int, ts: float | None = None) -> None:
+        with self.lock:
+            self.db.execute("INSERT INTO contact(source_id, ts) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET ts=excluded.ts",
+                            (source_id, time.time() if ts is None else ts))
+            self.db.commit()
+
     def devices(self) -> list[dict]:
         """All sources with their device row, without the key (only whether one is set)."""
         rows = self._q(
             "SELECT s.name, s.protocol, d.type, d.manufacturer, d.model, d.host, d.port, d.enabled, d.key IS NOT NULL AND d.key<>'' AS has_key,"
             " d.source_id IS NOT NULL AS configured,"
             " (SELECT COUNT(*) FROM frames f WHERE f.source_id=s.id) AS frames,"
-            # last sign of life: newest heartbeat, or the newest burst of the latest board session (start + board clock)
-            " MAX(COALESCE((SELECT MAX(h.recv_ts) FROM heartbeats h JOIN sessions x ON x.id=h.session_id WHERE x.source_id=s.id), 0),"
+            # last sign of life: live connection, newest heartbeat, or the newest burst of the latest board session
+            " MAX(COALESCE((SELECT c.ts FROM contact c WHERE c.source_id=s.id), 0), COALESCE((SELECT MAX(h.recv_ts) FROM heartbeats h JOIN sessions x ON x.id=h.session_id WHERE x.source_id=s.id), 0),"
             "     COALESCE((SELECT x.started_recv + x.last_t_us/1e6 FROM sessions x WHERE x.source_id=s.id ORDER BY x.id DESC LIMIT 1), 0)) AS last_seen"
             " FROM sources s LEFT JOIN devices d ON d.source_id=s.id ORDER BY s.name")
         for r in rows:
@@ -182,6 +190,7 @@ class Store:
                 self.db.execute("DELETE FROM markers WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM learned WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM learned_values WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM contact WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sessions WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM devices WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sources WHERE id=?", (sid,))
