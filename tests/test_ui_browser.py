@@ -58,7 +58,11 @@ def test_guided_run_and_pages_without_overflow(server, width):
         kinds = [m["kind"] for m in store.markers("dw")]
         assert kinds == ["start", "program"] and store.markers("dw")[0]["menu"] == "Main menu"
         # guided door check: 3 rounds x (open, close)
+        import time as _t
+        sid = store.source_by_name("dw")["id"]
+        store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, _t.time(), 0x17, 0x1010, b"\x00\x01")); store.db.commit()   # the appliance is alive
         pg.click("#cp-scripts button:has-text('Open and close the door')")
+        pg.wait_for_selector("#cp-go:enabled")
         assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-done") and not pg.is_visible("#cp-text")      # first screen: only "Go", no instruction
         assert not pg.is_visible("#cp-lead")
         pg.click("#cp-go")

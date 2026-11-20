@@ -172,6 +172,11 @@ def test_guided_timers_in_the_real_browser(tmp_path, fast):
             pg.goto(base + "/s/dw/companion?lang=en&fast=1")
             pg.click("#cp-scripts button:has-text('Open and close the door')")
             assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-text")                                # first screen: only "Go"
+            pg.wait_for_selector("#cp-hint:has-text('sending nothing')")                                    # appliance off: Go waits
+            assert pg.is_disabled("#cp-go")
+            sid = store.source_by_name("dw")["id"]
+            store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, time.time(), 0x17, 0x1010, b"\x00\x01")); store.db.commit()
+            pg.wait_for_selector("#cp-go:enabled", timeout=8000)                                            # the bus is alive: Go is free
             pg.click("#cp-go")
             pg.wait_for_selector("#cp-text:has-text('Hands off')")                                          # rest phase with a countdown, no Done button
             assert not pg.is_visible("#cp-done") and pg.is_visible("#cp-wait")
@@ -191,3 +196,19 @@ def test_guided_timers_in_the_real_browser(tmp_path, fast):
             assert len(store.markers("dw")) == n - 1 and errors == []
     finally:
         srv.should_exit = True; th.join(5); store.close()
+
+
+def test_actions_without_any_bus_traffic_are_not_counted_as_evidence():
+    """The appliance was off: those markers must not dilute the hit rate of the ones where it was on."""
+    from device_bus_analyzer import analysis
+    ts = [1000.0 + 3 * i for i in range(400)]                                         # alive from 1000 to 2200
+    vals = [bytes([0, 0x03 if 1300 <= t < 1500 else 0x43]) for t in ts]
+    series = {(0x2a, 0x2252): (ts, vals)}
+    rules = {"door_open": {"pair": "door_close"}, "door_close": {"pair": "door_open"}}
+    mk = lambda kind, t: {"kind": kind, "label": kind, "ts": t, "ts_end": t + 5, "note": None, "menu": ""}      # noqa: E731
+    markers = [mk("door_open", 1300), mk("door_close", 1500), mk("door_open", 5000), mk("door_open", 5100), mk("door_close", 5200)]   # 5000+: silent
+    res = analysis.analyze(markers, series, rules)
+    assert {s["key"]: s["n"] for s in res["silent"]} == {"door_open": 2, "door_close": 1}
+    g = next(x for x in res["groups"] if x["key"] == "door_open")
+    assert g["n"] == 1                                                                 # only the action with traffic counts
+    assert analysis.analyze([mk("door_open", 5000)], series, rules)["groups"] == []

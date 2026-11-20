@@ -246,6 +246,9 @@ STR = {
         "menu_account": "Account",
         "menu_connect": "Connections",
         "menu_system": "System",
+        "learn_silent": "No reaction from the appliance (not counted – was it switched on?): {}",
+        "cp_off": "The appliance is sending nothing – is it switched off? Please switch it on (display “ready”). “Go” is enabled then.",
+        "cp_off_run": "Warning: the appliance stopped sending – was it switched off? This action will not count otherwise.",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -493,6 +496,9 @@ STR = {
         "menu_account": "Konto",
         "menu_connect": "Anbindung",
         "menu_system": "System",
+        "learn_silent": "Ohne Reaktion des Geräts (nicht gezählt, war es eingeschaltet?): {}",
+        "cp_off": "Das Gerät sendet gerade nichts – ist es ausgeschaltet? Bitte einschalten (Anzeige „bereit“). „Los“ wird dann frei.",
+        "cp_off_run": "Achtung: Das Gerät sendet nichts mehr – wurde es ausgeschaltet? Diese Aktion zählt sonst nicht.",
     },
 }
 

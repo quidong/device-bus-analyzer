@@ -363,4 +363,7 @@ menu_main | Menu principal
 menu_account | Compte
 menu_connect | Connexions
 menu_system | Système
+learn_silent | Sans réaction de l'appareil (non comptées – était-il allumé ?) : {}
+cp_off | L'appareil n'envoie rien – est-il éteint ? Allumez-le (affichage « prêt »). « Départ » sera alors actif.
+cp_off_run | Attention : l'appareil n'envoie plus rien – a-t-il été éteint ? Sinon cette action ne comptera pas.
 """

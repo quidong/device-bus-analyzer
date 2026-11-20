@@ -363,4 +363,7 @@ menu_main | Menú principal
 menu_account | Cuenta
 menu_connect | Conexiones
 menu_system | Sistema
+learn_silent | Sin reacción del aparato (no contadas, ¿estaba encendido?): {}
+cp_off | El aparato no envía nada: ¿está apagado? Enciéndelo (pantalla «listo»). Entonces se activa «Inicio».
+cp_off_run | Atención: el aparato dejó de enviar: ¿se apagó? Si no, esta acción no cuenta.
 """

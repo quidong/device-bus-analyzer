@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
 {% set tj = {'step': t.cp_step, 'round': t.cp_round, 'doing': t.cp_doing, 'note_label': t.cp_note_label, 'note_needed': t.cp_note_needed, 'hint_none': t.cp_hint_none,
  'hint_some': t.cp_hint_some, 'hint_nobase': t.cp_hint_nobase, 'finished': t.cp_finished, 'empty': t.cp_empty, 'remove': t.cp_remove, 'error': t.cp_error,
- 'duration': t.cp_duration, 'go': t.cp_go, 'done': t.cp_done, 'abort': t.cp_abort, 'add': t.cp_add, 'tap_note': t.cp_tap_note, 'rest': t.cp_rest, 'wait': t.cp_wait, 'check': t.cp_check, 'phase_rest': t.cp_phase_rest, 'waiting': t.cp_waiting} %}
+ 'duration': t.cp_duration, 'go': t.cp_go, 'done': t.cp_done, 'abort': t.cp_abort, 'add': t.cp_add, 'tap_note': t.cp_tap_note, 'rest': t.cp_rest, 'wait': t.cp_wait, 'check': t.cp_check, 'off': t.cp_off, 'off_run': t.cp_off_run, 'phase_rest': t.cp_phase_rest, 'waiting': t.cp_waiting} %}
 <div id="cp" data-csrf="{{ logout_csrf }}" data-src="{{ src.name }}" data-controls="{{ controls|tojson|forceescape }}" data-t="{{ tj|tojson|forceescape }}" data-markers="{{ markers|tojson|forceescape }}">
 <div class="pagehead"><h1>{{ src.name }} · {{ t.cp_title }}</h1><a class="btn" href="/s/{{ src.name }}/learn">{{ t.cp_results }}</a></div>
 <p class="lead" id="cp-lead">{{ t.cp_intro }}</p>

@@ -1,6 +1,7 @@
 {% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
 <div class="pagehead"><h1>{{ src.name }} · {{ t.learn_title }}</h1>{% if logged_in %}<a class="btn" href="/s/{{ src.name }}/companion">{{ t.open_companion }}</a>{% endif %}</div>
 <p class="lead">{{ t.learn_intro }}</p>
+{% if res.silent %}{% set parts = [] %}{% for e in res.silent %}{% set _ = parts.append(e.label ~ " × " ~ e.n) %}{% endfor %}<p class="notice" role="status"><span>{{ t.learn_silent.format(parts|join(", ")) }}</span></p>{% endif %}
 {% if not res.groups %}<p class="info"><span>{{ t.learn_none }}</span></p>{% else %}
 <p class="fld">{{ t.learn_stats.format(res.markers, res.frames, res.baseline) }}</p>
 {% if res.baseline < min_baseline %}<p class="notice"><span>{{ t.learn_few_base }}</span></p>{% endif %}

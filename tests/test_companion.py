@@ -263,7 +263,7 @@ def test_activity_hint_is_for_signed_in_users(client, store):
     assert client.get(f"/s/live/activity?since={now - 70}").status_code == 303
     login(client)
     r = client.get(f"/s/live/activity?since={now - 70}").json()
-    assert set(r) == {"changes", "baseline", "best"} and r["baseline"] >= 5 and r["changes"] >= 1 and r["best"]["pos"] == 2
+    assert set(r) == {"changes", "baseline", "best", "silent_s"} and r["silent_s"] < 5 and r["baseline"] >= 5 and r["changes"] >= 1 and r["best"]["pos"] == 2
     assert client.get(f"/s/live/activity?since={now - 20}").json()["changes"] == 0                  # nothing happened in the last 20 s
     assert client.get("/s/nope/activity?since=1").status_code == 404
 

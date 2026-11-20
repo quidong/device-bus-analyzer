@@ -75,13 +75,30 @@
     run = { g: g, i: 0, group: Date.now().toString(36), marker: null, since: 0 };
     idle();
   }
+  // An appliance that is switched off sends nothing, so actions would leave no trace: "Go" waits until the bus is alive.
+  function alive(then) {
+    fetch(base + "/activity?since=" + (Date.now() / 1000 - 5), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (a) {
+      then(a.silent_s !== null && a.silent_s <= 30);
+    }, function () { then(true); });
+  }
+  function watchPower() {
+    stopPoll(); var me = run;
+    var check = function () {
+      if (run !== me || !$("cp-done").hidden || !$("cp-text").hidden) { return; }
+      alive(function (ok) {
+        if (run !== me) { return; }
+        $("cp-go").disabled = !ok; $("cp-hint").hidden = ok; $("cp-hint").textContent = ok ? "" : T.off;
+      });
+    };
+    check(); poll = setInterval(check, 3000);
+  }
   function current() { return run.g.steps[run.i % run.g.steps.length]; }
   // First screen of a run: only "Go". After it every step shows its instruction straight away and ends with "Done"
   // (the Done of one step starts the next one), so "Go" is tapped once per run, not once per step.
   function idle() {
     stopPoll(); show("step"); run.marker = null;
     $("cp-progress").hidden = true; $("cp-text").hidden = true; $("cp-hint").hidden = true; $("cp-note-wrap").hidden = true;
-    $("cp-go").hidden = false; $("cp-done").hidden = true;
+    $("cp-go").hidden = false; $("cp-done").hidden = true; watchPower();
   }
   var K = /[?&]fast=1/.test(location.search) ? 0.25 : 1;                  // test hook: ?fast=1 shortens every timer
   var timer = null;
@@ -134,7 +151,7 @@
   function hint() {
     if (!run || !run.marker) { return; }
     fetch(base + "/activity?since=" + run.since, { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (a) {
-      $("cp-hint").textContent = a.baseline < 5 ? T.hint_nobase : (a.changes ? fill(T.hint_some, [a.changes]) : T.hint_none);
+      $("cp-hint").textContent = a.silent_s !== null && a.silent_s > 30 ? T.off_run : (a.baseline < 5 ? T.hint_nobase : (a.changes ? fill(T.hint_some, [a.changes]) : T.hint_none));
     }, function () {});
   }
   function nextStep() {

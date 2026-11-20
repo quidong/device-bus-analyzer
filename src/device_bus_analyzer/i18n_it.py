@@ -363,4 +363,7 @@ menu_main | Menu principale
 menu_account | Account
 menu_connect | Collegamenti
 menu_system | Sistema
+learn_silent | Nessuna reazione dell'apparecchio (non conteggiate: era acceso?): {}
+cp_off | L'apparecchio non invia nulla: è spento? Accendilo (display «pronto»). Poi «Via» si attiva.
+cp_off_run | Attenzione: l'apparecchio non invia più nulla: è stato spento? Altrimenti questa azione non conta.
 """

@@ -17,7 +17,7 @@ Everything here is a pure function of its inputs, so it is easy to test with syn
 """
 from __future__ import annotations
 
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from typing import Any
 
@@ -53,6 +53,12 @@ def window_of(m: dict) -> tuple[float, float]:
     if m.get("ts_end"):
         return m["ts"] - SLACK_START, m["ts_end"] + SLACK_END
     return m["ts"] - PRE, m["ts"] + POST
+
+
+def _silent(m: dict, series: Series) -> bool:
+    """No frame at all around the action (the appliance was off or not connected): nothing could have been seen."""
+    a, b = window_of(m)
+    return not any(bisect_right(t, b + POST) - bisect_left(t, a - PRE) for t, _ in series.values())
 
 
 def group_key(m: dict, rules: dict[str, dict[str, Any]]) -> str:
@@ -125,8 +131,18 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
     rules = rules or {}
     rest = [m for m in markers if m.get("kind") == "rest" and m.get("ts_end")]       # "do nothing" phase: noise of the same appliance state
     done = [m for m in markers if m.get("kind") != "rest"]
+    if series:                                                        # an action while the appliance was off leaves no trace on the bus: it is not evidence
+        quiet_marks = [m for m in done if _silent(m, series)]
+        done = [m for m in done if m not in quiet_marks]
+    else:
+        quiet_marks = []
+    silent: dict[str, dict[str, Any]] = {}
+    for m in quiet_marks:
+        e = silent.setdefault(group_key(m, rules), {"key": group_key(m, rules), "label": m["label"], "n": 0})
+        e["n"] += 1
+    silent_list = sorted(silent.values(), key=lambda e: e["key"])
     if not done:
-        return {"baseline": 0, "groups": [], "frames": sum(len(v[0]) for v in series.values())}
+        return {"baseline": 0, "groups": [], "silent": silent_list, "frames": sum(len(v[0]) for v in series.values())}
     lo = min((t[0][0] for t in series.values() if t[0]), default=min(window_of(m)[0] for m in done))
     hi = max((t[0][-1] for t in series.values() if t[0]), default=max(window_of(m)[1] for m in done))
     windows = _quiet_windows(done, lo, hi)
@@ -232,7 +248,7 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
         g["candidates"] = sorted(g.pop("_all"), key=lambda c: (rank[c["status"]], -c["score"], -c["hits"], c["ds"], c["cmd"], c["pos"], -c["mask"]))[:12]
         g["best"] = g["candidates"][0] if g["candidates"] else None
     out.sort(key=lambda g: (g["kind"], g["key"]))
-    return {"baseline": n_base, "groups": out, "frames": sum(len(v[0]) for v in series.values())}
+    return {"baseline": n_base, "groups": out, "silent": silent_list, "frames": sum(len(v[0]) for v in series.values())}
 
 
 def run(store, name: str, rules: dict[str, dict[str, Any]] | None = None, markers: list[dict] | None = None) -> dict[str, Any]:
@@ -257,7 +273,9 @@ def activity(store, name: str, since: float, until: float, rules: dict[str, dict
     res = analyze(fake, series, rules)
     g = res["groups"][0] if res["groups"] else None
     quiet = [c for c in (g["candidates"] if g else []) if c["noise"] is not None and c["noise"] <= 0.25]
-    return {"changes": len(quiet), "baseline": res["baseline"], "best": quiet[0] if quiet else None}
+    last = max((t[0][-1] for t in series.values() if t[0]), default=None)
+    return {"changes": len(quiet), "baseline": res["baseline"], "best": quiet[0] if quiet else None,
+            "silent_s": None if last is None else round(max(0.0, until - last), 1)}
 
 
 # --- values: numbers that follow what the display shows ---------------------------------------------------
