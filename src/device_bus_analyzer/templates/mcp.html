@@ -13,6 +13,6 @@
 {% else %}<p class="info warn"><span>{{ t.mcp_token_none }}</span></p>{% endif %}</section>
 <section class="card"><h2>{{ t.mcp_other }}</h2><p>{{ t.mcp_other_note }}</p>
 <section class="fw"><header><strong>shell</strong><button type="button" class="copy" data-target="mcp-cmd" data-ok="{{ t.copied }}">{{ t.copy_cmd }}</button></header><pre class="code" id="mcp-cmd" tabindex="0"><code>claude mcp add device-bus-analyzer -e DBA_URL={{ base_url }} -e DBA_TOKEN=&lt;token&gt; -- node /path/to/device-bus-analyzer/extension/server/index.js</code></pre></section></section>
-<section class="card"><h2>{{ t.mcp_chatgpt_title }}</h2><p>{{ t.mcp_chatgpt }}</p></section>
+<section class="card"><h2>{{ t.mcp_local_title }}</h2><p>{{ t.mcp_local }}</p></section>
 <script src="/static/firmware.js"></script>
 {% endblock %}

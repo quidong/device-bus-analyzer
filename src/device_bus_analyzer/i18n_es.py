@@ -272,9 +272,9 @@ mcp_token | Token de API
 mcp_token_show | Mostrar token
 mcp_token_warn | El token da acceso de lectura a todas las grabaciones. No lo compartas.
 mcp_token_none | Aún no hay token de API. Define DBA_API_TOKEN en el contenedor y reinícialo.
-mcp_other | Otros clientes (Claude Code, Cursor …)
+mcp_other | Claude Code
 mcp_other_note | El servidor se ejecuta localmente con Node (stdio). Ajusta la ruta a la carpeta extension/ del repositorio:
-mcp_chatgpt_title | ChatGPT
-mcp_chatgpt | ChatGPT no puede usar esta extensión: solo se conecta a servidores HTTPS accesibles públicamente y admite OAuth o ningún inicio de sesión, no un token de API. Un camino sería un acceso remoto con inicio de sesión propio; no publiques esta instalación en internet sin protección.
+mcp_local_title | Solo para uso local
+mcp_local | La conexión está pensada para uso local y solo funciona con Claude (Claude Desktop y Claude Code). El analizador no se publica en internet; la extensión se ejecuta en tu ordenador y lee a través de la red local. Otros servicios de IA como ChatGPT no son compatibles.
 copy_cmd | Copiar comando
 """

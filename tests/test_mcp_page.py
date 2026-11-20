@@ -23,7 +23,7 @@ def test_page_shows_address_token_download_and_chatgpt_note(tmp_path):
     login(c)
     html = c.get("/mcp?lang=en").text
     assert "http://analyzer.lan:8089" in html and "tok-secret-1" in html and 'data-target="mcp-token"' in html
-    assert "raw/main/device-bus-analyzer.mcpb" in html and "ChatGPT cannot use this extension" in html
+    assert "raw/main/device-bus-analyzer.mcpb" in html and "Other AI services such as ChatGPT are not supported" in html
     assert 'href="/mcp"' in c.get("/devices").text
 
 

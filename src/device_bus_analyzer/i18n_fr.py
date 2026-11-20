@@ -272,9 +272,9 @@ mcp_token | Jeton d'API
 mcp_token_show | Afficher le jeton
 mcp_token_warn | Le jeton donne un accès en lecture à tous les enregistrements. Ne le partagez pas.
 mcp_token_none | Aucun jeton d'API n'est défini. Définissez DBA_API_TOKEN dans le conteneur et redémarrez-le.
-mcp_other | Autres clients (Claude Code, Cursor …)
+mcp_other | Claude Code
 mcp_other_note | Le serveur tourne en local avec Node (stdio). Adaptez le chemin vers le dossier extension/ du dépôt :
-mcp_chatgpt_title | ChatGPT
-mcp_chatgpt | ChatGPT ne peut pas utiliser cette extension : il ne se connecte qu'à des serveurs HTTPS accessibles publiquement et gère OAuth ou aucune authentification, pas un jeton d'API. Une voie serait un accès distant avec sa propre connexion ; ne mettez pas cette installation sur Internet sans protection.
+mcp_local_title | Uniquement en local
+mcp_local | La connexion est conçue pour un usage local et fonctionne uniquement avec Claude (Claude Desktop et Claude Code). L'analyseur n'est pas exposé sur Internet ; l'extension tourne sur votre ordinateur et lit via le réseau local. Les autres services d'IA comme ChatGPT ne sont pas pris en charge.
 copy_cmd | Copier la commande
 """

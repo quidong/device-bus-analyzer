@@ -101,7 +101,7 @@ dba collect | dba serve [--no-collector]
 
 ## MCP for Claude Desktop (extension)
 
-`extension/` is a Claude Desktop extension (`.mcpb`, Node). Build it with `cd extension && npm ci --omit=dev && npx @anthropic-ai/mcpb pack`
+The connection is meant for local operation and works with Claude only (Claude Desktop, Claude Code); the **AI connection** page in the app has the download, address and token. `extension/` is a Claude Desktop extension (`.mcpb`, Node). Build it with `cd extension && npm ci --omit=dev && npx @anthropic-ai/mcpb pack`
 (the `extension` workflow also builds it on every change) and open the file in Claude Desktop. The install dialog asks for the
 **analyzer URL** (for example `http://192.0.2.10:8089`) and the **API token** (`API_TOKEN` of the stack, stored as a sensitive value).
 Nine tools (read access only): `list_sources`, `get_findings`, `list_runs`, `command_overview`, `command_values`, `timeline`, `frames`,

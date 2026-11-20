@@ -272,9 +272,9 @@ mcp_token | Token API
 mcp_token_show | Mostra token
 mcp_token_warn | Il token dà accesso in lettura a tutte le registrazioni. Non condividerlo.
 mcp_token_none | Nessun token API impostato. Imposta DBA_API_TOKEN nel container e riavvialo.
-mcp_other | Altri client (Claude Code, Cursor …)
+mcp_other | Claude Code
 mcp_other_note | Il server gira in locale con Node (stdio). Adatta il percorso alla cartella extension/ del repository:
-mcp_chatgpt_title | ChatGPT
-mcp_chatgpt | ChatGPT non può usare questa estensione: si collega solo a server HTTPS raggiungibili pubblicamente e supporta OAuth o nessun accesso, non un token API. Una strada sarebbe un accesso remoto con login proprio; non mettere questa installazione su internet senza protezione.
+mcp_local_title | Solo per uso locale
+mcp_local | Il collegamento è pensato per l'uso locale e funziona solo con Claude (Claude Desktop e Claude Code). L'analizzatore non viene messo su internet; l'estensione gira sul tuo computer e legge tramite la rete locale. Altri servizi di IA come ChatGPT non sono supportati.
 copy_cmd | Copia comando
 """
