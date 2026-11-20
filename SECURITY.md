@@ -13,11 +13,17 @@ Meant for a trusted home network. Do not publish the analyzer through a reverse 
 - **Knowledge updates** fetch only data files named in a manifest, over https (redirects to http are refused), verify SHA-256, cap sizes and YAML aliases, validate with the normal spec/catalogue checks and roll back on any problem.
 - **Container:** runs as a non-root user; secrets only through environment variables.
 
-## HTTPS
-The web UI and API are served over HTTPS by default. A local CA and a server certificate (EC P-256) are created in the data volume
-(`tls/`); the private keys stay there (mode 600), only `/tls/ca.crt` is public. Session cookies are `Secure` when TLS is on. The MCP
-extension verifies the certificate against the system roots plus the optional CA file and never disables verification.
-`DBA_TLS=0` is meant for a TLS-terminating reverse proxy; HSTS is deliberately not sent (self-signed click-through).
+## HTTPS (optional)
+The LAN default is plain HTTP; the session cookie is then not `Secure`. `DBA_TLS=1` serves HTTPS: a local CA and a server certificate
+(EC P-256) are created in the data volume (`tls/`, private keys mode 600; only `/tls/ca.crt` is public), cookies become `Secure`.
+The MCP extension verifies the certificate against the system roots plus the optional CA file and never disables verification.
+Use HTTP only on a trusted network segment; HSTS is deliberately not sent.
+
+## Signed knowledge updates
+Knowledge updates are verified by SHA-256 over HTTPS and, once the project ships a public key (`knowledge-pubkey.txt`), by an
+Ed25519 signature over the manifest (`knowledge-manifest.json.sig`): without a valid signature nothing is downloaded or activated.
+Maintainer: `dba knowledge-keygen <private-key-file>` once (keep the key out of the repository), then after every knowledge change
+`dba build-knowledge --sign <private-key-file>`; the test suite fails when the committed signature is stale.
 
 ## Things to know
 - The ESPHome API keys are stored in clear text in the SQLite file and therefore also in every backup. Keep backups private.

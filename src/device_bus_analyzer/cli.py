@@ -25,7 +25,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("rebuild", help="re-derive frames from the raw bursts")
     p = sub.add_parser("validate-spec")
     p.add_argument("protocol")
-    sub.add_parser("build-knowledge", help="write knowledge-manifest.json (version and hashes of specs, catalogue, firmware)")
+    bk = sub.add_parser("build-knowledge", help="write knowledge-manifest.json (version and hashes of specs, catalogue, firmware)")
+    bk.add_argument("--sign", metavar="PRIVATE_KEY", help="also sign the manifest (writes knowledge-manifest.json.sig)")
+    kg = sub.add_parser("knowledge-keygen", help="create the Ed25519 signing key for knowledge updates (public key goes into the package)")
+    kg.add_argument("private_key", help="where to store the PRIVATE key (keep it out of the repository)")
     sub.add_parser("update-knowledge", help="fetch newer device knowledge from the repository now")
     p = sub.add_parser("sanitize", help="print a log with SSID/MAC/IP/hostnames/keys removed")
     p.add_argument("file")
@@ -66,6 +69,14 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "build-knowledge":
         from . import knowledge
         print(knowledge.write_manifest()["version"])
+        if a.sign:
+            knowledge.sign_manifest(a.sign)
+            print("signed")
+        return 0
+    if a.cmd == "knowledge-keygen":
+        from . import knowledge
+        print("public key:", knowledge.generate_keypair(a.private_key))
+        print("commit src/device_bus_analyzer/knowledge-pubkey.txt, then: dba build-knowledge --sign", a.private_key)
         return 0
     if a.cmd == "update-knowledge":
         from pathlib import Path

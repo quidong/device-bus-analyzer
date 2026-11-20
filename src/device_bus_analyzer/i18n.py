@@ -198,6 +198,9 @@ STR = {
         "tls_names": "Names and addresses in the certificate",
         "tls_names_note": "So that the address you use to open the analyzer matches, put it into DBA_TLS_HOSTS (comma separated, names and IP addresses) and restart the container; the certificate is reissued and the CA stays the same.",
         "mcp_ca": "If the analyzer runs HTTPS with its own CA, also pick the CA certificate as the CA file during installation (download on the HTTPS page).",
+        "kn_sig": "Signature",
+        "kn_sig_on": "Updates must be signed with the project key (Ed25519)",
+        "kn_sig_off": "not enforced: checksums over HTTPS only",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -397,6 +400,9 @@ STR = {
         "tls_names": "Namen und Adressen im Zertifikat",
         "tls_names_note": "Damit die Adresse, mit der du den Analyzer öffnest, passt, trage sie in DBA_TLS_HOSTS ein (kommagetrennt, Namen und IP-Adressen) und starte den Container neu; das Zertifikat wird dann neu ausgestellt, die CA bleibt gleich.",
         "mcp_ca": "Läuft der Analyzer mit HTTPS und eigener CA, wähle bei der Installation zusätzlich das CA-Zertifikat als CA-Datei (Download auf der Seite HTTPS).",
+        "kn_sig": "Signatur",
+        "kn_sig_on": "Updates müssen mit dem Schlüssel des Projekts signiert sein (Ed25519)",
+        "kn_sig_off": "nicht erzwungen: nur Prüfsummen über HTTPS",
     },
 }
 

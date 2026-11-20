@@ -315,4 +315,7 @@ tls_how_firefox | Impostazioni > Privacy e sicurezza > Visualizza certificati > 
 tls_names | Nomi e indirizzi nel certificato
 tls_names_note | Perché corrisponda l'indirizzo con cui apri l'analizzatore, inseriscilo in DBA_TLS_HOSTS (separato da virgole, nomi e indirizzi IP) e riavvia il container; il certificato viene riemesso e la CA resta la stessa.
 mcp_ca | Se l'analizzatore usa HTTPS con una propria CA, scegli anche il certificato della CA come file CA durante l'installazione (download nella pagina HTTPS).
+kn_sig | Firma
+kn_sig_on | Gli aggiornamenti devono essere firmati con la chiave del progetto (Ed25519)
+kn_sig_off | non imposta: solo checksum via HTTPS
 """

@@ -62,7 +62,7 @@ def test_build_manifest_bumps_the_version_only_on_change():
 def test_update_activates_newer_knowledge_and_decoding_uses_it():
     assert knowledge.info()["source"] == "bundled" and spec.lookup(spec.load_spec("bshdbus"), 0x99, 0x9999) is None
     res = knowledge.update(URL, Remote(change=newer_spec))
-    assert res["status"] == "updated" and knowledge.info() == {"bundled": knowledge.bundled_manifest()["version"], "active": "2099-01-01.1", "source": "update", "format": 1}
+    assert res["status"] == "updated" and knowledge.info() == {"bundled": knowledge.bundled_manifest()["version"], "active": "2099-01-01.1", "source": "update", "format": 1, "signed": knowledge.pubkey() is not None}
     assert spec.lookup(spec.load_spec("bshdbus"), 0x99, 0x9999)["name"] == "probe"
     assert catalog.firmware_profile("bshdbus")["files"][0]["text"]                 # other files come from the same state
     assert knowledge.update(URL, Remote(version="2099-01-01.1"))["status"] == "current"

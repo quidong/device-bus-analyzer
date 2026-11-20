@@ -38,7 +38,7 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 | `API_TOKEN` | token for the MCP extension and scripts (optional) |
 | `DBA_TZ` | display timezone, default `Europe/Berlin` |
 
-3. Open `https://<host>:8080` (HTTPS is on by default with a local CA: set `DBA_TLS_HOSTS` to the names/IPs you use, install the CA once from `/tls/ca.crt`; `DBA_TLS=0` only behind a TLS proxy), sign in, then **Devices > New device**: choose type, manufacturer and model (suggestions from
+3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type, manufacturer and model (suggestions from
    `src/device_bus_analyzer/catalog.yaml`, free text is allowed; the manufacturer selects the decoder protocol), enter host, port and the
    ESPHome API key. Collection starts immediately and changes apply without a restart. Expose it in your LAN only; there is no password reset and no e-mail sending.
    If you must put it behind a reverse proxy, set `COOKIE_SECURE=1` and terminate TLS there.
@@ -114,7 +114,7 @@ dba collect | dba serve [--no-collector]
 
 The connection is meant for local operation and works with Claude only (Claude Desktop, Claude Code); the **AI connection** page in the app has the download, address and token. `extension/` is a Claude Desktop extension (`.mcpb`, Node). Build it with `cd extension && npm ci --omit=dev && npx @anthropic-ai/mcpb pack`
 (the `extension` workflow also builds it on every change) and open the file in Claude Desktop. The install dialog asks for the
-**analyzer URL** (for example `https://analyzer.lan:8089`; pick the CA certificate from the HTTPS page as the optional CA file) and the **API token** (`API_TOKEN` of the stack, stored as a sensitive value).
+**analyzer URL** (for example `http://192.0.2.10:8089`, or `https://…` with `DBA_TLS=1` and the CA file from the HTTPS page) and the **API token** (`API_TOKEN` of the stack, stored as a sensitive value).
 Nine tools (read access only): `list_sources`, `get_findings`, `list_runs`, `command_overview`, `command_values`, `timeline`, `frames`,
 `raw_bursts`, `data_quality`. Every one is a GET against the API.
 

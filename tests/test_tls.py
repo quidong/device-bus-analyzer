@@ -50,11 +50,12 @@ def test_own_certificate_is_used_as_it_is(tmp_path):
     assert own.own and own.ca is None and own.cert == f.cert
 
 
-def test_settings_defaults_to_https_and_secure_cookies(monkeypatch):
-    assert config.load({"ADMIN_EMAIL": "a@b.de"}).tls and config.load({"ADMIN_EMAIL": "a@b.de"}).cookie_secure
-    s = config.load({"DBA_TLS": "0", "DBA_TLS_HOSTS": "a.lan, 10.0.0.2"})
-    assert not s.tls and not s.cookie_secure and s.tls_hosts == ["a.lan", "10.0.0.2"]
-    assert config.load({"DBA_TLS": "0", "COOKIE_SECURE": "1"}).cookie_secure
+def test_settings_default_to_plain_http_and_https_is_opt_in():
+    d = config.load({"ADMIN_EMAIL": "a@b.de"})
+    assert not d.tls and not d.cookie_secure
+    s = config.load({"DBA_TLS": "1", "DBA_TLS_HOSTS": "a.lan, 10.0.0.2"})
+    assert s.tls and s.cookie_secure and s.tls_hosts == ["a.lan", "10.0.0.2"]
+    assert config.load({"COOKIE_SECURE": "1"}).cookie_secure and not config.load({"DBA_TLS": "1", "COOKIE_SECURE": "0"}).cookie_secure
 
 
 @pytest.fixture

@@ -3,6 +3,7 @@
 <p class="lead">{{ t.kn_intro }}</p>
 <section class="card"><dl class="kv">
 <dt>{{ t.kn_active }}</dt><dd><b>{{ k.active }}</b> ({{ t['kn_src_' ~ k.source] }})</dd>
+<dt>{{ t.kn_sig }}</dt><dd>{% if k.signed %}{{ t.kn_sig_on }}{% else %}{{ t.kn_sig_off }}{% endif %}</dd>
 <dt>{{ t.kn_bundled }}</dt><dd>{{ k.bundled }}</dd>
 <dt>{{ t.kn_last }}</dt><dd>{% if k.last %}{{ when(k.last.ts) }} · {% if k.last.status == 'updated' %}{{ t.kn_res_updated }} {{ k.last.version }}{% elif k.last.status == 'error' %}{{ t.kn_res_error }}: {{ k.last.message }}{% else %}{{ t['kn_res_' ~ k.last.status] }}{% endif %}{% else %}{{ t.kn_never }}{% endif %}</dd></dl>
 <form method="post" action="/knowledge/check"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button class="btn primary">{{ t.kn_check }}</button></form></section>

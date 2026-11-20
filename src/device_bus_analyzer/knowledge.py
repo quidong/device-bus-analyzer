@@ -7,8 +7,10 @@ the previous state in place. Only data files are ever fetched: YAML read with ``
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import os
 import re
 import shutil
 import threading
@@ -21,6 +23,8 @@ from typing import Callable
 
 FORMAT = 1                                   # raised when a spec/catalogue change needs a newer app
 MANIFEST = "knowledge-manifest.json"
+SIGNATURE = MANIFEST + ".sig"                # base64 Ed25519 signature over the manifest bytes
+PUBKEY = "knowledge-pubkey.txt"              # base64 raw Ed25519 public key shipped in the package; when present, updates MUST be signed
 DEFAULT_URL = "https://raw.githubusercontent.com/quidong/device-bus-analyzer/main/src/device_bus_analyzer/" + MANIFEST
 NAME_OK = re.compile(r"^(spec/[a-z0-9_-]+\.yaml|catalog\.yaml|firmware/[A-Za-z0-9][A-Za-z0-9._-]*)$")
 MAX_FILE = 1 << 20
@@ -85,7 +89,7 @@ def read(rel: str) -> str:
 
 def info() -> dict:
     b, a = bundled_manifest(), active_manifest()
-    return {"bundled": b["version"], "active": (a or b)["version"], "source": "update" if a else "bundled", "format": FORMAT}
+    return {"bundled": b["version"], "active": (a or b)["version"], "source": "update" if a else "bundled", "format": FORMAT, "signed": pubkey() is not None}
 
 
 # --- building the manifest (repository side) ---------------------------------------------------------------------------
@@ -116,6 +120,56 @@ def write_manifest() -> dict:
     m = build_manifest(prev)
     path.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return m
+
+
+# --- signing: the maintainer signs the manifest, installations verify it before trusting any hash in it ------------------
+def pubkey() -> str | None:
+    try:
+        t = resources.files("device_bus_analyzer").joinpath(PUBKEY).read_text(encoding="utf-8").strip()
+    except (FileNotFoundError, OSError):
+        return None
+    return t or None
+
+
+def _load_public(b64: str):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    return Ed25519PublicKey.from_public_bytes(base64.b64decode(b64, validate=True))
+
+
+def verify_signature(manifest_bytes: bytes, sig_b64: bytes | str, key_b64: str) -> bool:
+    from cryptography.exceptions import InvalidSignature
+    try:
+        sig = base64.b64decode(sig_b64.strip() if isinstance(sig_b64, bytes) else sig_b64.strip(), validate=True)
+        _load_public(key_b64).verify(sig, manifest_bytes)
+        return True
+    except (InvalidSignature, ValueError):
+        return False
+
+
+def generate_keypair(private_path: str | Path, write_public: bool = True) -> str:
+    """Create an Ed25519 key. The private key goes to ``private_path`` (mode 600, never into the repository); returns the public key."""
+    from cryptography.hazmat.primitives import serialization as ser
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    key = Ed25519PrivateKey.generate()
+    pem = key.private_bytes(ser.Encoding.PEM, ser.PrivateFormat.PKCS8, ser.NoEncryption())
+    path = Path(private_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "wb") as f:
+        f.write(pem)
+    pub = base64.b64encode(key.public_key().public_bytes(ser.Encoding.Raw, ser.PublicFormat.Raw)).decode()
+    if write_public:
+        Path(str(resources.files("device_bus_analyzer").joinpath(PUBKEY))).write_text(pub + "\n", encoding="utf-8")
+    return pub
+
+
+def sign_manifest(private_path: str | Path) -> str:
+    from cryptography.hazmat.primitives import serialization as ser
+    key = ser.load_pem_private_key(Path(private_path).read_bytes(), password=None)
+    mp = Path(str(resources.files("device_bus_analyzer").joinpath(MANIFEST)))
+    sig = base64.b64encode(key.sign(mp.read_bytes())).decode()
+    mp.with_name(SIGNATURE).write_text(sig + "\n", encoding="utf-8")
+    return sig
 
 
 # --- updating (installation side) --------------------------------------------------------------------------------------
@@ -162,7 +216,16 @@ def update(url: str = DEFAULT_URL, fetch: Fetch = http_fetch) -> dict:
         if _dir is None:
             return {"status": "error", "version": None, "message": "no data directory"}
         try:
-            remote = json.loads(fetch(url).decode("utf-8"))
+            raw = fetch(url)
+            key = pubkey()
+            if key:                                               # signed updates: nothing in the manifest is trusted before this passes
+                try:
+                    sig = fetch(url + ".sig")
+                except Exception:
+                    sig = b""
+                if not verify_signature(raw, sig, key):
+                    return {"status": "error", "version": None, "message": "signature missing or invalid: update refused"}
+            remote = json.loads(raw.decode("utf-8"))
             files = remote["files"]
             if remote.get("format", 0) > FORMAT:
                 return {"status": "needs_app_update", "version": remote.get("version"), "message": "newer format"}

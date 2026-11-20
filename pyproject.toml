@@ -36,7 +36,7 @@ dba = "device_bus_analyzer.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-device_bus_analyzer = ["spec/*.yaml", "catalog.yaml", "templates/*.html", "static/*", "firmware/*", "knowledge-manifest.json"]
+device_bus_analyzer = ["spec/*.yaml", "catalog.yaml", "templates/*.html", "static/*", "firmware/*", "knowledge-manifest.json", "knowledge-manifest.json.sig", "knowledge-pubkey.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
