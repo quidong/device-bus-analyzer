@@ -17,6 +17,7 @@ Everything here is a pure function of its inputs, so it is easy to test with syn
 """
 from __future__ import annotations
 
+import math
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from typing import Any
@@ -29,6 +30,7 @@ NOISE_WINDOW = PRE + POST
 MIN_BASELINE = 5   # fewer quiet windows than this: the noise is unknown and nothing is confirmed
 MAX_BASELINE = 300
 NOISY_BIT = 0.2    # a bit that flips in more than this share of quiet windows is ignored when comparing
+RATE_NEAR = 240.0   # seconds around the actions in which the change rate of rare telegrams is measured
 MAX_NOISE = {"assumed": 0.25, "confirmed": 0.10, "unpaired": 0.05}
 
 Series = dict[tuple[int, int], tuple[list[float], list[bytes]]]
@@ -82,6 +84,59 @@ def _quiet_windows(markers: list[dict], lo: float, hi: float) -> list[tuple[floa
         step = len(out) / MAX_BASELINE
         out = [out[int(i * step)] for i in range(MAX_BASELINE)]
     return out
+
+
+def _rates(series: Series, marks: list[dict]) -> dict[tuple, float]:
+    """Changes per second of every byte (ds, cmd, pos) and bit (ds, cmd, pos, bit) while NO action was going on. Telegrams that are rare
+    (a clock every minute, a counter) cannot show their change inside a short quiet window, but their rate still tells how likely they
+    are to change by chance during an action. Gaps (appliance off) and the action windows themselves are left out."""
+    spans = sorted(window_of(m) for m in marks)
+    starts, ends = [], []
+    for a, b in spans:
+        a, b = a - 3.0, b + 3.0
+        if ends and a <= ends[-1]:
+            ends[-1] = max(ends[-1], b)
+        else:
+            starts.append(a); ends.append(b)
+
+    def busy(t: float) -> bool:
+        i = bisect_right(starts, t) - 1
+        return i >= 0 and t <= ends[i]
+
+    def near(t: float) -> bool:                                       # the same appliance state: a few minutes around the actions only
+        i = bisect_right(starts, t) - 1
+        return (i >= 0 and t - ends[i] <= RATE_NEAR) or (i + 1 < len(starts) and starts[i + 1] - t <= RATE_NEAR)
+
+    out: dict[tuple, float] = {}
+    for key, (ts, data) in series.items():
+        if len(ts) < 6:
+            continue
+        gaps = sorted(ts[i] - ts[i - 1] for i in range(1, len(ts)))
+        med = gaps[len(gaps) // 2]
+        if med <= 0:
+            continue
+        T, n = 0.0, 0
+        ch: Counter = Counter()
+        for i in range(1, len(ts)):
+            dt = ts[i] - ts[i - 1]
+            if dt <= 0 or dt > 5 * med or busy(ts[i]) or busy(ts[i - 1]) or not near(ts[i]):
+                continue
+            T += dt; n += 1
+            x, y = data[i - 1], data[i]
+            for pos in range(min(len(x), len(y))):
+                if x[pos] != y[pos]:
+                    ch[(pos, -1)] += 1
+                    for bit in range(8):
+                        if ((x[pos] ^ y[pos]) >> bit) & 1:
+                            ch[(pos, bit)] += 1
+        if n >= 5 and T > 0:
+            for (pos, bit), c in ch.items():
+                out[(*key, pos) if bit < 0 else (*key, pos, bit)] = c / T
+    return out
+
+
+def _by_rate(rate: float | None, length: float) -> float | None:
+    return None if rate is None else round(1 - math.exp(-rate * max(length, NOISE_WINDOW)), 3)
 
 
 def _noise(series: Series, windows: list[tuple[float, float]]):
@@ -151,18 +206,21 @@ def analyze(markers: list[dict], series: Series, rules: dict[str, dict[str, Any]
         windows = rest_windows                                      # same state as the action: far better than hours of standby
     changed, tiles, seen, variety, noisy, bitchg = _noise(series, windows)
     n_base = len(windows)
+    rates = _rates(series, done)
 
     def noise_rate(key: tuple[int, int], pos: int, length: float) -> float | None:
         if n_base < MIN_BASELINE or tiles[key] < MIN_BASELINE:
             return None
         p = min(0.999, changed[(*key, pos)] / tiles[key])
-        return round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)         # longer windows collect more noise
+        quiet = round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)        # longer windows collect more noise
+        return max(quiet, _by_rate(rates.get((*key, pos)), length) or 0.0)       # rare telegrams (clock, counter) change by themselves too
 
     def bit_noise(key: tuple[int, int], pos: int, bit: int, length: float) -> float | None:
         if n_base < MIN_BASELINE or tiles[key] < MIN_BASELINE:
             return None
         p = min(0.999, bitchg[(*key, pos, bit)] / tiles[key])
-        return round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)
+        quiet = round(1 - (1 - p) ** max(1.0, length / NOISE_WINDOW), 3)
+        return max(quiet, _by_rate(rates.get((*key, pos, bit)), length) or 0.0)
 
     groups: dict[str, dict[str, Any]] = {}
     for m in sorted(done, key=lambda x: x["ts"]):

@@ -212,3 +212,27 @@ def test_actions_without_any_bus_traffic_are_not_counted_as_evidence():
     g = next(x for x in res["groups"] if x["key"] == "door_open")
     assert g["n"] == 1                                                                 # only the action with traffic counts
     assert analysis.analyze([mk("door_open", 5000)], series, rules)["groups"] == []
+
+
+def test_rare_telegrams_that_change_by_themselves_count_as_noise():
+    """A clock telegram (one per minute) shows no change inside short quiet windows, yet it lands in actions by chance: its rate outside
+    the actions must lower its score, while the door byte that only changes at actions stays clean."""
+    from device_bus_analyzer import analysis
+    ts_door = [1000.0 + 3 * i for i in range(600)]                                     # status every 3 s, 30 min
+    marks, door = [], []
+    for k in range(6):
+        t = 1100.0 + 250 * k
+        marks.append({"kind": "door_open" if k % 2 == 0 else "door_close", "label": "d", "ts": t, "ts_end": t + 5, "note": None, "menu": ""})
+    for t in ts_door:
+        opened = any(m["ts"] <= t < m["ts"] + 250 and m["kind"] == "door_open" for m in marks)
+        door.append(bytes([0, 0x03 if opened else 0x41]))
+    ts_clock = [1000.0 + 60 * i for i in range(30)]
+    clock = [bytes([0, 0, 0, 0xff - i]) for i in range(30)]                             # changes every frame (a minute counter)
+    series = {(0x2a, 0x2252): (ts_door, door), (0x2a, 0x2256): (ts_clock, clock)}
+    rules = {"door_open": {"pair": "door_close"}, "door_close": {"pair": "door_open"}}
+    res = analysis.analyze(marks, series, rules)
+    g = next(x for x in res["groups"] if x["key"] == "door_open")
+    clk = [c for c in g["candidates"] if c["cmd"] == 0x2256 and c["pos"] == 3 and c["mask"] == 0xFF]
+    door_c = [c for c in g["candidates"] if c["cmd"] == 0x2252 and c["pos"] == 1]
+    assert door_c and door_c[0]["noise"] is not None and door_c[0]["noise"] < 0.1
+    assert not clk or clk[0]["noise"] is None or clk[0]["noise"] >= 0.1
