@@ -16,7 +16,7 @@ const j = (r) => JSON.parse(r.content[0].text);
 const c = await run({ DBA_URL: process.env.DBA_URL, DBA_TOKEN: process.env.DBA_TOKEN });
 const tools = (await c.listTools()).tools;
 assert.deepEqual(tools.map((t) => t.name).sort(),
-  ["command_overview", "command_values", "data_quality", "frames", "get_findings", "list_runs", "list_sources", "raw_bursts", "timeline"]);
+  ["command_overview", "command_values", "data_quality", "device_state", "frames", "get_findings", "learn_analysis", "list_markers", "list_runs", "list_sources", "raw_bursts", "timeline"]);
 assert.ok(tools.every((t) => t.annotations?.readOnlyHint === true), "all tools must be read-only");
 
 assert.equal(j(await c.callTool({ name: "list_sources", arguments: {} }))[0].name, "dw");
@@ -33,6 +33,9 @@ assert.equal(runs.length, 1);
 assert.equal(runs[0].start_status, "assumed");
 const inRun = j(await c.callTool({ name: "frames", arguments: { source: "dw", run: runs[0].id } }));
 assert.ok(inRun.length >= 1);
+assert.deepEqual(j(await c.callTool({ name: "device_state", arguments: { source: "dw" } })).fields, []);
+assert.ok(Array.isArray(j(await c.callTool({ name: "list_markers", arguments: { source: "dw" } }))));
+assert.equal(j(await c.callTool({ name: "learn_analysis", arguments: { source: "dw" } })).markers, 0);
 const bad = await c.callTool({ name: "frames", arguments: { source: "nobody" } });
 assert.equal(bad.isError, true);
 assert.match(bad.content[0].text, /404/);

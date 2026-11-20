@@ -50,6 +50,9 @@ CREATE INDEX IF NOT EXISTS ix_markers_src ON markers(source_id, ts);
 CREATE TABLE IF NOT EXISTS learned(               -- findings the person accepted from the analysis (local, per device)
   id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, meaning TEXT NOT NULL, kind TEXT, ds INTEGER, cmd INTEGER, pos INTEGER,
   from_val INTEGER, to_val INTEGER, hits INTEGER, n INTEGER, status TEXT NOT NULL, created_ts REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS learned_values(        -- numbers that follow what the display shows (remaining time, temperature ...)
+  id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, meaning TEXT NOT NULL, unit TEXT, ds INTEGER, cmd INTEGER, pos INTEGER,
+  enc TEXT NOT NULL, factor REAL NOT NULL, interp TEXT, hits INTEGER, n INTEGER, status TEXT NOT NULL, created_ts REAL NOT NULL);
 """
 
 
@@ -68,6 +71,45 @@ class Store:
     def close(self):
         with self.lock:
             self.db.close()
+
+    # --- backup / restore ---------------------------------------------------------
+    REQUIRED_TABLES = ("sources", "sessions", "bursts", "frames", "devices")
+
+    def backup_to(self, path: str | Path) -> None:
+        """Consistent snapshot of the live database (SQLite backup API; safe while the collectors write)."""
+        dst = sqlite3.connect(str(path))
+        try:
+            with self.lock:
+                self.db.backup(dst)
+        finally:
+            dst.close()
+
+    @classmethod
+    def check_backup(cls, path: str | Path) -> str | None:
+        """None if the file is a usable snapshot, otherwise a short reason."""
+        try:
+            con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+            try:
+                if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                    return "integrity"
+                have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            finally:
+                con.close()
+        except sqlite3.Error:
+            return "not_sqlite"
+        return None if all(t in have for t in cls.REQUIRED_TABLES) else "missing_tables"
+
+    def restore_from(self, path: str | Path) -> None:
+        """Replace the content of the live database with a checked snapshot; missing newer tables are added afterwards."""
+        src = sqlite3.connect(str(path))
+        try:
+            with self.lock:
+                src.backup(self.db)
+                self.db.executescript(SCHEMA)
+                self._sessions.clear()
+                self._pending_rx.clear()
+        finally:
+            src.close()
 
     # --- sources ------------------------------------------------------------
     def source(self, name: str, protocol: str) -> int:
@@ -122,7 +164,7 @@ class Store:
                 "sessions": one("SELECT COUNT(*) n FROM sessions WHERE source_id=?"),
                 "gaps": one("SELECT COUNT(*) n FROM gaps WHERE source_id=?"),
                 "markers": one("SELECT COUNT(*) n FROM markers WHERE source_id=?"),
-                "learned": one("SELECT COUNT(*) n FROM learned WHERE source_id=?")}
+                "learned": one("SELECT COUNT(*) n FROM learned WHERE source_id=?") + one("SELECT COUNT(*) n FROM learned_values WHERE source_id=?")}
 
     def delete_device(self, name: str) -> dict[str, int] | None:
         """Remove a source completely: raw bursts, frames, runs (derived), heartbeats, gaps, sessions, connection and key.
@@ -139,6 +181,7 @@ class Store:
                 self.db.execute("DELETE FROM gaps WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM markers WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM learned WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM learned_values WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sessions WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM devices WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sources WHERE id=?", (sid,))
@@ -418,6 +461,36 @@ class Store:
         src = self.source_by_name(name)
         return self._q("SELECT id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts FROM learned "
                        "WHERE source_id=? ORDER BY ds, cmd, pos, id", (src["id"],)) if src else []
+
+    def save_learned_value(self, name: str, meaning: str, unit: str | None, ds: int, cmd: int, pos: int, enc: str, factor: float,
+                           interp: str, hits: int, n: int, status: str) -> int | None:
+        src = self.source_by_name(name)
+        if not src:
+            return None
+        with self.lock:
+            c = self.db.execute("INSERT INTO learned_values(source_id, meaning, unit, ds, cmd, pos, enc, factor, interp, hits, n, status, created_ts) "
+                                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", (src["id"], meaning.strip()[:120], (unit or "").strip()[:12] or None, ds, cmd, pos,
+                                                                       enc, factor, interp, hits, n, status, time.time()))
+            self.db.commit()
+        return c.lastrowid
+
+    def learned_values(self, name: str) -> list[dict]:
+        src = self.source_by_name(name)
+        return self._q("SELECT id, meaning, unit, ds, cmd, pos, enc, factor, interp, hits, n, status FROM learned_values WHERE source_id=? "
+                       "ORDER BY ds, cmd, pos, id", (src["id"],)) if src else []
+
+    def delete_learned_value(self, name: str, value_id: int) -> bool:
+        with self.lock:
+            c = self.db.execute("DELETE FROM learned_values WHERE id=? AND source_id=(SELECT id FROM sources WHERE name=?)", (value_id, name))
+            self.db.commit()
+        return c.rowcount > 0
+
+    def latest_payload(self, name: str, ds: int, cmd: int) -> tuple[float, bytes] | None:
+        """Newest valid payload of one command (for 'the state right now')."""
+        src = self.source_by_name(name)
+        rows = self._q("SELECT ts, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND crc_ok=1 ORDER BY ts DESC, id DESC LIMIT 1",
+                       (src["id"], ds, cmd)) if src else []
+        return (rows[0]["ts"], bytes(rows[0]["data"])) if rows else None
 
     def delete_learned(self, name: str, learned_id: int) -> bool:
         with self.lock:

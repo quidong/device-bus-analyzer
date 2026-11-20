@@ -12,7 +12,7 @@
 <div class="tbl"><table class="stack"><tr><th>{{ t.time }}</th><th>{{ t.sender }}</th><th>{{ t.dest }}</th><th>{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.ack }}</th><th>{{ t.crc }}</th><th>{{ t.decoded }}</th></tr>
 {% for r in rows %}<tr class="{{ '' if r.crc_ok else 'bad' }}"><td data-label="{{ t.time }}">{{ fmt(r.ts) }}</td><td data-label="{{ t.sender }}">{{ m.who(r.decoded.sender, t) }}</td><td data-label="{{ t.dest }}">{{ '%02x' % r.ds }}<br><small>{{ r.decoded.receiver.value or '' }}</small></td><td data-label="{{ t.cmd }}">{{ '%04x' % r.cmd }}</td><td class="mono wide" data-label="{{ t.data }}">{{ hexs(r.data) }}</td>
 <td data-label="{{ t.ack }}">{% if r.ack is not none %}{{ '%02X' % r.ack }}<br>{{ m.who(r.decoded.acked_by, t) }}{% endif %}</td><td data-label="{{ t.crc }}">{{ t.ok if r.crc_ok else t.bad }}</td>
-<td class="wide" data-label="{{ t.decoded }}">{{ m.decoded(r.decoded, t) }}</td></tr>{% endfor %}</table></div>
+<td class="wide" data-label="{{ t.decoded }}">{{ m.decoded(r.decoded, t) }}{% for l in r.learned %}<br><span class="tag learned">{{ l }}</span>{% endfor %}</td></tr>{% endfor %}</table></div>
 <p class="pager">{% if q.offset > 0 %}<a href="?ds={{ q.ds }}&cmd={{ q.cmd }}&since={{ q.since }}&until={{ q.until }}&run={{ q.run }}&limit={{ q.limit }}&offset={{ [q.offset - q.limit, 0]|max }}">{{ t.prev }}</a>{% endif %}
 {% if rows|length == q.limit %}<a href="?ds={{ q.ds }}&cmd={{ q.cmd }}&since={{ q.since }}&until={{ q.until }}&run={{ q.run }}&limit={{ q.limit }}&offset={{ q.offset + q.limit }}">{{ t.next }}</a>{% endif %}</p>{% endif %}
 {% endblock %}

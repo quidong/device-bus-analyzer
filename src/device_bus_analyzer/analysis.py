@@ -190,11 +190,13 @@ def run(store, name: str, rules: dict[str, dict[str, Any]] | None = None, marker
     markers = store.markers(name) if markers is None else markers
     markers = [m for m in markers if not (m.get("step_group") and not m.get("ts_end"))]    # a guided step that was never finished
     if not markers:
-        return analyze([], {}, rules)
+        return {**analyze([], {}, rules), "value_fields": [], "markers": 0}
     lo = min(window_of(m)[0] for m in markers) - 1800
     hi = max(window_of(m)[1] for m in markers) + 1800
-    res = analyze(markers, store.frame_series(name, lo, hi), rules)
+    series = store.frame_series(name, lo, hi)
+    res = analyze(markers, series, rules)
     res["markers"] = len(markers)
+    res["value_fields"] = value_candidates(markers, series)
     return res
 
 
@@ -206,3 +208,68 @@ def activity(store, name: str, since: float, until: float, rules: dict[str, dict
     g = res["groups"][0] if res["groups"] else None
     quiet = [c for c in (g["candidates"] if g else []) if c["noise"] is not None and c["noise"] <= 0.25]
     return {"changes": len(quiet), "baseline": res["baseline"], "best": quiet[0] if quiet else None}
+
+
+# --- values: numbers that follow what the display shows ---------------------------------------------------
+INTERP_UNIT = {"min_total": "min", "hours": "h", "min_part": "min", "number": ""}
+INTERP_TOL = {"min_total": 1.0, "hours": 0.0, "min_part": 1.0, "number": 0.5}
+FACTORS = (1.0, 0.1)
+
+
+def parse_display(note: str | None) -> dict[str, float]:
+    """Read what the person typed from the display: '1:45' (time), '105 min', '45', '45 °C', '1,5'. Text such as 'Eco' gives {}."""
+    import re
+    s = (note or "").strip().lower().replace(",", ".")
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})(?:\s*h)?", s)
+    if m:
+        h, mm = int(m[1]), int(m[2])
+        return {"min_total": float(h * 60 + mm), "hours": float(h), "min_part": float(mm)}
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*(min|m|h|std|°c|°|c|%)?", s)
+    if not m:
+        return {}
+    v, unit = float(m[1]), m[2] or ""
+    if unit in ("h", "std"):
+        return {"hours": v, "min_total": v * 60}
+    if unit in ("min", "m"):
+        return {"min_total": v, "number": v}
+    return {"number": v, "min_total": v} if not unit else {"number": v}
+
+
+def value_candidates(markers: list[dict], series: Series, min_readings: int = 4, min_distinct: int = 3) -> list[dict[str, Any]]:
+    """Which byte or word equals the number the person read from the display, at every reading?
+
+    The readings (marker kind 'display' with a note) are taken at different moments of a run, so the shown value changes. A candidate
+    must match every reading with the same interpretation (total minutes, hour part, minute part or plain number) and the readings must
+    differ, otherwise a constant byte would match by accident.
+    """
+    from .learned import decode_value
+    reads = []
+    for m in markers:
+        interp = parse_display(m.get("note")) if m["kind"] == "display" else {}
+        if interp:
+            reads.append((m.get("ts_end") or m["ts"], interp))
+    if len(reads) < min_readings:
+        return []
+    out = []
+    for interp_name, tol in INTERP_TOL.items():
+        mine = [(t, i[interp_name]) for t, i in reads if interp_name in i]
+        if len(mine) < min_readings or len({v for _, v in mine}) < min_distinct:
+            continue
+        for key, ser in series.items():
+            states = [(_state_at(ser, t + 0.3), v) for t, v in mine]
+            if any(s is None for s, _ in states):
+                continue
+            longest = min(len(s) for s, _ in states)
+            for pos in range(longest):
+                for enc in ("u8", "u16be", "u16le"):
+                    if enc != "u8" and pos + 1 >= longest:
+                        continue
+                    for factor in FACTORS:
+                        if all(abs((decode_value(enc, pos, factor, s) or -1e9) - v) <= tol for s, v in states):
+                            distinct = len({v for _, v in mine})
+                            out.append({"ds": key[0], "cmd": key[1], "pos": pos, "enc": enc, "factor": factor, "interp": interp_name,
+                                        "unit": INTERP_UNIT[interp_name], "hits": len(mine), "n": len(mine), "distinct": distinct,
+                                        "status": "confirmed" if len(mine) >= 6 and distinct >= 5 else "assumed"})
+    # a wider word that merely contains the same low byte is the less likely reading: keep the narrower encoding first
+    out.sort(key=lambda c: (-c["distinct"], c["enc"] != "u8", c["factor"] != 1.0, c["ds"], c["cmd"], c["pos"]))
+    return out[:12]

@@ -26,7 +26,10 @@
     { "name": "timeline", "description": "Value changes in time order" },
     { "name": "frames", "description": "Decoded telegrams with sender, receiver and ACK node" },
     { "name": "raw_bursts", "description": "Raw received bursts" },
-    { "name": "data_quality", "description": "CRC errors, gaps, restarts" }
+    { "name": "data_quality", "description": "CRC errors, gaps, restarts" },
+    { "name": "list_markers", "description": "Companion markers of a device" },
+    { "name": "learn_analysis", "description": "Findings derived from the markers" },
+    { "name": "device_state", "description": "Current taught values of a device" }
   ],
   "user_config": {
     "url": {

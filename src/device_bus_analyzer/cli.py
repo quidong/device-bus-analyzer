@@ -29,6 +29,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("file")
     p = sub.add_parser("gaps", help="check a log file for lost bursts")
     p.add_argument("file")
+    p = sub.add_parser("validate-contribution", help="check exported findings (JSON) for shape and private data")
+    p.add_argument("files", nargs="+")
+    p = sub.add_parser("suggest-spec", help="print spec entries (YAML) for an exported findings file")
+    p.add_argument("file")
     sub.add_parser("hash-password", help="print an argon2id hash for ADMIN_PASSWORD_HASH (reads the password from stdin)")
     sub.add_parser("collect", help="run the passive collector for DBA_DEVICES")
     p = sub.add_parser("serve", help="run API + frontend")
@@ -53,6 +57,22 @@ def main(argv: list[str] | None = None) -> int:
         g = logformat.find_gaps(entries)
         print("\n".join(g) or "no gaps")
         return 1 if g else 0
+    if a.cmd in ("validate-contribution", "suggest-spec"):
+        import json
+
+        from .contribution import to_spec_snippet, validate
+        bad = 0
+        for f in (a.files if a.cmd == "validate-contribution" else [a.file]):
+            doc = json.load(open(f, encoding="utf-8"))
+            problems = validate(doc)
+            if problems:
+                bad += 1
+                print(f"{f}:\n  " + "\n  ".join(problems))
+            elif a.cmd == "suggest-spec":
+                print(to_spec_snippet(doc))
+            else:
+                print(f"{f}: OK")
+        return 1 if bad else 0
     if a.cmd == "hash-password":
         from argon2 import PasswordHasher
         print(PasswordHasher().hash(sys.stdin.readline().rstrip("\n")))

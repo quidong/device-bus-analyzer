@@ -59,6 +59,12 @@ controls:
         steps:
           - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
           - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+      - id: display
+        de: "Anzeige ablesen"
+        en: "Read the display"
+        repeat: 5
+        steps:
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}
   dryer:
     events:
       - {id: door_open,  de: "Tür geöffnet",        en: "Door opened",        pair: door_close}
@@ -99,6 +105,12 @@ controls:
         steps:
           - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
           - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+      - id: display
+        de: "Anzeige ablesen"
+        en: "Read the display"
+        repeat: 5
+        steps:
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}
   generic:                      # any other device type
     events:
       - {id: door_open,  de: "Tür geöffnet",    en: "Door opened",    pair: door_close}
@@ -115,3 +127,9 @@ controls:
         steps:
           - {event: door_open,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open."}
           - {event: door_close, de: "Tür wieder schließen.",        en: "Close the door again."}
+      - id: display
+        de: "Anzeige ablesen"
+        en: "Read the display"
+        repeat: 5
+        steps:
+          - {event: display, ask: true, de: "Während ein Programm läuft: Anzeige ablesen (z. B. Restzeit 1:45 oder 105) und eintragen. Zwischen den Schritten 1–2 Minuten warten.", en: "While a program runs: read the display (e.g. remaining time 1:45 or 105) and enter it. Wait 1-2 minutes between steps."}

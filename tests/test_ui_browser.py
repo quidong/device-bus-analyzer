@@ -44,7 +44,7 @@ def test_guided_run_and_pages_without_overflow(server, width):
         pg = b.new_page(viewport={"width": width, "height": 800}); errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.goto(base + "/login?lang=en"); pg.fill("input[name=email]", MAIL); pg.fill("input[name=password]", PW); pg.click("button")
-        for path in ("/", "/devices", "/s/dw/companion", "/s/dw/learn", "/s/dw/timeline", "/firmware/bshdbus"):
+        for path in ("/", "/devices", "/s/dw/companion", "/s/dw/learn", "/s/dw/timeline", "/firmware/bshdbus", "/help", "/backup", "/s/dw/homeassistant"):
             pg.goto(base + path + "?lang=en")
             assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0, (path, width)
         pg.goto(base + "/s/dw/companion?lang=en")

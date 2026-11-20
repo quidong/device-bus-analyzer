@@ -65,6 +65,12 @@ export function buildServer(call = api) {
     ({ source, ...q }) => call(`/api/${encodeURIComponent(source)}/bursts`, q));
   tool("data_quality", "Frame counts, CRC errors, frames without ACK, board restarts and detected gaps.",
     { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/quality`));
+  tool("list_markers", "Companion markers (what was done at the appliance, with server time): id, label, kind, start/end.",
+    { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/markers`));
+  tool("learn_analysis", "Findings derived from the markers: byte changes per action with repeats and status, plus display-value candidates.",
+    { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/learn`));
+  tool("device_state", "Current value of everything taught for a device (door, remaining time ...), as Home Assistant reads it.",
+    { source: z.string() }, ({ source }) => call(`/api/${encodeURIComponent(source)}/state`));
   return server;
 }
 

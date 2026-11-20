@@ -132,3 +132,8 @@ table.stack tr.mk td{display:block;padding:10px 14px}
 .grp{margin:18px 0}.grp-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.grp-head h2{margin:0;font-size:18px;flex:1}
 form.accept{display:flex;gap:8px;flex-wrap:wrap}form.accept input{min-height:38px;max-width:220px}form.accept button{min-height:38px}
 details summary{cursor:pointer;margin:8px 0}
+
+.tag.learned{background:var(--acc-soft);color:var(--acc-ink);border-color:transparent}
+dl .now{grid-column:1/-1}
+.onboarding .checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}.onboarding .done{color:var(--mut)}.onboarding .todo{font-weight:600}
+.right a{color:var(--mut);text-decoration:none;font-size:14px}.right a:hover{color:var(--fg)}

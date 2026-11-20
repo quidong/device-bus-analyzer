@@ -5,20 +5,25 @@ import json
 import logging
 import os
 import secrets
+import shutil
+import tempfile
 import time
 from collections import Counter
 from contextlib import asynccontextmanager
 from datetime import datetime
 from importlib import resources
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import __version__, analysis, catalog, i18n, protocols
+from . import __version__, analysis, catalog, i18n, learned, protocols
+from . import contribution as contribution_mod
+from . import homeassistant
 from .auth import COOKIE, CSRF_COOKIE, Auth
 from .config import Settings, validate_device_input
 from .spec import load_spec
@@ -199,13 +204,13 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         lo, hi = window(source, run, parse_time(since, tz), parse_time(until, tz))
         rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi,
                             False if bad_only else None, max(1, min(limit, 5000)), max(0, offset))
-        return jsonable(rows)
+        return jsonable(annotate(source, rows))
 
     @app.get("/api/{source}/timeline", dependencies=[api])
     def api_timeline(source: str, since: str | None = None, until: str | None = None, limit: int = 2000, run: int | None = None):
         source_or_404(source)
         lo, hi = window(source, run, parse_time(since, tz), parse_time(until, tz))
-        return jsonable(store.timeline(source, lo, hi, max(1, min(limit, 20000))))
+        return jsonable(annotate(source, store.timeline(source, lo, hi, max(1, min(limit, 20000)))))
 
     @app.get("/api/{source}/runs", dependencies=[api])
     def api_runs(source: str):
@@ -260,12 +265,35 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             return "paused"
         return "live" if d["last_seen"] and time.time() - d["last_seen"] < 150 else "waiting"
 
+    def annotate(source: str, rows: list[dict]) -> list[dict]:
+        """Add what the person has taught the app (accepted findings) to each row: r['learned'] = ['Door opened', ...]."""
+        ov = learned.overlay(store.learned(source), store.learned_values(source))
+        for r in rows:
+            r["learned"] = learned.describe(ov, r["ds"], r["cmd"], bytes(r["data"])) if ov and "data" in r else []
+        return rows
+
+    def device_state_now(source: str) -> list[str]:
+        """The newest value of everything that was taught: what the appliance is doing right now."""
+        ov = learned.overlay(store.learned(source), store.learned_values(source))
+        out: list[str] = []
+        for (ds, cmd) in sorted(ov):
+            last = store.latest_payload(source, ds, cmd)
+            for text in (learned.describe(ov, ds, cmd, last[1]) if last else []):
+                if text not in out:
+                    out.append(text)
+        return out
+
     def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):
         lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
         rows = store.devices()
         for d in rows:
             d["state"], d["ago"] = device_state(d), ago(d["last_seen"], lang)
-        resp = page(request, "devices.html", devices=rows, catalog=catalog.build(store.used_classifications()),
+            d["now"] = device_state_now(d["name"])
+        steps = [("device", bool(rows)), ("data", any(d["last_seen"] for d in rows)),
+                 ("marker", any(store.markers(d["name"], limit=1) for d in rows)),
+                 ("learned", any(d["now"] for d in rows))]
+        onboarding = None if all(ok for _, ok in steps) else steps
+        resp = page(request, "devices.html", onboarding=onboarding, devices=rows, catalog=catalog.build(store.used_classifications()),
                     error=error, form=form)
         resp.status_code = status
         return resp
@@ -364,6 +392,60 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             manager.sync()
         return RedirectResponse("/devices", status_code=303)
 
+    # --- backup and restore of the whole database (session only: the file contains the ESPHome keys) ----------------------
+    @app.get("/backup", response_class=HTMLResponse, dependencies=[cfg])
+    def backup_page(request: Request, msg: str = ""):
+        return page(request, "backup.html", msg=msg, error=None)
+
+    @app.get("/backup/download", dependencies=[cfg])
+    def backup_download():
+        tmp = Path(tempfile.mkdtemp(prefix="dba-backup-"))
+        out = tmp / "snapshot.sqlite"
+        store.backup_to(out)
+        data = out.read_bytes()
+        shutil.rmtree(tmp, ignore_errors=True)
+        name = time.strftime("device-bus-analyzer-%Y%m%d-%H%M.sqlite")
+        return Response(data, media_type="application/vnd.sqlite3",
+                        headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+    @app.post("/backup/restore")
+    async def backup_restore(request: Request, csrf: str = Form(...), confirm: str = Form(""), file: UploadFile = File(...)):
+        need_session_csrf(request, csrf)
+
+        def fail(reason: str) -> Response:
+            r = page(request, "backup.html", msg="", error=reason)
+            r.status_code = 422
+            return r
+        if confirm.strip() != "RESTORE":
+            return fail("confirm_mismatch")
+        tmp = Path(tempfile.mkdtemp(prefix="dba-restore-"))
+        try:
+            up = tmp / "upload.sqlite"
+            size = 0
+            with up.open("wb") as fh:
+                while chunk := await file.read(1 << 20):
+                    size += len(chunk)
+                    if size > 2 << 30:
+                        return fail("too_big")
+                    fh.write(chunk)
+            bad = Store.check_backup(up)
+            if bad:
+                return fail(bad)
+            store.backup_to(tmp / "before-restore.sqlite")          # safety copy of the current state
+            manager.stop()
+            try:
+                store.restore_from(up)
+            finally:
+                if start_collectors:
+                    manager.sync()
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        return RedirectResponse("/backup?msg=restored", status_code=303)
+
+    @app.get("/help", response_class=HTMLResponse, dependencies=[api])
+    def help_page(request: Request):
+        return page(request, "help.html")
+
     # --- firmware: the recommended ESPHome files of a protocol, to read, copy and download ---------------------------
     @app.get("/firmware/{protocol}", response_class=HTMLResponse, dependencies=[api])
     def firmware_page(request: Request, protocol: str, device: str = "", new: str = ""):
@@ -399,7 +481,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         limit = max(1, min(limit, 1000))
         run_id = int(run) if run.isdigit() else None
         lo, hi = window(source, run_id, parse_time(since, tz), parse_time(until, tz))
-        rows = store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi, False if bad_only else None, limit, max(0, offset))
+        rows = annotate(source, store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi, False if bad_only else None, limit, max(0, offset)))
         return page(request, "frames.html", src=src, rows=rows, q=dict(ds=ds, cmd=cmd, since=since, until=until, bad_only=bad_only,
                     limit=limit, offset=max(0, offset), run=run))
 
@@ -407,7 +489,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     def html_timeline(request: Request, source: str, since: str = "", until: str = "", limit: int = 1000, run: str = ""):
         src = source_or_404(source)
         lo, hi = window(source, int(run) if run.isdigit() else None, parse_time(since, tz), parse_time(until, tz))
-        rows = store.timeline(source, lo, hi, max(1, min(limit, 5000)))
+        rows = annotate(source, store.timeline(source, lo, hi, max(1, min(limit, 5000))))
         for r in rows:
             r["marker"] = None
         if rows:     # what the person did at the appliance is shown between the telegrams, at the time it happened
@@ -522,7 +604,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     def learn_context(request: Request, source: str) -> dict:
         src = source_or_404(source)
         res = analysis.run(store, source, rules_for(source))
-        return {"src": src, "res": res, "learned": store.learned(source), "device": store.device(source),
+        return {"src": src, "res": res, "learned": store.learned(source), "learned_values": store.learned_values(source), "device": store.device(source),
                 "min_baseline": analysis.MIN_BASELINE, "marker_rows": store.markers(source, limit=1)}
 
     @app.get("/s/{source}/learn", response_class=HTMLResponse, dependencies=[api])
@@ -542,6 +624,25 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         store.save_learned(source, meaning.strip() or g["label"], g["kind"], ds, cmd, pos, c["from"], c["to"], c["hits"], c["n"], c["status"])
         return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
 
+    @app.post("/s/{source}/values")
+    async def value_create(request: Request, source: str, csrf: str = Form(...), ds: int = Form(...), cmd: int = Form(...), pos: int = Form(...),
+                           enc: str = Form(...), factor: float = Form(...), interp: str = Form(...), meaning: str = Form(""), unit: str = Form("")):
+        need_session_csrf(request, csrf)
+        source_or_404(source)
+        res = analysis.run(store, source, rules_for(source))
+        c = next((x for x in res["value_fields"] if (x["ds"], x["cmd"], x["pos"], x["enc"], x["factor"], x["interp"]) == (ds, cmd, pos, enc, factor, interp)), None)
+        if not c:
+            raise HTTPException(422, "no such value")
+        store.save_learned_value(source, meaning.strip() or "Value", unit.strip() or c["unit"], ds, cmd, pos, enc, factor, interp, c["hits"], c["n"], c["status"])
+        return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
+
+    @app.post("/s/{source}/values/{value_id}/delete")
+    async def value_delete(request: Request, source: str, value_id: int, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        if not store.delete_learned_value(source, value_id):
+            raise HTTPException(404, "unknown value")
+        return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
+
     @app.post("/s/{source}/learned/{learned_id}/delete")
     async def learned_delete(request: Request, source: str, learned_id: int, csrf: str = Form(...)):
         need_session_csrf(request, csrf)
@@ -553,14 +654,30 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
     def contribution(source: str):
         """What may leave this installation: accepted findings and a count of actions. No frames, no timestamps, no host, no key."""
         src = source_or_404(source)
-        d = store.device(source) or {}
-        kinds = Counter(m["kind"] for m in store.markers(source, limit=5000))
-        out = {"format": 1, "protocol": src["protocol"], "type": d.get("type"), "manufacturer": d.get("manufacturer"), "model": d.get("model"),
-               "findings": [{"meaning": f["meaning"], "action": f["kind"], "ds": f["ds"], "cmd": f["cmd"], "byte": f["pos"], "from": f["from_val"],
-                             "to": f["to_val"], "repeats": f["hits"], "of": f["n"], "status": f["status"]} for f in store.learned(source)],
-               "actions_recorded": dict(kinds)}
+        out = contribution_mod.build_export(store, source, src["protocol"], store.device(source))
         return Response(json.dumps(out, indent=2, ensure_ascii=False), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="{source}-findings.json"'})
+
+    @app.get("/s/{source}/contribution.yaml", dependencies=[api])
+    def contribution_spec(source: str):
+        """The same findings as entries for spec/<protocol>.yaml, ready for a pull request."""
+        src = source_or_404(source)
+        doc = contribution_mod.build_export(store, source, src["protocol"], store.device(source))
+        return Response(contribution_mod.to_spec_snippet(doc), media_type="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{source}-spec-suggestion.yaml"'})
+
+    @app.get("/api/{source}/state", dependencies=[api])
+    def api_state(source: str):
+        """Newest value of everything that was taught (door, remaining time ...): what Home Assistant reads."""
+        source_or_404(source)
+        return {"source": source, "fields": homeassistant.state_fields(store, source)}
+
+    @app.get("/s/{source}/homeassistant", response_class=HTMLResponse, dependencies=[api])
+    def html_homeassistant(request: Request, source: str):
+        src = source_or_404(source)
+        fields = homeassistant.state_fields(store, source)
+        base = str(request.base_url).rstrip("/")
+        return page(request, "homeassistant.html", src=src, fields=fields, yaml_text=homeassistant.render_yaml(source, base, fields))
 
     @app.get("/api/{source}/markers", dependencies=[api])
     def api_markers(source: str, limit: int = 500):

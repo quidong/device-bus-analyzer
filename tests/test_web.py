@@ -155,10 +155,10 @@ def test_no_write_routes_exist(app):
         if r.path.startswith("/api"):
             assert methods <= {"GET", "HEAD"}, r.path
         if r.path.startswith("/s/") and "POST" in methods:      # the only writes under /s/: companion markers and accepted findings
-            assert any(x in r.path for x in ("/markers", "/learned")), r.path
+            assert any(x in r.path for x in ("/markers", "/learned", "/values")), r.path
     # devices (add, edit, pause, delete) change only through session + CSRF forms; the API and the data pages are GET-only; nothing sends to a device
     assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout", "/devices", "/devices/{name}", "/devices/{name}/enabled", "/devices/{name}/delete",
-        "/s/{source}/markers", "/s/{source}/markers/{marker_id}/end", "/s/{source}/markers/{marker_id}/delete", "/s/{source}/learned", "/s/{source}/learned/{learned_id}/delete"}
+        "/s/{source}/markers", "/s/{source}/markers/{marker_id}/end", "/s/{source}/markers/{marker_id}/delete", "/s/{source}/learned", "/s/{source}/learned/{learned_id}/delete", "/s/{source}/values", "/s/{source}/values/{value_id}/delete", "/backup/restore"}
     assert not [r.path for r in app.routes if {"DELETE", "PUT", "PATCH"} & (getattr(r, "methods", None) or set())]
 
 

@@ -70,6 +70,22 @@ findings** writes only those (addresses, byte positions, values, device model) a
 host names and keys are never part of it. The companion sends nothing to the appliance. Actions and accepted findings are deleted
 together with the device.
 
+### Display values, Home Assistant, sharing
+The guided check **Read the display** (enter the shown time or number five times while it changes) lets **Learned** find the bytes
+that carry it (minutes, hours and minutes, or a number; 8 or 16 bit, factor 1 or 0.1). Accepted findings and values are shown next to
+the telegrams in the timeline and frames, and as **Now** on the device card.
+
+**Home Assistant** (device card or Learned page): the page shows the current values and a ready `rest:` configuration that reads
+`/api/{device}/state` with your API token. Decoding happens on the server; the ESPHome firmware only streams raw telegrams.
+
+**Share** with *Export findings* (JSON) or *Spec suggestion* (YAML for the protocol spec, always status *assumed*). Put the JSON
+under `contributions/<protocol>/`; CI checks the file (`dba validate-contribution`, no telegrams, times, addresses or keys allowed).
+`dba suggest-spec FILE` prints the YAML for a contribution.
+
+**Backup** (header): download a consistent snapshot of the database, or restore one (type RESTORE; the file contains the ESPHome
+keys, keep it private). **Help** explains how to record a good run. The MCP extension also offers `list_markers`, `learn_analysis`
+and `device_state`.
+
 ## Command line
 
 ```

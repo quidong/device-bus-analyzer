@@ -8,6 +8,7 @@
 <div class="pagehead"><h1>{{ t.devices_title }}</h1><button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
 <p class="lead">{{ t.dev_note }}</p>
 {% if error %}<p class="err" role="alert">{{ t[error] }}</p>{% endif %}
+{% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {{ t['onb_' ~ key] }}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}
 <div class="cards">
 {% for d in devices %}<article class="dev">
 <div class="head"><div class="tile">{{ tile(d.type) }}</div>
@@ -18,10 +19,12 @@
 <dl><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
 <div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
 <div><dt>{{ t.frames }}</dt><dd><b>{{ d.frames }}</b></dd></div>
-<div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div></dl>
+<div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div>
+{% if d.now %}<div class="now"><dt>{{ t.state_now }}</dt><dd>{% for x in d.now %}<span class="tag learned">{{ x }}</span> {% endfor %}</dd></div>{% endif %}</dl>
 <div class="actions">
 <a class="btn primary" href="/s/{{ d.name }}/companion">{{ t.companion }}</a>
 <a class="btn soft" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
+{% if d.now %}<a class="btn soft" href="/s/{{ d.name }}/homeassistant">{{ t.ha_title }}</a>{% endif %}
 <a class="btn" href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
 <button type="button" class="edit-device" {{ editdata(d) }}>{{ t.edit }}</button>
 {% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button>{{ t.pause if d.enabled else t.resume }}</button></form>{% endif %}

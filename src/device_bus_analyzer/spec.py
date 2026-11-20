@@ -116,11 +116,11 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
             fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
                            "status": f.get("status", entry["status"])})
             continue
-        if f.get("kind") == "u16":
+        if f.get("kind") in ("u16", "u16le"):
             if b + 1 >= len(data):
                 notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
                 continue
-            v: Any = data[b] << 8 | data[b + 1]
+            v: Any = data[b] << 8 | data[b + 1] if f["kind"] == "u16" else data[b + 1] << 8 | data[b]
         elif "bit" in f:
             v = bool(data[b] >> f["bit"] & 1)
         elif f.get("kind") == "enum":
@@ -128,6 +128,8 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
             v = label if label is not None else f"0x{data[b]:02x}"
         else:
             v = data[b]
+        if f.get("scale") and isinstance(v, (int, float)) and not isinstance(v, bool):
+            v = round(v * f["scale"], 3)
         values[f["name"]] = v
         fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
                        "status": f.get("status", entry["status"])})

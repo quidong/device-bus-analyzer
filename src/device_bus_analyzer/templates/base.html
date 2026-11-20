@@ -7,7 +7,7 @@
 {% if logged_in and has_src %}<a class="back" href="/" aria-label="{{ t.sources }}"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>{% endif %}
 <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="var(--acc)"/><path d="M5 9h5l2 4 3-8 2 4h4M5 17h16" stroke="var(--on-acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ t.title }}</a>
 {% if logged_in %}
-<span class="right"><span class="lang"><a href="?lang=de" {% if lang == 'de' %}class="on"{% endif %}>DE</a> · <a href="?lang=en" {% if lang == 'en' %}class="on"{% endif %}>EN</a></span>
+<span class="right"><a href="/help">{{ t.help_link }}</a><a href="/backup">{{ t.backup_link }}</a><span class="lang"><a href="?lang=de" {% if lang == 'de' %}class="on"{% endif %}>DE</a> · <a href="?lang=en" {% if lang == 'en' %}class="on"{% endif %}>EN</a></span>
 <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.logout }}</button></form></span>
 {% endif %}</header>
 {% block nav %}{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block body %}
+<div class="pagehead"><h1>{{ t.backup_title }}</h1></div>
+{% if msg == 'restored' %}<p class="info ok"><span>{{ t.backup_restored }}</span></p>{% endif %}
+{% if error %}<p class="info err" role="alert"><span>{{ t['backup_err_' ~ error] }}</span></p>{% endif %}
+<section class="card"><h2>{{ t.backup_download }}</h2><p>{{ t.backup_download_intro }}</p>
+<p class="info warn"><span>{{ t.backup_keys_warning }}</span></p>
+<p><a class="btn primary" href="/backup/download">{{ t.backup_download_btn }}</a></p></section>
+<section class="card"><h2>{{ t.backup_restore }}</h2><p>{{ t.backup_restore_intro }}</p>
+<form method="post" action="/backup/restore" enctype="multipart/form-data" class="stackform">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}">
+<label>{{ t.backup_file }}<input type="file" name="file" accept=".sqlite,.db,application/vnd.sqlite3" required></label>
+<label>{{ t.backup_confirm }}<input name="confirm" autocomplete="off" placeholder="RESTORE" required></label>
+<button class="btn danger">{{ t.backup_restore_btn }}</button></form></section>
+{% endblock %}
