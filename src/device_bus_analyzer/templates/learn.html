@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
+<div class="pagehead"><h1>{{ src.name }} · {{ t.learn_title }}</h1>{% if logged_in %}<a class="btn" href="/s/{{ src.name }}/companion">{{ t.open_companion }}</a>{% endif %}</div>
+<p class="lead">{{ t.learn_intro }}</p>
+{% if not res.groups %}<p class="info"><span>{{ t.learn_none }}</span></p>{% else %}
+<p class="fld">{{ t.learn_stats.format(res.markers, res.frames, res.baseline) }}</p>
+{% if res.baseline < min_baseline %}<p class="notice"><span>{{ t.learn_few_base }}</span></p>{% endif %}
+{% for g in res.groups %}<section class="card grp">
+<div class="grp-head"><h2>{{ g.label }}</h2><span class="tag">{{ g.n }} {{ t.times }}</span>{% if g.best %}<span class="st {{ g.best.status }}">{{ t[g.best.status] }}</span>{% endif %}</div>
+{% if g.candidates %}<div class="tbl"><table class="stack"><tr><th>{{ t.byte }}</th><th>{{ t.hits }}</th><th>{{ t.change }}</th><th>{{ t.noise }}</th><th>{{ t.status }}</th>{% if logged_in %}<th></th>{% endif %}</tr>
+{% for c in g.candidates %}<tr><td class="mono" data-label="{{ t.byte }}">{{ '%02x' % c.ds }}/{{ '%04x' % c.cmd }} #{{ c.pos if c.pos >= 0 else '–' }}</td>
+<td data-label="{{ t.hits }}">{{ c.hits }} {{ t.of_n }} {{ c.n }}</td>
+<td class="mono wide" data-label="{{ t.change }}">{% if c.pos >= 0 %}{{ '%02x' % c.from }} → {{ '%02x' % c.to }}{% if c.bits %} <small>({{ c.bits|join(', ') }})</small>{% endif %}{% else %}{{ c.from }} → {{ c.to }} B{% endif %}</td>
+<td data-label="{{ t.noise }}">{{ ('%d %%' % (c.noise * 100)) if c.noise is not none else '–' }}</td>
+<td data-label="{{ t.status }}"><span class="st {{ c.status }}">{{ t[c.status] }}</span></td>
+{% if logged_in %}<td class="wide" data-label="">{% if c.status in ('assumed', 'confirmed') %}<form method="post" action="/s/{{ src.name }}/learned" class="inline accept">
+<input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="group" value="{{ g.key }}"><input type="hidden" name="ds" value="{{ c.ds }}"><input type="hidden" name="cmd" value="{{ c.cmd }}"><input type="hidden" name="pos" value="{{ c.pos }}">
+<input name="meaning" value="{{ g.label }}" maxlength="120" aria-label="{{ t.meaning }}"><button>{{ t.accept }}</button></form>{% else %}<span class="fld">{{ t.not_accepted }}</span>{% endif %}</td>{% endif %}</tr>{% endfor %}</table></div>
+{% else %}<p class="fld">{{ t.no_candidates }}</p>{% endif %}
+{% if g.events %}<details><summary>{{ t.events_title }}</summary><div class="tbl"><table class="stack"><tr><th>{{ t.dest }}/{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.hits }}</th></tr>
+{% for e in g.events %}<tr><td class="mono" data-label="{{ t.dest }}/{{ t.cmd }}">{{ '%02x' % e.ds }}/{{ '%04x' % e.cmd }}</td><td class="mono wide" data-label="{{ t.data }}">{{ e.data }}</td><td data-label="{{ t.hits }}">{{ e.hits }} {{ t.of_n }} {{ e.n }}</td></tr>{% endfor %}</table></div></details>{% endif %}
+</section>{% endfor %}{% endif %}
+<section class="card" id="learned"><h2>{{ t.learned_title }}</h2>
+{% if not learned %}<p class="fld">{{ t.learned_none }}</p>{% else %}<div class="tbl"><table class="stack"><tr><th>{{ t.meaning }}</th><th>{{ t.byte }}</th><th>{{ t.change }}</th><th>{{ t.hits }}</th><th>{{ t.status }}</th>{% if logged_in %}<th></th>{% endif %}</tr>
+{% for f in learned %}<tr><td data-label="{{ t.meaning }}">{{ f.meaning }}</td><td class="mono" data-label="{{ t.byte }}">{{ '%02x' % f.ds }}/{{ '%04x' % f.cmd }} #{{ f.pos }}</td><td class="mono" data-label="{{ t.change }}">{{ '%02x' % f.from_val }} → {{ '%02x' % f.to_val }}</td>
+<td data-label="{{ t.hits }}">{{ f.hits }} {{ t.of_n }} {{ f.n }}</td><td data-label="{{ t.status }}"><span class="st {{ f.status }}">{{ t[f.status] }}</span></td>
+{% if logged_in %}<td class="wide" data-label=""><form method="post" action="/s/{{ src.name }}/learned/{{ f.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.delete }}</button></form></td>{% endif %}</tr>{% endfor %}</table></div>
+<p><a class="btn" href="/s/{{ src.name }}/contribution.json">{{ t.export }}</a></p><p class="fld">{{ t.export_note }}</p>{% endif %}</section>
+{% endblock %}

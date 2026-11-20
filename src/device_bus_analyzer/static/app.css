@@ -116,3 +116,19 @@ form.wizard .steps{display:grid}form.wizard fieldset[hidden]{display:none}.only-
 
 [hidden]{display:none!important}
 label.chk,label.field.chk{display:flex;flex-direction:row!important;align-items:center;gap:10px;font-weight:400}label.chk input{width:20px;flex:none}
+
+/* companion + learn */
+.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
+button.ev{min-height:64px;padding:10px 12px;font-weight:600;border-radius:14px;border:1px solid var(--line2);background:var(--surface);color:var(--fg);cursor:pointer;text-align:center}
+button.ev:active,button.ev:hover{border-color:var(--acc);background:var(--acc-soft)}
+button.big{min-height:64px;font-size:18px;flex:1}
+.step h2{font-size:22px;margin:0}.cp-block{margin:22px 0;display:flex;flex-direction:column;gap:10px}.cp-block h2{margin:0;font-size:18px}
+.mklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.mklist li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+button.icon{min-height:36px;min-width:36px;padding:0;font-size:20px;line-height:1}
+details.custom summary{cursor:pointer;font-weight:600;padding:8px 0}.stackf{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+tr.mk td{background:var(--acc-soft);color:var(--acc-ink)}.mkdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--acc);margin-right:8px}
+table.stack tr.mk td{display:block;padding:10px 14px}
+.grp{margin:18px 0}.grp-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.grp-head h2{margin:0;font-size:18px;flex:1}
+form.accept{display:flex;gap:8px;flex-wrap:wrap}form.accept input{min-height:38px;max-width:220px}form.accept button{min-height:38px}
+details summary{cursor:pointer;margin:8px 0}

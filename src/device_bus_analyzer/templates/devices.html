@@ -20,6 +20,7 @@
 <div><dt>{{ t.frames }}</dt><dd><b>{{ d.frames }}</b></dd></div>
 <div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div></dl>
 <div class="actions">
+<a class="btn primary" href="/s/{{ d.name }}/companion">{{ t.companion }}</a>
 <a class="btn soft" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
 <a class="btn" href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
 <button type="button" class="edit-device" {{ editdata(d) }}>{{ t.edit }}</button>

@@ -23,3 +23,95 @@ firmware:
     note:
       de: "Beispiel für die MACS-Platine (ESP32-C6), nur Mitlesen. macs_recorder.h muss im selben Ordner wie die YAML liegen. Bisher nur an einem AEG-Wärmepumpentrockner aufgenommen: Electrolux-Modelle können abweichen."
       en: "Example for the MACS board (ESP32-C6), listen only. macs_recorder.h must sit next to the YAML. So far recorded on one AEG heat-pump dryer only: Electrolux models may differ."
+# Companion mode: what the person can mark while standing at the appliance (events) and the guided checks (scripts).
+# An event with `pair` is the opposite action (door open <-> door closed): a change that flips back and forth between a pair is
+# strong evidence. `ask` = the person types what the display shows / which option it was; `by_note` = analyse per typed name.
+# A guided script is a list of steps repeated `repeat` times; each step is timed from "go" to "done", so reaction time does not matter.
+controls:
+  dishwasher: &dishwasher
+    events:
+      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened",        pair: door_close}
+      - {id: door_close, de: "Tür geschlossen",     en: "Door closed",        pair: door_open}
+      - {id: program,    de: "Programm gewählt",    en: "Program selected",   ask: true}
+      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", ask: true, by_note: true, pair: option_off}
+      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", ask: true, by_note: true, pair: option_on}
+      - {id: start,      de: "Start gedrückt",      en: "Start pressed"}
+      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset"}
+      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …",    ask: true}
+    guided:
+      - id: door
+        de: "Tür öffnen und schließen"
+        en: "Open and close the door"
+        repeat: 3
+        steps:
+          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open."}
+          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again."}
+      - id: program
+        de: "Programmwahl durchschalten"
+        en: "Step through the programs"
+        repeat: 4
+        steps:
+          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown."}
+      - id: option
+        de: "Zusatzoption ein- und ausschalten"
+        en: "Switch an extra option on and off"
+        repeat: 2
+        steps:
+          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
+          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+  dryer:
+    events:
+      - {id: door_open,  de: "Tür geöffnet",        en: "Door opened",        pair: door_close}
+      - {id: door_close, de: "Tür geschlossen",     en: "Door closed",        pair: door_open}
+      - {id: tank_out,   de: "Wasserbehälter entnommen", en: "Water tank removed", pair: tank_in}
+      - {id: tank_in,    de: "Wasserbehälter eingesetzt", en: "Water tank inserted", pair: tank_out}
+      - {id: program,    de: "Programm gewählt",    en: "Program selected",   ask: true}
+      - {id: option_on,  de: "Option eingeschaltet", en: "Option switched on", ask: true, by_note: true, pair: option_off}
+      - {id: option_off, de: "Option ausgeschaltet", en: "Option switched off", ask: true, by_note: true, pair: option_on}
+      - {id: start,      de: "Start gedrückt",      en: "Start pressed"}
+      - {id: cancel,     de: "Abbruch / Reset",     en: "Cancel / reset"}
+      - {id: display,    de: "Anzeige zeigt …",     en: "Display shows …",    ask: true}
+    guided:
+      - id: door
+        de: "Tür öffnen und schließen"
+        en: "Open and close the door"
+        repeat: 3
+        steps:
+          - {event: door_open,  de: "Tür öffnen und offen lassen.",   en: "Open the door and leave it open."}
+          - {event: door_close, de: "Tür wieder schließen.",          en: "Close the door again."}
+      - id: tank
+        de: "Wasserbehälter entnehmen und einsetzen"
+        en: "Remove and insert the water tank"
+        repeat: 3
+        steps:
+          - {event: tank_out, de: "Wasserbehälter herausnehmen.",     en: "Take the water tank out."}
+          - {event: tank_in,  de: "Wasserbehälter wieder einsetzen.", en: "Put the water tank back."}
+      - id: program
+        de: "Programmwahl durchschalten"
+        en: "Step through the programs"
+        repeat: 4
+        steps:
+          - {event: program, ask: true, de: "Programmtaste einmal drücken, dann das angezeigte Programm eintragen.", en: "Press the program button once, then enter the program shown."}
+      - id: option
+        de: "Zusatzoption ein- und ausschalten"
+        en: "Switch an extra option on and off"
+        repeat: 2
+        steps:
+          - {event: option_on,  ask: true, de: "Eine Zusatzoption einschalten und ihren Namen eintragen.", en: "Switch an extra option on and enter its name."}
+          - {event: option_off, ask: true, de: "Dieselbe Option wieder ausschalten (gleicher Name).",      en: "Switch the same option off again (same name)."}
+  generic:                      # any other device type
+    events:
+      - {id: door_open,  de: "Tür geöffnet",    en: "Door opened",    pair: door_close}
+      - {id: door_close, de: "Tür geschlossen", en: "Door closed",    pair: door_open}
+      - {id: program,    de: "Programm gewählt", en: "Program selected", ask: true}
+      - {id: start,      de: "Start gedrückt",  en: "Start pressed"}
+      - {id: cancel,     de: "Abbruch / Reset", en: "Cancel / reset"}
+      - {id: display,    de: "Anzeige zeigt …", en: "Display shows …", ask: true}
+    guided:
+      - id: door
+        de: "Tür öffnen und schließen"
+        en: "Open and close the door"
+        repeat: 3
+        steps:
+          - {event: door_open,  de: "Tür öffnen und offen lassen.", en: "Open the door and leave it open."}
+          - {event: door_close, de: "Tür wieder schließen.",        en: "Close the door again."}

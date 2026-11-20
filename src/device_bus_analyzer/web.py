@@ -1,10 +1,12 @@
 """FastAPI application: GET-only JSON API (/api) and HTML frontend. Nothing here can write to a device."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import secrets
 import time
+from collections import Counter
 from contextlib import asynccontextmanager
 from datetime import datetime
 from importlib import resources
@@ -16,7 +18,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import __version__, catalog, i18n, protocols
+from . import __version__, analysis, catalog, i18n, protocols
 from .auth import COOKIE, CSRF_COOKIE, Auth
 from .config import Settings, validate_device_input
 from .spec import load_spec
@@ -403,6 +405,12 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         src = source_or_404(source)
         lo, hi = window(source, int(run) if run.isdigit() else None, parse_time(since, tz), parse_time(until, tz))
         rows = store.timeline(source, lo, hi, max(1, min(limit, 5000)))
+        for r in rows:
+            r["marker"] = None
+        if rows:     # what the person did at the appliance is shown between the telegrams, at the time it happened
+            for m in store.markers(source, since=rows[0]["ts"], until=rows[-1]["ts"] + 1):
+                rows.append({"ts": m["ts"], "marker": m})
+            rows.sort(key=lambda r: (r["ts"], r["marker"] is None))
         return page(request, "timeline.html", src=src, rows=rows, q=dict(since=since, until=until, limit=limit, run=run))
 
     @app.get("/s/{source}/runs", response_class=HTMLResponse, dependencies=[api])
@@ -436,5 +444,119 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         except (FileNotFoundError, OSError):
             raise HTTPException(404, "unknown protocol") from None
         return page(request, "findings.html", spec=spec, protocol=protocol)
+
+    # --- companion: mark what is done at the appliance, learn from it ------------------------------------
+    def rules_for(source: str) -> dict:
+        d = store.device(source)
+        return catalog.event_rules(d["type"] if d else None)
+
+    def lang_of(request: Request) -> str:
+        return i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
+
+    @app.get("/s/{source}/companion", response_class=HTMLResponse, dependencies=[cfg])
+    def html_companion(request: Request, source: str):
+        src = source_or_404(source)
+        d = store.device(source)
+        return page(request, "companion.html", src=src, device=d, controls=catalog.controls(d["type"] if d else None, lang_of(request)),
+                    markers=store.markers(source, limit=15, newest_first=True))
+
+    @app.post("/s/{source}/markers")
+    async def marker_create(request: Request, source: str, csrf: str = Form(...), kind: str = Form(...), label: str = Form(""),
+                            menu: str = Form(""), note: str = Form(""), step_group: str = Form("")):
+        need_session_csrf(request, csrf)
+        source_or_404(source)
+        d = store.device(source)
+        events = {e["id"]: e for e in catalog.controls(d["type"] if d else None, lang_of(request))["events"]}
+        if kind in events:
+            label = events[kind]["label"]                                     # the server owns the wording of presets
+        elif kind == "custom":
+            if not label.strip():
+                raise HTTPException(422, "label required")
+        else:
+            raise HTTPException(422, "unknown kind")
+        # Instant action; a guided step with a duration is closed later through /end (the time span is what is analysed).
+        return JSONResponse(store.add_marker(source, kind, label, menu or None, note or None, step_group=step_group or None))
+
+    @app.post("/s/{source}/markers/{marker_id}/end")
+    async def marker_end(request: Request, source: str, marker_id: int, csrf: str = Form(...), note: str = Form("")):
+        need_session_csrf(request, csrf)
+        m = store.marker(source, marker_id)
+        if not m:
+            raise HTTPException(404, "unknown marker")
+        label = m["label"].split(":")[0] + (": " + note.strip() if note.strip() else "")
+        return JSONResponse(store.end_marker(source, marker_id, note=note, label=label if note.strip() else None))
+
+    @app.post("/s/{source}/markers/{marker_id}/delete")
+    async def marker_delete(request: Request, source: str, marker_id: int, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        if not store.delete_marker(source, marker_id):
+            raise HTTPException(404, "unknown marker")
+        return JSONResponse({"ok": True})
+
+    activity_cache: dict[tuple, dict] = {}
+
+    @app.get("/s/{source}/activity", dependencies=[cfg])
+    def marker_activity(source: str, since: float):
+        source_or_404(source)
+        now = time.time()
+        key = (source, int(since), int(now / 2))
+        if key not in activity_cache:
+            if len(activity_cache) > 50:
+                activity_cache.clear()
+            activity_cache[key] = analysis.activity(store, source, since, now, rules_for(source))
+        return JSONResponse(activity_cache[key])
+
+    def learn_context(request: Request, source: str) -> dict:
+        src = source_or_404(source)
+        res = analysis.run(store, source, rules_for(source))
+        return {"src": src, "res": res, "learned": store.learned(source), "device": store.device(source),
+                "min_baseline": analysis.MIN_BASELINE, "marker_rows": store.markers(source, limit=1)}
+
+    @app.get("/s/{source}/learn", response_class=HTMLResponse, dependencies=[api])
+    def html_learn(request: Request, source: str, error: str = ""):
+        return page(request, "learn.html", error=error, **learn_context(request, source))
+
+    @app.post("/s/{source}/learned")
+    async def learned_create(request: Request, source: str, csrf: str = Form(...), group: str = Form(...), ds: int = Form(...),
+                             cmd: int = Form(...), pos: int = Form(...), meaning: str = Form("")):
+        need_session_csrf(request, csrf)
+        source_or_404(source)
+        res = analysis.run(store, source, rules_for(source))              # recomputed: only what the analysis really found is stored
+        g = next((x for x in res["groups"] if x["key"] == group), None)
+        c = next((x for x in (g["candidates"] if g else []) if (x["ds"], x["cmd"], x["pos"]) == (ds, cmd, pos)), None)
+        if not c or c["status"] not in ("assumed", "confirmed"):
+            raise HTTPException(422, "no such finding")
+        store.save_learned(source, meaning.strip() or g["label"], g["kind"], ds, cmd, pos, c["from"], c["to"], c["hits"], c["n"], c["status"])
+        return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
+
+    @app.post("/s/{source}/learned/{learned_id}/delete")
+    async def learned_delete(request: Request, source: str, learned_id: int, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        if not store.delete_learned(source, learned_id):
+            raise HTTPException(404, "unknown finding")
+        return RedirectResponse(f"/s/{source}/learn#learned", status_code=303)
+
+    @app.get("/s/{source}/contribution.json", dependencies=[api])
+    def contribution(source: str):
+        """What may leave this installation: accepted findings and a count of actions. No frames, no timestamps, no host, no key."""
+        src = source_or_404(source)
+        d = store.device(source) or {}
+        kinds = Counter(m["kind"] for m in store.markers(source, limit=5000))
+        out = {"format": 1, "protocol": src["protocol"], "type": d.get("type"), "manufacturer": d.get("manufacturer"), "model": d.get("model"),
+               "findings": [{"meaning": f["meaning"], "action": f["kind"], "ds": f["ds"], "cmd": f["cmd"], "byte": f["pos"], "from": f["from_val"],
+                             "to": f["to_val"], "repeats": f["hits"], "of": f["n"], "status": f["status"]} for f in store.learned(source)],
+               "actions_recorded": dict(kinds)}
+        return Response(json.dumps(out, indent=2, ensure_ascii=False), media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{source}-findings.json"'})
+
+    @app.get("/api/{source}/markers", dependencies=[api])
+    def api_markers(source: str, limit: int = 500):
+        source_or_404(source)
+        return store.markers(source, limit=limit)
+
+    @app.get("/api/{source}/learn", dependencies=[api])
+    def api_learn(source: str):
+        source_or_404(source)
+        return analysis.run(store, source, rules_for(source))
 
     return app

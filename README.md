@@ -56,6 +56,20 @@ to a model"); decoding is unchanged. New catalogue entries are welcome as pull r
 Devices that are only online sometimes (a dryer that connects when switched on) are fine: the collector reconnects forever
 with back-off and the data model records board restarts and gaps explicitly.
 
+## Companion: learn the buttons and menus of your appliance
+Open **Companion** on a device (made for the phone, while you stand at the appliance). Let the appliance idle for about two minutes
+first. Then either run a **guided check** (open and close the door three times, step through the programs, switch an option on and
+off; each step is timed from *Go* to *Done*, so your reaction time does not matter) or **mark actions freely** (door opened, program
+selected, start pressed, display shows ..., or your own text, optionally with the menu level you are in). Every action is timed on the
+server and shown between the telegrams in the timeline.
+
+**Learned** compares the bytes before and after each action. A byte only counts when it changes again for the same action and does
+not change on its own (a noise model is measured on the quiet time of the recording). Repeats give *assumed*; if the opposite action
+(door closed) flips the same byte back, the finding is *confirmed*. You accept findings with a meaning of your own; **Export
+findings** writes only those (addresses, byte positions, values, device model) as JSON for a pull request or issue. Telegrams, times,
+host names and keys are never part of it. The companion sends nothing to the appliance. Actions and accepted findings are deleted
+together with the device.
+
 ## Command line
 
 ```
@@ -94,7 +108,7 @@ pytest -q
 Tests use synthetic telegrams only. Add real-device evidence to the spec as `evidence` text, never as log files.
 
 ## Contributing findings
-Open a pull request that changes `spec/<protocol>.yaml` (status + evidence) and, if useful, adds a synthetic test.
+Attach the JSON from **Export findings** to an issue, or open a pull request that changes `spec/<protocol>.yaml` (status + evidence) and, if useful, adds a synthetic test.
 Please do not commit logs, MAC/IP addresses, SSIDs or serial numbers.
 
 ## Licenses

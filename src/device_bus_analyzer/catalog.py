@@ -43,7 +43,39 @@ def validate_catalog() -> list[str]:
         for lang in ("de", "en"):
             if not prof.get("note", {}).get(lang):
                 problems.append(f"firmware {proto}: note.{lang} missing")
+    for ctype, ctl in cat.get("controls", {}).items():
+        ids = {e.get("id") for e in ctl.get("events", [])}
+        for e in ctl.get("events", []):
+            if not (e.get("de") and e.get("en")):
+                problems.append(f"controls {ctype}: event {e.get('id')!r} needs de and en")
+            if e.get("pair") and e["pair"] not in ids:
+                problems.append(f"controls {ctype}: event {e['id']!r} pairs with unknown {e['pair']!r}")
+        for g in ctl.get("guided", []):
+            if not (g.get("de") and g.get("en") and g.get("steps")) or int(g.get("repeat", 1)) < 1:
+                problems.append(f"controls {ctype}: guided {g.get('id')!r} incomplete")
+            for st in g.get("steps", []):
+                if st.get("event") not in ids or not (st.get("de") and st.get("en")):
+                    problems.append(f"controls {ctype}: guided {g.get('id')!r} has a bad step {st.get('event')!r}")
+    if "generic" not in cat.get("controls", {}):
+        problems.append("controls: 'generic' is missing")
     return problems
+
+
+def controls(dev_type: str | None, lang: str = "en") -> dict[str, Any]:
+    """Companion buttons and guided checks for a device type, in one language. Unknown types get the generic set."""
+    all_ctl = _base().get("controls", {})
+    ctl = all_ctl.get(dev_type or "", all_ctl.get("generic", {}))
+    pick = lambda d: d.get(lang) or d.get("en") or ""                           # noqa: E731
+    events = [{"id": e["id"], "label": pick(e), "pair": e.get("pair"), "ask": bool(e.get("ask")), "by_note": bool(e.get("by_note"))}
+              for e in ctl.get("events", [])]
+    guided = [{"id": g["id"], "label": pick(g), "repeat": int(g.get("repeat", 1)),
+               "steps": [{"event": s["event"], "text": pick(s), "ask": bool(s.get("ask"))} for s in g["steps"]]} for g in ctl.get("guided", [])]
+    return {"events": events, "guided": guided}
+
+
+def event_rules(dev_type: str | None) -> dict[str, dict[str, Any]]:
+    """{event id: {'pair', 'by_note'}} for the analysis."""
+    return {e["id"]: {"pair": e["pair"], "by_note": e["by_note"]} for e in controls(dev_type)["events"]}
 
 
 def build(used: list[dict[str, Any]] | None = None) -> dict[str, Any]:

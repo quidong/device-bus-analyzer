@@ -42,6 +42,14 @@ CREATE TABLE IF NOT EXISTS devices(             -- classification + connection o
   type TEXT, manufacturer TEXT, model TEXT,
   host TEXT, port INTEGER NOT NULL DEFAULT 6053, key TEXT,   -- key: ESPHome API encryption key, never leaves the server
   enabled INTEGER NOT NULL DEFAULT 1, created_ts REAL NOT NULL, updated_ts REAL NOT NULL);
+-- Added with the companion mode (again purely additive). Markers are what the person did at the appliance, timed by the server.
+CREATE TABLE IF NOT EXISTS markers(
+  id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, ts REAL NOT NULL, ts_end REAL,   -- ts_end set = an action with a duration
+  kind TEXT NOT NULL, label TEXT NOT NULL, menu TEXT, note TEXT, step_group TEXT);
+CREATE INDEX IF NOT EXISTS ix_markers_src ON markers(source_id, ts);
+CREATE TABLE IF NOT EXISTS learned(               -- findings the person accepted from the analysis (local, per device)
+  id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, meaning TEXT NOT NULL, kind TEXT, ds INTEGER, cmd INTEGER, pos INTEGER,
+  from_val INTEGER, to_val INTEGER, hits INTEGER, n INTEGER, status TEXT NOT NULL, created_ts REAL NOT NULL);
 """
 
 
@@ -112,7 +120,9 @@ class Store:
                 "frames": one("SELECT COUNT(*) n FROM frames WHERE source_id=?"),
                 "heartbeats": one("SELECT COUNT(*) n FROM heartbeats WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)"),
                 "sessions": one("SELECT COUNT(*) n FROM sessions WHERE source_id=?"),
-                "gaps": one("SELECT COUNT(*) n FROM gaps WHERE source_id=?")}
+                "gaps": one("SELECT COUNT(*) n FROM gaps WHERE source_id=?"),
+                "markers": one("SELECT COUNT(*) n FROM markers WHERE source_id=?"),
+                "learned": one("SELECT COUNT(*) n FROM learned WHERE source_id=?")}
 
     def delete_device(self, name: str) -> dict[str, int] | None:
         """Remove a source completely: raw bursts, frames, runs (derived), heartbeats, gaps, sessions, connection and key.
@@ -127,6 +137,8 @@ class Store:
                 self.db.execute("DELETE FROM heartbeats WHERE session_id IN (SELECT id FROM sessions WHERE source_id=?)", (sid,))
                 self.db.execute("DELETE FROM frames WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM gaps WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM markers WHERE source_id=?", (sid,))
+                self.db.execute("DELETE FROM learned WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sessions WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM devices WHERE source_id=?", (sid,))
                 self.db.execute("DELETE FROM sources WHERE id=?", (sid,))
@@ -321,6 +333,97 @@ class Store:
                     n += 1
             self.db.commit()
         return n
+
+    # --- companion: markers and accepted findings --------------------------------------------------------
+    def add_marker(self, name: str, kind: str, label: str, menu: str | None = None, note: str | None = None,
+                   ts: float | None = None, ts_end: float | None = None, step_group: str | None = None) -> dict | None:
+        src = self.source_by_name(name)
+        if not src:
+            return None
+        clean = lambda v, n: (v or "").strip()[:n] or None                      # noqa: E731
+        kind, label = (clean(kind, 40), clean(label, 80))
+        if not kind or not label:
+            raise ValueError("kind and label are required")
+        ts = time.time() if ts is None else ts
+        with self.lock:
+            c = self.db.execute("INSERT INTO markers(source_id, ts, ts_end, kind, label, menu, note, step_group) VALUES(?,?,?,?,?,?,?,?)",
+                                (src["id"], ts, ts_end, kind, label, clean(menu, 80), clean(note, 200), clean(step_group, 40)))
+            self.db.commit()
+        return self.marker(name, c.lastrowid)
+
+    def marker(self, name: str, marker_id: int) -> dict | None:
+        r = self.markers(name, marker_id=marker_id)
+        return r[0] if r else None
+
+    def markers(self, name: str, since: float | None = None, until: float | None = None, limit: int = 500,
+                marker_id: int | None = None, newest_first: bool = False) -> list[dict]:
+        src = self.source_by_name(name)
+        if not src:
+            return []
+        w, a = ["source_id=?"], [src["id"]]
+        for sql, v in (("id=?", marker_id), ("COALESCE(ts_end, ts)>=?", since), ("ts<=?", until)):
+            if v is not None:
+                w.append(sql); a.append(v)
+        order = "DESC" if newest_first else "ASC"
+        return self._q(f"SELECT id, ts, ts_end, kind, label, menu, note, step_group FROM markers WHERE {' AND '.join(w)} "
+                       f"ORDER BY ts {order}, id {order} LIMIT ?", [*a, min(limit, 5000)])
+
+    def end_marker(self, name: str, marker_id: int, ts_end: float | None = None, note: str | None = None,
+                   label: str | None = None) -> dict | None:
+        """Close an action that has a duration; the note (what the display showed, which option) may only be known now."""
+        m = self.marker(name, marker_id)
+        if not m:
+            return None
+        note = (note or "").strip()[:200] or m["note"]
+        label = (label or "").strip()[:80] or m["label"]
+        with self.lock:
+            self.db.execute("UPDATE markers SET ts_end=?, note=?, label=? WHERE id=? AND source_id=(SELECT id FROM sources WHERE name=?)",
+                            (max(m["ts"], time.time() if ts_end is None else ts_end), note, label, marker_id, name))
+            self.db.commit()
+        return self.marker(name, marker_id)
+
+    def delete_marker(self, name: str, marker_id: int) -> bool:
+        with self.lock:
+            c = self.db.execute("DELETE FROM markers WHERE id=? AND source_id=(SELECT id FROM sources WHERE name=?)", (marker_id, name))
+            self.db.commit()
+        return c.rowcount > 0
+
+    def frame_series(self, name: str, lo: float, hi: float, limit: int = 400_000) -> dict[tuple[int, int], tuple[list[float], list[bytes]]]:
+        """Valid frames in [lo, hi] as {(ds, cmd): (timestamps, payloads)}, in time order. The input of the analysis."""
+        src = self.source_by_name(name)
+        out: dict[tuple[int, int], tuple[list[float], list[bytes]]] = {}
+        if not src:
+            return out
+        with self.lock:
+            cur = self.db.execute("SELECT ts, ds, cmd, data FROM frames WHERE source_id=? AND crc_ok=1 AND ts BETWEEN ? AND ? "
+                                  "ORDER BY ts, id LIMIT ?", (src["id"], lo, hi, limit))
+            for r in cur:
+                t, d = out.setdefault((r["ds"], r["cmd"]), ([], []))
+                t.append(r["ts"]); d.append(bytes(r["data"]))
+        return out
+
+    def save_learned(self, name: str, meaning: str, kind: str, ds: int, cmd: int, pos: int, from_val: int | None, to_val: int | None,
+                     hits: int, n: int, status: str) -> int | None:
+        src = self.source_by_name(name)
+        if not src:
+            return None
+        with self.lock:
+            c = self.db.execute("INSERT INTO learned(source_id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts) "
+                                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (src["id"], meaning.strip()[:120], kind, ds, cmd, pos, from_val, to_val,
+                                                                     hits, n, status, time.time()))
+            self.db.commit()
+        return c.lastrowid
+
+    def learned(self, name: str) -> list[dict]:
+        src = self.source_by_name(name)
+        return self._q("SELECT id, meaning, kind, ds, cmd, pos, from_val, to_val, hits, n, status, created_ts FROM learned "
+                       "WHERE source_id=? ORDER BY ds, cmd, pos, id", (src["id"],)) if src else []
+
+    def delete_learned(self, name: str, learned_id: int) -> bool:
+        with self.lock:
+            c = self.db.execute("DELETE FROM learned WHERE id=? AND source_id=(SELECT id FROM sources WHERE name=?)", (learned_id, name))
+            self.db.commit()
+        return c.rowcount > 0
 
     # --- queries (read-only) ------------------------------------------------
     def _q(self, sql: str, args: Iterable[Any] = ()) -> list[dict]:
