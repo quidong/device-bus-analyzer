@@ -328,4 +328,34 @@ cp_waiting | Attendez : ne touchez à rien
 cp_phase_rest | Mesure du repos
 cp_manual | Marquer manuellement
 cp_manual_hint | Pour des observations libres sur l'appareil. Astuce : laissez l'appareil au repos environ deux minutes avant, pour que l'analyse sache quelles valeurs changent d'elles-mêmes.
+cfg_link | Réglages
+cfg_title | Réglages
+cfg_intro | Modifiez ici les valeurs de l'installation sans toucher au stack. Ce qui est enregistré ici prime sur les variables du stack.
+cfg_general | Général
+cfg_tz | Fuseau horaire d'affichage
+cfg_tz_hint | p. ex. Europe/Paris
+cfg_hours | Connexion valide (heures)
+cfg_kn_url | Adresse des mises à jour
+cfg_kn_hint | Vide pour le dépôt du projet.
+cfg_https | HTTPS
+cfg_tls_on | Activer HTTPS (redémarrage requis)
+cfg_tls_hosts | Noms/adresses supplémentaires dans le certificat
+cfg_save | Enregistrer
+cfg_token | Jeton d'API
+cfg_token_note | Le jeton de la connexion IA. Une fois renouvelé, l'ancien cesse de fonctionner ; un jeton défini dans le stack redevient actif après un redémarrage, retirez-le là.
+cfg_token_new | Générer un nouveau jeton
+cfg_password | Changer le mot de passe
+cfg_pw_current | Mot de passe actuel
+cfg_pw_new | Nouveau mot de passe (10 caractères minimum)
+cfg_pw_again | Répétez le nouveau mot de passe
+cfg_saved | Enregistré.
+cfg_restart | Enregistré. Le réglage HTTPS s'applique après le redémarrage du conteneur.
+cfg_token_done | Nouveau jeton créé : il figure sur la page connexion IA.
+cfg_pw_done | Mot de passe modifié.
+cfg_err_tz | Fuseau horaire inconnu.
+cfg_err_hours | Validité : 1 à 2160 heures.
+cfg_err_url | L'adresse doit commencer par http:// ou https://.
+cfg_err_hosts | Nom ou adresse invalide pour le certificat.
+cfg_err_pw_current | Le mot de passe actuel est incorrect.
+cfg_err_pw_new | Nouveau mot de passe trop court ou la répétition ne correspond pas.
 """

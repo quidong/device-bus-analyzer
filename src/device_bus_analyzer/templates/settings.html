@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block body %}
+<div class="pagehead"><h1>{{ t.cfg_title }}</h1></div>
+<p class="lead">{{ t.cfg_intro }}</p>
+{% if msg %}<p class="info ok" role="status"><span>{{ t['cfg_' ~ ('token_done' if msg == 'token' else 'pw_done' if msg == 'password' else msg)] }}</span></p>{% endif %}
+{% if error %}<p class="info err" role="alert"><span>{{ t['cfg_err_' ~ error] }}</span></p>{% endif %}
+<form method="post" action="/settings" class="stackform"><input type="hidden" name="csrf" value="{{ logout_csrf }}">
+<section class="card"><h2>{{ t.cfg_general }}</h2>
+<label class="field">{{ t.cfg_tz }}<input name="tz" value="{{ cfg_.tz }}" required autocomplete="off" list="tzs"><span class="fld">{{ t.cfg_tz_hint }}</span></label>
+<label class="field">{{ t.cfg_hours }}<input name="session_hours" type="number" min="1" max="2160" value="{{ cfg_.session_hours }}" required></label>
+<label class="field">{{ t.cfg_kn_url }}<input name="knowledge_url" value="{{ cfg_.knowledge_url }}" autocomplete="off" placeholder="https://"><span class="fld">{{ t.cfg_kn_hint }}</span></label></section>
+<section class="card"><h2>{{ t.cfg_https }}</h2>
+<label class="field chk"><input type="checkbox" name="tls" value="1" {% if cfg_.tls %}checked{% endif %}> {{ t.cfg_tls_on }}</label>
+<label class="field">{{ t.cfg_tls_hosts }}<input name="tls_hosts" class="mono" value="{{ cfg_.tls_hosts }}" autocomplete="off"></label>
+<p class="fld"><a href="/tls">{{ t.tls_link }}</a></p></section>
+<p><button class="primary">{{ t.cfg_save }}</button></p></form>
+<section class="card"><h2>{{ t.cfg_token }}</h2><p class="fld">{{ t.cfg_token_note }}</p>
+<form method="post" action="/settings/token"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button>{{ t.cfg_token_new }}</button> <a class="btn" href="/mcp">{{ t.mcp_link }}</a></form></section>
+<section class="card"><h2>{{ t.cfg_password }}</h2>
+<form method="post" action="/settings/password" class="stackform"><input type="hidden" name="csrf" value="{{ logout_csrf }}">
+<label class="field">{{ t.cfg_pw_current }}<input type="password" name="current" autocomplete="current-password" required></label>
+<label class="field">{{ t.cfg_pw_new }}<input type="password" name="new" autocomplete="new-password" minlength="10" required></label>
+<label class="field">{{ t.cfg_pw_again }}<input type="password" name="again" autocomplete="new-password" minlength="10" required></label>
+<button class="primary">{{ t.cfg_password }}</button></form></section>
+{% endblock %}

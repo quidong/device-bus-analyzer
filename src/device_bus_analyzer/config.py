@@ -34,6 +34,7 @@ class Settings:
     tls_cert: str = ""
     tls_key: str = ""
     session_hours: int = 12
+    tz: str = "Europe/Berlin"
 
 
 _DEV = re.compile(r"^(?P<name>[A-Za-z0-9_-]+)@(?P<host>[^:/\s]+)(?::(?P<port>\d+))?/(?P<proto>[a-z0-9]+)$")
@@ -67,7 +68,7 @@ def load(env: dict[str, str] | None = None) -> Settings:
         tls=env.get("DBA_TLS", "0") == "1",
         tls_hosts=[h for h in re.split(r"[,\s]+", env.get("DBA_TLS_HOSTS", "")) if h],
         tls_cert=env.get("DBA_TLS_CERT", ""), tls_key=env.get("DBA_TLS_KEY", ""),
-        session_hours=int(env.get("SESSION_HOURS", "12")),
+        session_hours=int(env.get("SESSION_HOURS", "12")), tz=env.get("DBA_TZ", "Europe/Berlin"),
     )
 
 
@@ -95,6 +96,51 @@ def ensure_secrets(s: Settings) -> Settings:
         except OSError:
             return s
     s.session_secret, s.api_token = new["session_secret"], new["api_token"]
+    return s
+
+
+# --- settings changed in the UI (kv "config" in the database): they win over the environment, which only gives the defaults -------
+def validate_config(form: dict[str, str]) -> dict:
+    """Check the settings form. Raises ValueError with a short code (cfg_err_<code>)."""
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    out: dict = {}
+    tz = (form.get("tz") or "").strip()
+    try:
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        raise ValueError("tz") from None
+    out["tz"] = tz
+    try:
+        h = int(form.get("session_hours") or 0)
+    except ValueError:
+        raise ValueError("hours") from None
+    if not 1 <= h <= 24 * 90:
+        raise ValueError("hours")
+    out["session_hours"] = h
+    url = (form.get("knowledge_url") or "").strip()
+    if url and not re.match(r"^https?://[^\s]+$", url):
+        raise ValueError("url")
+    out["knowledge_url"] = url
+    out["tls"] = form.get("tls") == "1"
+    hosts = [x for x in re.split(r"[,\s]+", form.get("tls_hosts") or "") if x]
+    if any(not _HOST.match(x) for x in hosts):
+        raise ValueError("hosts")
+    out["tls_hosts"] = hosts
+    return out
+
+
+def apply_saved(s: Settings, saved_json: str | None) -> Settings:
+    """Overlay what was saved in the UI onto the settings (UI wins over the environment)."""
+    try:
+        d = json.loads(saved_json or "{}")
+    except ValueError:
+        return s
+    if isinstance(d, dict):
+        for k in ("tz", "session_hours", "knowledge_url", "tls", "tls_hosts"):
+            if k in d:
+                setattr(s, k, d[k])
+        if "tls" in d:
+            s.cookie_secure = bool(d["tls"]) if not os.environ.get("COOKIE_SECURE") else s.cookie_secure
     return s
 
 

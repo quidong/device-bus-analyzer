@@ -24,7 +24,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import __version__, analysis, catalog, i18n, learned, protocols
+from . import __version__, analysis, catalog, config, i18n, learned, protocols
 from . import contribution as contribution_mod
 from . import homeassistant, knowledge, tls
 from .auth import COOKIE, CSRF_COOKIE, Auth
@@ -74,8 +74,11 @@ def jsonable(rows: list[dict]) -> list[dict]:
 
 
 def create_app(settings: Settings, store: Store, start_collectors: bool = False) -> FastAPI:
+    config.apply_saved(settings, store.kv_get("config"))      # what was saved on the settings page wins over the environment
+    if store.kv_get("admin_hash"):                           # a password changed in the UI wins over the stack's variables
+        settings.admin_password_hash, settings.admin_password = store.kv_get("admin_hash"), ""
     auth = Auth(settings)
-    tz = ZoneInfo(os.environ.get("DBA_TZ", "Europe/Berlin"))
+    tz = ZoneInfo(settings.tz)
     tpl = Jinja2Templates(directory=str(PKG.joinpath("templates")))
     from .collector import CollectorManager
     manager = CollectorManager(store)
@@ -528,6 +531,50 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         if info["ca"]:
             info["fingerprint"] = tls.fingerprint(str(tls_dir / "ca.crt"))
         return page(request, "tls.html", info=info)
+
+    # --- settings: everything an administrator may change without touching the stack ---------------------------------
+    def settings_view(request: Request, **kw):
+        return page(request, "settings.html", cfg_=dict(tz=settings.tz, session_hours=settings.session_hours, knowledge_url=settings.knowledge_url,
+                                                      tls=settings.tls, tls_hosts=", ".join(settings.tls_hosts)), https=request.url.scheme == "https", **kw)
+
+    @app.get("/settings", response_class=HTMLResponse, dependencies=[cfg])
+    def settings_page(request: Request, msg: str = "", error: str = ""):
+        return settings_view(request, msg=msg, error=error)
+
+    @app.post("/settings", dependencies=[cfg])
+    def settings_save(request: Request, csrf: str = Form(...), tz_: str = Form("", alias="tz"), session_hours: str = Form(""),
+                      knowledge_url: str = Form(""), tls_: str = Form("", alias="tls"), tls_hosts: str = Form("")):
+        nonlocal tz
+        need_session_csrf(request, csrf)
+        try:
+            new = config.validate_config({"tz": tz_, "session_hours": session_hours, "knowledge_url": knowledge_url, "tls": tls_, "tls_hosts": tls_hosts})
+        except ValueError as e:
+            return RedirectResponse(f"/settings?error={e}", status_code=303)
+        restart = (new["tls"], new["tls_hosts"]) != (settings.tls, settings.tls_hosts)
+        store.kv_set("config", json.dumps(new))
+        config.apply_saved(settings, json.dumps(new))
+        tz = ZoneInfo(settings.tz)
+        auth.max_age = settings.session_hours * 3600
+        return RedirectResponse("/settings?msg=" + ("restart" if restart else "saved"), status_code=303)
+
+    @app.post("/settings/token", dependencies=[cfg])
+    def settings_token(request: Request, csrf: str = Form(...)):
+        need_session_csrf(request, csrf)
+        settings.api_token = secrets.token_urlsafe(32)
+        config.ensure_secrets(settings)                      # writes secrets.json (values that differ from the saved ones are stored)
+        auth.token = settings.api_token
+        return RedirectResponse("/settings?msg=token", status_code=303)
+
+    @app.post("/settings/password", dependencies=[cfg])
+    def settings_password(request: Request, csrf: str = Form(...), current: str = Form(""), new: str = Form(""), again: str = Form("")):
+        need_session_csrf(request, csrf)
+        if not auth.check_login(client_ip(request), auth.email, current):
+            return RedirectResponse("/settings?error=pw_current", status_code=303)
+        if len(new) < 10 or new != again:
+            return RedirectResponse("/settings?error=pw_new", status_code=303)
+        auth.hash = auth.ph.hash(new)
+        store.kv_set("admin_hash", auth.hash)
+        return RedirectResponse("/settings?msg=password", status_code=303)
 
     @app.get("/mcp", response_class=HTMLResponse, dependencies=[cfg])
     def mcp_page(request: Request):

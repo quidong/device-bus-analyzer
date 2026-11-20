@@ -11,7 +11,7 @@
 <details class="usermenu"><summary aria-label="{{ t.account }}" title="{{ user }}"><span class="avatar" aria-hidden="true">{{ (user or '?')[:1]|upper }}</span></summary>
 <div class="pop menu"><div class="who">{{ user }}</div>
 <label class="menu-row">{{ t.language }}{{ langsel() }}</label>
-<a href="/help">{{ t.help_link }}</a><a href="/mcp">{{ t.mcp_link }}</a><a href="/knowledge">{{ t.kn_link }}</a><a href="/tls">{{ t.tls_link }}</a><a href="/backup">{{ t.backup_link }}</a>
+<a href="/settings">{{ t.cfg_link }}</a><a href="/help">{{ t.help_link }}</a><a href="/mcp">{{ t.mcp_link }}</a><a href="/knowledge">{{ t.kn_link }}</a><a href="/tls">{{ t.tls_link }}</a><a href="/backup">{{ t.backup_link }}</a>
 <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><button class="menu-item">{{ t.logout }}</button></form></div></details>
 {% else %}<span class="right">{{ langsel() }}</span>
 {% endif %}</header>

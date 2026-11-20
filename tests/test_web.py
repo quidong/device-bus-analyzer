@@ -158,7 +158,7 @@ def test_no_write_routes_exist(app):
             assert any(x in r.path for x in ("/markers", "/learned", "/values")), r.path
     # devices (add, edit, pause, delete) change only through session + CSRF forms; the API and the data pages are GET-only; nothing sends to a device
     assert {r.path for r in app.routes if "POST" in (getattr(r, "methods", None) or set())} == {"/login", "/logout", "/devices", "/devices/{name}", "/devices/{name}/enabled", "/devices/{name}/delete",
-        "/s/{source}/markers", "/s/{source}/markers/{marker_id}/end", "/s/{source}/markers/{marker_id}/delete", "/s/{source}/learned", "/s/{source}/learned/{learned_id}/delete", "/s/{source}/values", "/s/{source}/values/{value_id}/delete", "/backup/restore", "/knowledge/check", "/knowledge/auto", "/knowledge/reset", "/api/knowledge/update"}
+        "/s/{source}/markers", "/s/{source}/markers/{marker_id}/end", "/s/{source}/markers/{marker_id}/delete", "/s/{source}/learned", "/s/{source}/learned/{learned_id}/delete", "/s/{source}/values", "/s/{source}/values/{value_id}/delete", "/backup/restore", "/knowledge/check", "/knowledge/auto", "/knowledge/reset", "/api/knowledge/update", "/settings", "/settings/token", "/settings/password"}
     assert not [r.path for r in app.routes if {"DELETE", "PUT", "PATCH"} & (getattr(r, "methods", None) or set())]
 
 

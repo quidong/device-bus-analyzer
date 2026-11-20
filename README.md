@@ -145,5 +145,6 @@ Code: MIT (`LICENSE`). Protocol documentation and spec files: CC BY 4.0 (`LICENS
 ## Design principles of the UI
 
 - **Everything that can change is live.** Regions marked `data-live="…"` are refreshed from the server every few seconds (paused while the tab is hidden or a field in the region has focus); a changed list of devices reloads the page. New pages must mark their changing parts the same way (`static/ui.js`).
+- **Settings page** (account menu → Settings): time zone, sign-in duration, knowledge update address, HTTPS (restart needed), renew the API token, change the password. Values saved there win over the stack variables, which only provide the defaults.
 - **One account menu** (avatar, top right) holds language (a select), help, AI connection, knowledge, HTTPS, backup and logout.
 - **Guided checks** run in phases: rest (countdown + progress bar) → action (instruction, "Done") → waiting (countdown + progress bar). The page splits guided checks from manual marking.

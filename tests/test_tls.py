@@ -180,3 +180,70 @@ def test_header_has_account_menu_with_language_select_and_pages_are_live(tmp_pat
     assert 'data-live="state-dw"' in html and 'data-live="values-dw"' in html and "data-live-keys=" in html
     assert 'data-live="runs"' in c.get("/s/dw/runs").text
     assert c.get("/static/ui.js").status_code == 200
+
+
+# --- settings page ----------------------------------------------------------------------------------------
+def _settings_client(tmp_path, name="s"):
+    from fastapi.testclient import TestClient
+    store = Store(tmp_path / f"{name}.sqlite")
+    s = config.ensure_secrets(Settings(admin_email=MAIL, admin_password=PW, db_path=str(tmp_path / f"{name}.sqlite")))
+    c = TestClient(create_app(s, store), follow_redirects=False)
+    login(c)
+    return c, s, store
+
+
+def _csrf(c):
+    import re
+    return re.search(r'name="csrf" value="([0-9a-f]+)"', c.get("/settings").text).group(1)
+
+
+def test_settings_save_applies_and_persists(tmp_path):
+    c, s, store = _settings_client(tmp_path)
+    r = c.post("/settings", data={"csrf": _csrf(c), "tz": "America/New_York", "session_hours": "48", "knowledge_url": "https://example.org/m.json", "tls_hosts": "a.lan"})
+    assert r.headers["location"] == "/settings?msg=restart"                                          # the certificate names changed
+    assert (s.tz, s.session_hours, s.knowledge_url) == ("America/New_York", 48, "https://example.org/m.json")
+    assert 'value="America/New_York"' in c.get("/settings").text
+    s2 = config.apply_saved(Settings(admin_email=MAIL, admin_password=PW, tz="Europe/Berlin"), store.kv_get("config"))      # a restart reads the same values
+    assert (s2.tz, s2.session_hours, s2.tls_hosts) == ("America/New_York", 48, ["a.lan"])
+    r = c.post("/settings", data={"csrf": _csrf(c), "tz": "Europe/Berlin", "session_hours": "48", "tls_hosts": "a.lan"})
+    assert r.headers["location"] == "/settings?msg=saved"                                            # nothing that needs a restart
+    r = c.post("/settings", data={"csrf": _csrf(c), "tz": "Europe/Berlin", "session_hours": "48", "tls": "1", "tls_hosts": "a.lan"})
+    assert r.headers["location"] == "/settings?msg=restart"                                          # HTTPS needs a restart
+
+
+def test_settings_validation_and_csrf(tmp_path):
+    c, s, store = _settings_client(tmp_path)
+    good = {"csrf": _csrf(c), "tz": "Europe/Berlin", "session_hours": "12"}
+    for bad, code in (({"tz": "Mars/Base"}, "tz"), ({"session_hours": "0"}, "hours"), ({"session_hours": "x"}, "hours"),
+                      ({"knowledge_url": "ftp://x"}, "url"), ({"tls_hosts": "bad host!"}, "hosts")):
+        assert c.post("/settings", data={**good, **bad}).headers["location"] == f"/settings?error={code}"
+    assert c.post("/settings", data={**good, "csrf": "wrong"}).status_code == 403
+    assert store.kv_get("config") is None and s.tz == "Europe/Berlin"
+
+
+def test_token_renewal_and_password_change(tmp_path):
+    c, s, store = _settings_client(tmp_path)
+    old = s.api_token
+    assert c.post("/settings/token", data={"csrf": _csrf(c)}).headers["location"] == "/settings?msg=token"
+    assert s.api_token != old and s.api_token in c.get("/mcp").text
+    from fastapi.testclient import TestClient
+    anon = TestClient(c.app, follow_redirects=False)                                                 # no session cookie: only the token counts
+    assert anon.get("/api/sources", headers={"authorization": "Bearer " + s.api_token}).status_code == 200
+    assert anon.get("/api/sources", headers={"authorization": "Bearer " + old}).status_code == 401
+    assert config.ensure_secrets(Settings(admin_email=MAIL, db_path=s.db_path)).api_token == s.api_token      # kept across restarts
+    t = _csrf(c)
+    assert c.post("/settings/password", data={"csrf": t, "current": "nope", "new": "a-long-new-pass", "again": "a-long-new-pass"}).headers["location"] == "/settings?error=pw_current"
+    assert c.post("/settings/password", data={"csrf": t, "current": PW, "new": "short", "again": "short"}).headers["location"] == "/settings?error=pw_new"
+    assert c.post("/settings/password", data={"csrf": t, "current": PW, "new": "a-long-new-pass", "again": "a-long-new-pass"}).headers["location"] == "/settings?msg=password"
+    from fastapi.testclient import TestClient
+    c2 = TestClient(create_app(Settings(admin_email=MAIL, admin_password=PW, db_path=s.db_path, session_secret="z" * 40), store), follow_redirects=False)
+    import re
+    tok = re.search(r'name="csrf" value="([^"]+)"', c2.get("/login").text).group(1)
+    assert c2.post("/login", data={"email": MAIL, "password": PW, "csrf": tok}).status_code != 303      # the old password no longer works
+    tok = re.search(r'name="csrf" value="([^"]+)"', c2.get("/login").text).group(1)
+    assert c2.post("/login", data={"email": MAIL, "password": "a-long-new-pass", "csrf": tok}).status_code == 303
+
+
+def test_menu_links_to_settings(tmp_path):
+    c, s, store = _settings_client(tmp_path)
+    assert 'href="/settings"' in c.get("/devices").text

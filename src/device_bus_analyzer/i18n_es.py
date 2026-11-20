@@ -328,4 +328,34 @@ cp_waiting | Espera: no toques nada
 cp_phase_rest | Midiendo el reposo
 cp_manual | Marcar manualmente
 cp_manual_hint | Para observaciones libres en el aparato. Consejo: deja el aparato en reposo unos dos minutos antes, para que el análisis sepa qué valores cambian solos.
+cfg_link | Ajustes
+cfg_title | Ajustes
+cfg_intro | Cambia aquí los valores de la instalación sin editar el stack. Lo guardado aquí prevalece sobre las variables del stack.
+cfg_general | General
+cfg_tz | Zona horaria de visualización
+cfg_tz_hint | p. ej. Europe/Madrid
+cfg_hours | Sesión válida (horas)
+cfg_kn_url | Dirección de las actualizaciones
+cfg_kn_hint | Vacío para el repositorio del proyecto.
+cfg_https | HTTPS
+cfg_tls_on | Activar HTTPS (requiere reinicio)
+cfg_tls_hosts | Nombres/direcciones adicionales en el certificado
+cfg_save | Guardar
+cfg_token | Token de API
+cfg_token_note | El token de la conexión de IA. Al renovarlo el anterior deja de funcionar; un token definido en el stack vuelve a valer tras un reinicio, quítalo allí.
+cfg_token_new | Generar un token nuevo
+cfg_password | Cambiar contraseña
+cfg_pw_current | Contraseña actual
+cfg_pw_new | Contraseña nueva (mínimo 10 caracteres)
+cfg_pw_again | Repite la contraseña nueva
+cfg_saved | Guardado.
+cfg_restart | Guardado. El ajuste de HTTPS se aplica tras reiniciar el contenedor.
+cfg_token_done | Token nuevo creado: aparece en la página de conexión de IA.
+cfg_pw_done | Contraseña cambiada.
+cfg_err_tz | Zona horaria desconocida.
+cfg_err_hours | Validez: de 1 a 2160 horas.
+cfg_err_url | La dirección debe empezar por http:// o https://.
+cfg_err_hosts | Nombre o dirección no válidos para el certificado.
+cfg_err_pw_current | La contraseña actual no es correcta.
+cfg_err_pw_new | Contraseña nueva demasiado corta o la repetición no coincide.
 """
