@@ -73,3 +73,78 @@ def test_guided_run_and_pages_without_overflow(server, width):
         assert len(store.markers("dw")) == n - 1
         assert errors == []
         b.close()
+
+
+def _login(pg, base):
+    pg.goto(base + "/login?lang=en"); pg.fill("input[name=email]", MAIL); pg.fill("input[name=password]", PW); pg.click("button")
+
+
+def _wizard_next(pg):
+    if pg.is_visible("#wz-next"):                    # phone: one step at a time; desktop: everything is on one sheet
+        pg.click("#wz-next")
+
+
+@pytest.mark.parametrize("width", [1100, 390])
+def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, width):
+    """Add a device, read its firmware, edit, pause, learn from markers, delete: the same flow on both screen sizes."""
+    from test_companion import door_markers, put_frames, series, door
+    base, store = server
+    key = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+    with sync_playwright_ctx() as p:
+        b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+        pg = b.new_page(viewport={"width": width, "height": 800}); errors = []
+        pg.on("pageerror", lambda e: errors.append(str(e)))
+        _login(pg, base)
+        # --- add: type -> maker -> model -> connection
+        pg.goto(base + "/devices?lang=en"); pg.click("#new-device"); pg.wait_for_selector("#device-dialog", state="visible")
+        pg.click("#device-dialog label:has-text('Dryer')"); _wizard_next(pg)
+        pg.click("#device-dialog label:has-text('AEG')"); _wizard_next(pg)
+        pg.fill("#f-model", "T8DEE"); _wizard_next(pg)
+        pg.fill("#f-name", "dry1"); pg.fill("#f-host", "dry1.lan"); pg.fill("#f-key", key)
+        assert pg.is_visible("#save"); pg.click("#save")
+        pg.wait_for_url("**/firmware/macs**")
+        d = store.device("dry1")
+        assert (d["type"], d["manufacturer"], d["model"], d["protocol"], d["host"], d["enabled"]) == ("dryer", "AEG", "T8DEE", "macs", "dry1.lan", True)
+        assert store.db.execute("SELECT d.key FROM devices d JOIN sources s ON s.id=d.source_id WHERE s.name='dry1'").fetchone()[0] == key
+        # --- firmware: both files, copy and download work
+        assert pg.is_visible("text=macs-analysis.example.yaml") and pg.is_visible("text=macs_recorder.h")
+        pg.click("button.copy >> nth=0"); pg.wait_for_selector("button.copy:has-text('Copied')")
+        with pg.expect_download() as dl:
+            pg.click("a[download] >> nth=1")
+        assert dl.value.suggested_filename == "macs_recorder.h"
+        assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
+        # --- edit: protocol stays fixed, model changes
+        pg.goto(base + "/devices?lang=en"); pg.click(".edit-device >> nth=0"); pg.wait_for_selector("#device-dialog", state="visible")
+        assert pg.input_value("#f-name") == "dry1" and pg.input_value("#f-model") == "T8DEE"
+        while not pg.is_visible("#f-model"):          # phone: walk to the model step
+            pg.click("#wz-next")
+        pg.fill("#f-model", "T8DEE-2")
+        while pg.is_visible("#wz-next"):
+            pg.click("#wz-next")
+        pg.click("#save"); pg.wait_for_url("**/devices")
+        assert store.device("dry1")["model"] == "T8DEE-2"
+        assert store.db.execute("SELECT d.key FROM devices d JOIN sources s ON s.id=d.source_id WHERE s.name='dry1'").fetchone()[0] == key           # an empty key field keeps the key
+        # --- pause keeps the device, resume
+        pg.goto(base + "/devices?lang=en"); pg.click("form[action='/devices/dry1/enabled'] button")
+        pg.wait_for_url("**/devices**"); assert store.device("dry1")["enabled"] is False
+        # --- learn: companion data on the other device, accept a finding
+        put_frames(store, "dw", series(door))
+        for m in door_markers():
+            store.add_marker("dw", m["kind"], m["label"], ts=m["ts"])
+        pg.goto(base + "/s/dw/learn?lang=en")
+        assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
+        pg.fill("form.accept input[name=meaning] >> nth=0", "Door state"); pg.click("form.accept button >> nth=0")
+        pg.wait_for_url("**/learn#learned")
+        assert [f["meaning"] for f in store.learned("dw")] == ["Door state"]
+        # --- delete: typed name required
+        pg.goto(base + "/devices?lang=en"); pg.click("a[href='/devices/dry1/delete']")
+        pg.fill("input[name=confirm]", "wrong"); pg.click("button.danger")
+        assert store.device("dry1") is not None
+        pg.fill("input[name=confirm]", "dry1"); pg.click("button.danger"); pg.wait_for_url("**/devices")
+        assert store.device("dry1") is None and store.device("dw") is not None and len(store.markers("dw")) == 6
+        assert errors == []
+        b.close()
+
+
+def sync_playwright_ctx():
+    return pw.sync_playwright()
