@@ -131,7 +131,7 @@ def test_validation_and_unknown_source(client):
 def test_html_pages_render_in_both_languages(client, lang, word):
     login(client)
     for path in ("/", "/s/dw/frames", "/s/dw/timeline", "/s/dw/commands", "/s/dw/commands?ds=25&cmd=2008",
-                 "/s/dw/bursts", "/s/dw/quality", "/findings/bshdbus", "/findings/macs"):
+                 "/s/dw/bursts", "/s/dw/quality", "/s/dw/spec", "/findings/bshdbus", "/findings/macs"):
         r = client.get(path, params={"lang": lang} if "?" not in path else None, headers={"Accept-Language": lang})
         assert r.status_code == 200, path
     assert word in client.get("/s/dw/frames", params={"lang": lang}).text

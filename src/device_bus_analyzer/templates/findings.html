@@ -1,5 +1,5 @@
-{% extends "base.html" %}{% import "_macros.html" as m %}{% block body %}
-<h1>{{ spec.title }}</h1>
+{% extends "base.html" %}{% import "_macros.html" as m %}{% block nav %}{% if src %}{% include "_srcnav.html" %}{% endif %}{% endblock %}{% block body %}
+<h1>{{ spec.title }}</h1>{% if src %}<p class="fld">{{ src.name }} · {{ protocol }}</p>{% endif %}
 <p><b>{{ spec.physical }}</b><br><span class="mono">{{ spec.frame }}</span></p>
 {% if spec.devices %}<h2>{{ t.devices }}</h2>
 <div class="tbl"><table class="stack"><tr><th>{{ t.address }}</th><th>{{ t.device }}</th><th>{{ t.status }}</th><th>{{ t.evidence }}</th></tr>

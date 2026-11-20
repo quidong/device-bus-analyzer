@@ -8,7 +8,7 @@
  ('/s/' ~ src.name ~ '/commands', t.commands, 'commands', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M4 6h14M4 11h14M4 16h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'),
  ('/s/' ~ src.name ~ '/bursts', t.bursts, 'bursts', ''),
  ('/s/' ~ src.name ~ '/quality', t.quality, 'quality', ''),
- ('/findings/' ~ src.protocol, t.findings, src.protocol, '') ] %}
+ ('/s/' ~ src.name ~ '/spec', t.findings, 'spec', '') ] %}
 <nav class="subnav" aria-label="{{ src.name }}"><span class="src-name">{{ src.name }}</span>
 {% for href, label, key, icon in links %}<a href="{{ href }}" {% if path.endswith('/' ~ key) %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
 <nav class="bottom" aria-label="{{ src.name }}">

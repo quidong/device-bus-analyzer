@@ -448,6 +448,16 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             raise HTTPException(404, "unknown protocol") from None
         return page(request, "findings.html", spec=spec, protocol=protocol)
 
+    @app.get("/s/{source}/spec", response_class=HTMLResponse, dependencies=[api])
+    def html_source_spec(request: Request, source: str):
+        """The protocol knowledge, opened from a device so the device navigation stays."""
+        src = source_or_404(source)
+        try:
+            spec = load_spec(src["protocol"])
+        except (FileNotFoundError, OSError):
+            raise HTTPException(404, "unknown protocol") from None
+        return page(request, "findings.html", spec=spec, protocol=src["protocol"], src=src)
+
     # --- companion: mark what is done at the appliance, learn from it ------------------------------------
     def rules_for(source: str) -> dict:
         d = store.device(source)

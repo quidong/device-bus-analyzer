@@ -338,3 +338,11 @@ def test_unfinished_guided_steps_are_ignored(store):
     store.add_marker("dw", "door_open", "Door opened", ts=T0 + 300, step_group="g")             # started, never finished
     res = analysis.run(store, "dw", RULES)
     assert {g["kind"]: g["n"] for g in res["groups"]} == {"door_open": 3, "door_close": 3} and res["markers"] == 6
+
+
+def test_protocol_knowledge_keeps_the_device_navigation(client):
+    login(client)
+    html = client.get("/s/dw/spec?lang=en").text
+    assert 'href="/s/dw/companion"' in html and 'href="/s/dw/learn"' in html and "dw · bshdbus" in html       # still inside the device
+    assert 'href="/s/dw/spec"' in client.get("/s/dw/learn").text and "/findings/" not in client.get("/s/dw/learn").text
+    assert client.get("/s/nope/spec").status_code == 404
