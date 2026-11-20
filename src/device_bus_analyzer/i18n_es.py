@@ -260,4 +260,21 @@ onb_device | Crear un dispositivo
 onb_data | Recibir los primeros telegramas
 onb_marker | Grabar una acción en el acompañante
 onb_learned | Aceptar un hallazgo en la página Aprendido
+mcp_link | Conexión con IA
+mcp_title | Conexión con IA (MCP)
+mcp_intro | Para que Claude pueda leer y analizar tus grabaciones necesita la extensión y dos datos: la dirección de esta instalación y el token de API. La extensión solo lee y nunca envía nada a un dispositivo.
+mcp_step1 | Descarga la extensión y ábrela con doble clic (Claude Desktop pide confirmar la instalación).
+mcp_step2 | Durante la instalación introduce la dirección y el token de API de abajo.
+mcp_download | Descargar extensión (.mcpb)
+mcp_url | Dirección de esta instalación
+mcp_url_note | La dirección debe ser accesible desde el ordenador donde corre Claude. Se toma del navegador; si usas localhost, introduce la dirección de la red local.
+mcp_token | Token de API
+mcp_token_show | Mostrar token
+mcp_token_warn | El token da acceso de lectura a todas las grabaciones. No lo compartas.
+mcp_token_none | Aún no hay token de API. Define DBA_API_TOKEN en el contenedor y reinícialo.
+mcp_other | Otros clientes (Claude Code, Cursor …)
+mcp_other_note | El servidor se ejecuta localmente con Node (stdio). Ajusta la ruta a la carpeta extension/ del repositorio:
+mcp_chatgpt_title | ChatGPT
+mcp_chatgpt | ChatGPT no puede usar esta extensión: solo se conecta a servidores HTTPS accesibles públicamente y admite OAuth o ningún inicio de sesión, no un token de API. Un camino sería un acceso remoto con inicio de sesión propio; no publiques esta instalación en internet sin protección.
+copy_cmd | Copiar comando
 """

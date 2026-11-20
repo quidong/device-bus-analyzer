@@ -5,7 +5,7 @@
 {% elif kind == 'dryer' %}<circle cx="13" cy="14" r="6" stroke="currentColor" stroke-width="1.8"/><circle cx="7" cy="7" r="1" fill="currentColor"/>
 {% else %}<path d="M8 13h10M8 9h10M8 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>{% endif %}</svg>{% endmacro %}
 {% block body %}
-<div class="pagehead"><h1>{{ t.devices_title }}</h1><button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
+<div class="pagehead"><h1>{{ t.devices_title }}</h1><a class="btn soft" href="/mcp">{{ t.mcp_link }}</a> <button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
 <p class="lead">{{ t.dev_note }}</p>
 {% if error %}<p class="err" role="alert">{{ t[error] }}</p>{% endif %}
 {% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {{ t['onb_' ~ key] }}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}

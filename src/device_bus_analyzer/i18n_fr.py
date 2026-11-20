@@ -260,4 +260,21 @@ onb_device | Créer un appareil
 onb_data | Recevoir les premiers télégrammes
 onb_marker | Enregistrer une action dans l'assistant
 onb_learned | Accepter un résultat sur la page Appris
+mcp_link | Connexion IA
+mcp_title | Connexion IA (MCP)
+mcp_intro | Pour que Claude puisse lire et analyser vos enregistrements, il faut l'extension et deux valeurs : l'adresse de cette installation et le jeton d'API. L'extension ne fait que lire et n'envoie jamais rien à un appareil.
+mcp_step1 | Téléchargez l'extension et ouvrez-la d'un double clic (Claude Desktop demande de l'installer).
+mcp_step2 | Lors de l'installation, saisissez l'adresse et le jeton d'API ci-dessous.
+mcp_download | Télécharger l'extension (.mcpb)
+mcp_url | Adresse de cette installation
+mcp_url_note | L'adresse doit être joignable depuis l'ordinateur où tourne Claude. Elle est reprise du navigateur ; avec localhost, saisissez l'adresse du réseau local.
+mcp_token | Jeton d'API
+mcp_token_show | Afficher le jeton
+mcp_token_warn | Le jeton donne un accès en lecture à tous les enregistrements. Ne le partagez pas.
+mcp_token_none | Aucun jeton d'API n'est défini. Définissez DBA_API_TOKEN dans le conteneur et redémarrez-le.
+mcp_other | Autres clients (Claude Code, Cursor …)
+mcp_other_note | Le serveur tourne en local avec Node (stdio). Adaptez le chemin vers le dossier extension/ du dépôt :
+mcp_chatgpt_title | ChatGPT
+mcp_chatgpt | ChatGPT ne peut pas utiliser cette extension : il ne se connecte qu'à des serveurs HTTPS accessibles publiquement et gère OAuth ou aucune authentification, pas un jeton d'API. Une voie serait un accès distant avec sa propre connexion ; ne mettez pas cette installation sur Internet sans protection.
+copy_cmd | Copier la commande
 """

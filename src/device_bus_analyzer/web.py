@@ -442,6 +442,12 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             shutil.rmtree(tmp, ignore_errors=True)
         return RedirectResponse("/backup?msg=restored", status_code=303)
 
+    @app.get("/mcp", response_class=HTMLResponse, dependencies=[cfg])
+    def mcp_page(request: Request):
+        """How to connect Claude: extension download, this installation's address and the API token (session only)."""
+        return page(request, "mcp.html", base_url=str(request.base_url).rstrip("/"), token=settings.api_token,
+                    mcpb_url="https://github.com/quidong/device-bus-analyzer/raw/main/device-bus-analyzer.mcpb")
+
     @app.get("/help", response_class=HTMLResponse, dependencies=[api])
     def help_page(request: Request):
         return page(request, "help.html")
