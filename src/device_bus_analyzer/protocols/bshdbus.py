@@ -61,9 +61,14 @@ def build_frame(ds: int, cmd: int, data: bytes = b"") -> bytes:
 
 
 def parse_burst(data: bytes) -> tuple[list[Frame], BurstStats]:
-    """Split a burst into frames. CRC-failing candidates are returned with ``crc_ok=False``."""
+    """Split a burst into frames. A damaged spot is returned once, as a candidate with ``crc_ok=False``.
+
+    After a checksum failure the parser resynchronises byte by byte; the bogus candidates that produces belong to the
+    same damaged spot (typically a transmission that was aborted or overlapped and is repeated by the sender), so
+    ``BurstStats.crc`` counts spots, not retries, and ends at the next intact frame."""
     frames: list[Frame] = []
     st = BurstStats()
+    damaged = False
     i, n = 0, len(data)
     while i < n:
         length = data[i] + 4
@@ -76,10 +81,13 @@ def parse_burst(data: bytes) -> tuple[list[Frame], BurstStats]:
         ist = (chunk[-2] << 8) | chunk[-1]
         ds, cmd, payload = chunk[1], (chunk[2] << 8) | chunk[3], bytes(chunk[4:-2])
         if soll != ist:
-            st.crc += 1
-            frames.append(Frame(i, ds, cmd, payload, False, None, bytes(chunk)))
+            if not damaged:
+                st.crc += 1
+                frames.append(Frame(i, ds, cmd, payload, False, None, bytes(chunk)))
+                damaged = True
             i += 1                      # resynchronise on the next byte
             continue
+        damaged = False
         st.ok += 1
         start = i
         ack = None

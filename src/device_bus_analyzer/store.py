@@ -627,5 +627,10 @@ class Store:
         f = self._q("SELECT COUNT(*) n, SUM(crc_ok) ok, SUM(crc_ok=1 AND ack IS NULL) noack FROM frames WHERE source_id=?", (src["id"],))[0]
         g = self._q("SELECT recv_ts, message FROM gaps WHERE source_id=? ORDER BY id DESC LIMIT 50", (src["id"],))
         s = self._q("SELECT COUNT(*) n FROM sessions WHERE source_id=?", (src["id"],))[0]["n"]
-        return {"frames": f["n"], "ok": f["ok"] or 0, "crc_errors": f["n"] - (f["ok"] or 0), "ok_without_ack": f["noack"] or 0,
-                "sessions": s, "gaps": g}
+        # A damaged spot counts as repeated when an intact frame with the same destination and command follows within
+        # two seconds (senders repeat aborted or unacknowledged transmissions); only the others are real losses.
+        lost = self._q("SELECT COUNT(*) n FROM frames d WHERE d.source_id=? AND d.crc_ok=0 AND NOT EXISTS ("
+                       "SELECT 1 FROM frames o WHERE o.source_id=d.source_id AND o.crc_ok=1 AND o.ds=d.ds AND o.cmd=d.cmd "
+                       "AND o.ts>=d.ts AND o.ts<=d.ts+2.0)", (src["id"],))[0]["n"]
+        return {"frames": f["n"], "ok": f["ok"] or 0, "crc_errors": f["n"] - (f["ok"] or 0), "not_repeated": lost,
+                "ok_without_ack": f["noack"] or 0, "sessions": s, "gaps": g}

@@ -126,3 +126,15 @@ def test_legacy_received_and_frame_are_not_double_counted(tmp_path):
     st.ingest_line(sid, "[22:29:50.000][D][main:720]: Received frame dest 0x25 cmd 0x2000: 0x13", 110.0)
     st.ingest_line(sid, "FRAME 25200013 OK ACK 2A", 120.0)
     assert st.db.execute("SELECT count(*) FROM frames").fetchone()[0] == 4
+
+
+def test_quality_separates_repeated_damaged_spots_from_lost_ones(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    full = build_frame(0x25, 0x2008, bytes(8))
+    lost = build_frame(0x25, 0x2000, b"\x64")
+    store.ingest_line(sid, raw1(1, 1000, full[:9] + full + b"\x2a"), 1_000_000.0)       # aborted, repeated intact
+    store.ingest_line(sid, raw1(2, 2000, lost[:-1] + b"\x00"), 1_000_100.0)             # damaged, never repeated
+    q = store.quality("dw")
+    assert q["crc_errors"] == 2 and q["not_repeated"] == 1 and q["ok"] == 1

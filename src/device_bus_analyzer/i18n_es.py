@@ -38,7 +38,8 @@ no_data | Aún no hay datos.
 gaps | Huecos / pérdidas
 sessions | Arranques
 ok | válida
-bad | error CRC
+bad | puntos dañados (CRC)
+not_repeated | de ellos no repetidos intactos
 values | Valores
 confirmed | confirmado
 assumed | supuesto

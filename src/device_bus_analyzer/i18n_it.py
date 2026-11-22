@@ -38,7 +38,8 @@ no_data | Ancora nessun dato.
 gaps | Buchi / perdite
 sessions | Avvii
 ok | valido
-bad | errore CRC
+bad | punti danneggiati (CRC)
+not_repeated | di cui non ripetuti integri
 values | Valori
 confirmed | confermato
 assumed | presunto

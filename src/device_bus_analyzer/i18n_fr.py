@@ -38,7 +38,8 @@ no_data | Pas encore de données.
 gaps | Trous / pertes
 sessions | Démarrages
 ok | valide
-bad | erreur CRC
+bad | points endommagés (CRC)
+not_repeated | dont non répétés intacts
 values | Valeurs
 confirmed | confirmé
 assumed | supposé

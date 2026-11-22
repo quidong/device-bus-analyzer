@@ -89,6 +89,7 @@ uart:
                    (unsigned long long) t_us, (unsigned long long) dt_us, (unsigned) bytes.size(),
                    format_hex(bytes).c_str());
           size_t i = 0, n = bytes.size();
+          bool beschaedigt = false;                        // eine beschädigte Stelle zählt einmal, nicht jeder Resync-Versuch
           while (i < n) {
             size_t len = (size_t) bytes[i] + 4;            // LL DS <LL Datenbytes> CRC CRC
             if (bytes[i] == 0 || len < 6 || i + len > n) { // kein plausibler Frame-Anfang
@@ -100,11 +101,15 @@ uart:
             uint16_t ist = ((uint16_t) bytes[i + len - 2] << 8) | bytes[i + len - 1];
             std::vector<uint8_t> f(bytes.begin() + i + 1, bytes.begin() + i + len - 2);
             if (soll != ist) {
-              id(dbus_crc_err) += 1;
-              ESP_LOGI("dbus_raw", "FRAME %s CRC! (soll %04X ist %04X)", format_hex(f).c_str(), soll, ist);
+              if (!beschaedigt) {
+                id(dbus_crc_err) += 1;
+                ESP_LOGI("dbus_raw", "FRAME %s CRC! (soll %04X ist %04X)", format_hex(f).c_str(), soll, ist);
+                beschaedigt = true;
+              }
               i += 1;                                      // ab nächstem Byte neu synchronisieren
               continue;
             }
+            beschaedigt = false;
             id(dbus_ok) += 1;
             if (i + len < n && (bytes[i + len] & 0x0F) == 0x0A) {
               ESP_LOGI("dbus_raw", "FRAME %s OK ACK %02X", format_hex(f).c_str(), bytes[i + len]);
@@ -287,7 +292,7 @@ sensor:
     update_interval: 60s
     lambda: return (float) id(dbus_ok);
   - platform: template
-    name: "D-Bus Frames CRC-Fehler"
+    name: "D-Bus beschädigte Stellen"
     entity_category: diagnostic
     state_class: total_increasing
     accuracy_decimals: 0
