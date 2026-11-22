@@ -13,14 +13,17 @@ def _split_key(key: str) -> tuple[int, int]:
 
 
 def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
-    """Return runs, newest last. A run starts at the start command and ends at the last telegram before a silent gap
-    (or the next start). The newest run is `open` while telegrams keep arriving."""
+    """Return runs, newest last. A run starts at the start command. It ends at the end marker frame when the spec names one
+    (``runs.end.marker``, for the BSH D-Bus ``27/2007 = 03``), otherwise, or when the marker frame was lost, at the last
+    telegram before a silent gap (or the next start). The newest run is `open` while telegrams keep arriving."""
     spec = load_spec(protocol)
     rules = spec.get("runs") or {}
     if not rules.get("start"):
         return []
     start_ds, start_cmd = _split_key(rules["start"]["key"])
     gap = float(rules.get("end", {}).get("gap_minutes", 20)) * 60
+    marker = rules.get("end", {}).get("marker")
+    mk_ds, mk_cmd = _split_key(marker["key"]) if marker else (None, None)
     ctx = float(rules.get("context_seconds", 300))
     prog_ds, prog_cmd = _split_key(rules["program_key"]) if rules.get("program_key") else (None, None)
     rem_ds, rem_cmd = _split_key(rules["remaining_key"]) if rules.get("remaining_key") else (None, None)
@@ -53,11 +56,22 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
         for i, s in enumerate(merged):
             limit_ts = merged[i + 1]["ts"] if i + 1 < len(merged) else None
             end_ts, prev, n, bad = s["ts"], s["ts"], 0, 0
-            q = "SELECT ts, crc_ok FROM frames WHERE source_id=? AND ts>=?" + (" AND ts<?" if limit_ts else "") + " ORDER BY ts, id"
-            args = (source_id, s["ts"], limit_ts) if limit_ts else (source_id, s["ts"])
+            marker_ts = None
+            if marker:           # the first intact end-marker frame after the start (and before the next start)
+                mq = ("SELECT ts, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND crc_ok=1 AND ts>?"
+                      + (" AND ts<?" if limit_ts else "") + " ORDER BY ts, id")
+                margs = (source_id, mk_ds, mk_cmd, s["ts"]) + ((limit_ts,) if limit_ts else ())
+                mb = marker.get("byte", 0)
+                for r in db.execute(mq, margs):
+                    if len(r["data"]) > mb and r["data"][mb] == marker["value"]:
+                        marker_ts = r["ts"]
+                        break
+            q = ("SELECT ts, crc_ok FROM frames WHERE source_id=? AND ts>=?"
+                 + (" AND ts<?" if limit_ts else "") + (" AND ts<=?" if marker_ts else "") + " ORDER BY ts, id")
+            args = (source_id, s["ts"]) + ((limit_ts,) if limit_ts else ()) + ((marker_ts,) if marker_ts else ())
             ended_by_gap = False
             for r in db.execute(q, args):
-                if r["ts"] - prev > gap:
+                if marker_ts is None and r["ts"] - prev > gap:    # without a marker a silent gap ends the run
                     ended_by_gap = True
                     break
                 prev = end_ts = r["ts"]
@@ -79,13 +93,16 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                                   "ORDER BY ts DESC LIMIT 1", (source_id, rem_ds, rem_cmd, s["ts"], end_ts)).fetchone()
                 rem_start = first["data"][0] if first and first["data"] else None
                 rem_end = last["data"][0] if last and last["data"] else None
-            is_open = limit_ts is None and not ended_by_gap and (last_ts_all - end_ts) <= gap
+            is_open = marker_ts is None and limit_ts is None and not ended_by_gap and (last_ts_all - end_ts) <= gap
             runs.append({
                 "id": s["id"], "start_ts": s["ts"], "end_ts": end_ts, "duration_s": round(end_ts - s["ts"], 1),
                 "from_ts": max(s["ts"] - ctx, runs[-1]["end_ts"] if runs else 0), "frames": n, "crc_errors": bad,
                 "program": program, "remaining_start_min": rem_start, "remaining_end_min": rem_end, "open": is_open,
                 "start_status": rules["start"].get("status", "assumed"), "start_evidence": rules["start"].get("evidence", ""),
-                "end_status": "unknown" if is_open else rules.get("end", {}).get("status", "assumed"),
-                "end_evidence": "run still receiving telegrams" if is_open else rules.get("end", {}).get("evidence", ""),
+                "end_by": "marker" if marker_ts else ("open" if is_open else "gap"),
+                "end_status": ("unknown" if is_open else marker.get("status", "assumed") if marker_ts
+                               else rules.get("end", {}).get("status", "assumed")),
+                "end_evidence": ("run still receiving telegrams" if is_open else marker.get("evidence", "") if marker_ts
+                                 else rules.get("end", {}).get("evidence", "")),
             })
         return runs

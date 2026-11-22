@@ -5,7 +5,7 @@
 protocol: bshdbus
 title: BSH D-Bus (Bosch / Siemens / Neff)
 physical: "9600 baud, 8N1, half duplex, idle gap 15 ms ends a burst"
-frame: "LL DS CC CC data... CRC16-XMODEM(LL..data); total length LL+4; ACK byte with low nibble 0xA"
+frame: "LL DS CC CC data... CRC16-XMODEM(LL..data); total length LL+4; ACK byte with low nibble 0xA. Upstream (hn) also lists 0x3 = frame exceeds the receive buffer and 0x7 = CRC error as ACK low nibbles; not decoded here, because 0x3 and 0x7 are also common LL bytes of the next frame (not seen as ACK on our bus)"
 # The frame carries only the DESTINATION. The sender is derived from the destination class and is therefore
 # never better than "assumed". Exact node entries win over class entries ("1x" = every 0x1_ destination).
 # DS byte = destination node (high nibble) + subsystem (low nibble). There is NO source field on the wire
@@ -48,9 +48,15 @@ runs:
     status: assumed
     evidence: "17/1013 = 01 comes together with 17/1012 at program start; the module then reports 27/2007 = 01"
   end:
-    gap_minutes: 20         # no telegram for this long ends the run, or the next start begins a new one
+    marker:                 # the run ends with the first intact frame that matches; the gap below is only the fallback
+      key: "27/2007"
+      byte: 0
+      value: 3
+      status: confirmed
+      evidence: "27/2007 = 03 (finished) is sent exactly once at the end of each of the six recorded runs (1 h 65 C, Auto 45-65 C, Eco 50 C) and of one earlier partial recording; the module then sends 25/2012 = 00 about 120 s later"
+    gap_minutes: 20         # fallback: no telegram for this long ends the run, or the next start begins a new one
     status: assumed
-    evidence: "the real end-of-run marker is not yet known; the end is the last telegram before a silent gap"
+    evidence: "fallback when the end marker frame was lost (CRC error): the end is the last telegram before a silent gap"
   context_seconds: 300      # telegrams shown before the start (program selection, power on)
   program_key: "17/1011"    # program selection used to name the run
   remaining_key: "25/2008"  # remaining time, byte 0 in minutes
@@ -73,7 +79,7 @@ commands:
     name: sensors
     title: Door, rinse aid, salt
     status: confirmed
-    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs"
+    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs. Salt and rinse aid bits are NOT verified: the firmware example (after jowi24, Siemens SX66T096EU) reads bit 1 = rinse aid, bit 0 = salt, upstream hn DISHWASHER.md says bit 0 = rinse aid LED, bit 1 = salt LED; in our recordings bit 1 is always set and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once). Needs a recording with low salt or rinse aid, or the physical indicators noted next to a recording"
     fields:
       - {byte: 0, bit: 3, name: door_closed, label: Door closed, status: confirmed}
       - {byte: 0, bit: 1, name: rinse_aid_flag, label: Rinse aid flag, status: assumed}
@@ -82,11 +88,11 @@ commands:
     name: remaining_time
     title: Remaining time
     status: confirmed
-    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later)"
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
-      - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: assumed}
-      - {byte: 4, kind: u8, name: remaining_m, label: Remaining minutes part, unit: min, status: assumed}
+      - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: confirmed}
+      - {byte: 4, kind: u8, name: remaining_m, label: Remaining minutes part, unit: min, status: confirmed}
   - key: "25/2000"
     name: progress
     title: Program progress
@@ -96,14 +102,14 @@ commands:
       - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: confirmed}
   - key: "25/2012"
     name: after_end
-    title: Sent two minutes after the end of a cycle
+    title: Run flag (01 at the start, 00 two minutes after the end)
     status: unknown
-    evidence: "one frame, value 00, exactly 120 s after 27/2007 = 03 in both runs; probably marks the module going to standby"
+    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby"
   - key: "25/2013"
     name: end_marker
-    title: End-of-cycle marker
+    title: Marker ff00 (at the start and at the end of a run)
     status: unknown
-    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of both runs; 25/2005 = 0x28 is sent in the same burst"
+    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of every run (25/2005 = 0x28 in the same burst), but also about 1 s after power-on at the start of a run; so it is not an end marker on its own: use 27/2007 = 03"
   - key: "17/1010"
     name: program_select_early
     title: Program selection (panel, early)
@@ -122,7 +128,7 @@ commands:
     name: program_echo
     title: Program echo from the module
     status: confirmed
-    evidence: "byte 0 equals the selected program id"
+    evidence: "byte 0 is a program id in the module; at power-on it is the program used last (echo 0x0e, then the panel set 0x15 with 17/1010 + 17/1011 in a 1 h 65 C run), so it is not the current selection once the panel has changed it"
     fields:
       - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
   - key: "17/1000"
@@ -138,7 +144,7 @@ commands:
     name: operating_state
     title: Operating state
     status: confirmed
-    evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 at the end of two full runs (Chef 70 C, Eco 50 C); 06 seen in earlier runs, unclear"
+    evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 exactly once at the end of every recorded run (six runs plus one earlier partial recording); 06 was seen in earlier runs, unclear, and is not in the current database"
     fields:
       - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: confirmed}
   - key: "17/1007"
@@ -165,14 +171,14 @@ commands:
     name: phase
     title: Program phase
     status: unknown
-    evidence: "changes during a run; mapping of values to phases not verified"
+    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Hypothesis: low nibble 1/2/4/8 = step, bit 0x10 = short transition pulse"
     fields:
       - {byte: 0, kind: u8, name: phase, label: Phase, status: unknown}
   - key: "25/2004"
     name: flags
     title: Flags
     status: unknown
-    evidence: "bit field, meaning unknown"
+    evidence: "bit field, meaning unknown. Values 800000 (7 times, a few seconds after start), 200000 (17 times: a few seconds after start and together with 27/2007 = 03 at the end), 000000 (12 times); so bit 7 of byte 0 looks like a start flag and bit 5 like a running/finished flag"
     fields: []
   - key: "26/2002"
     name: status_26
@@ -185,6 +191,24 @@ commands:
     title: Program list (module announces supported programs)
     status: assumed
     evidence: "starts with a5 followed by the program ids 1c 0d 0e 0f 15 12 ... seen at power-on on a Neff S413K60S0E"
+    fields: []
+  - key: "25/2009"
+    name: heartbeat
+    title: Periodic frame, always 00
+    status: unknown
+    evidence: "760 frames (about a fifth of all traffic), always the single byte 00 from the first to the last recording; probably a cyclic heartbeat of the module"
+    fields: []
+  - key: "25/2015"
+    name: start_parameter
+    title: Parameter sent at power-on / start (0fff or 0e40)
+    status: unknown
+    evidence: "0fff 11 times, 0e40 twice, both right before a 1 h 65 C run; so it may depend on the program last used or selected"
+    fields: []
+  - key: "25/1012"
+    name: cmd_1012
+    title: Seven data bytes at power-on / start
+    status: unknown
+    evidence: "00 00 00 00 03 1e 00 seven times, once 00 00 00 00 02 2d 00 at the start of an Auto 45-65 C run; the last three bytes could be hours and minutes (3:30 and 2:45) but do not match the program, meaning unknown"
     fields: []
   - key: "22/7ff1"
     name: node22_7ff1
