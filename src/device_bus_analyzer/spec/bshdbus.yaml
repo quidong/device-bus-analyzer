@@ -77,9 +77,9 @@ enums:
 commands:
   - key: "24/2006"
     name: sensors
-    title: Door, rinse aid, salt (sent only at power-on/start and at the end of a run)
+    title: "Door, rinse aid, salt (sent while the module is awake: power-on, each door change, end of a run)"
     status: confirmed
-    evidence: "Neff S413K60S0E: byte 0 bit 3 = door closed. The frame is sent only twice per run (power-on/start and end of the cycle, 16 frames in six runs plus one partial recording) and never when the door is opened or closed in between: the door was open once at a power-on (0x02), and the door opened after the end of a run was never reported (the bus is silent about two minutes after 27/2007 = 03), so the state only reflects the door at those moments. Bit 1 = rinse aid needs refilling, bit 0 = salt needs refilling (flag set = refill): seen on one machine: bit 1 was set in every recording and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once), while the machine's display showed rinse aid low and salt sufficient. This matches the firmware example (after jowi24, Siemens SX66T096EU) and rules out the reverse mapping in upstream hn DISHWASHER.md (bit 0 = rinse aid LED, bit 1 = salt LED). Still one state each, so both stay assumed: the flags have never been seen toggling; a recording after a short rinse aid fill (bit 1 should clear) or a salt-low state would confirm them"
+    evidence: "Neff S413K60S0E: byte 0 bit 3 = door closed. The frame follows the door contact live while the module is awake: after power-on a door close was reported 3 s later (0x0a) and a door open 8 s later (0x02), each within about 3 s of the action. It is also sent at power-on and at the end of a run. While the machine is switched off (about two minutes after 27/2007 = 03 the bus goes silent) opening and closing the door produced no telegram at all. Whether opening the door wakes the module from standby is not yet tested. Bit 1 = rinse aid needs refilling, bit 0 = salt needs refilling (flag set = refill): seen on one machine: bit 1 was set in every recording and bit 0 never (0x0a with the door closed, 0x02 with the door open), while the machine's display showed rinse aid low and salt sufficient. This matches the firmware example (after jowi24, Siemens SX66T096EU) and rules out the reverse mapping in upstream hn DISHWASHER.md (bit 0 = rinse aid LED, bit 1 = salt LED). Still one state each, so both stay assumed: the flags have never been seen toggling; a recording after a short rinse aid fill (bit 1 should clear) or a salt-low state would confirm them"
     fields:
       - {byte: 0, bit: 3, name: door_closed, label: Door closed, status: confirmed}
       - {byte: 0, bit: 1, name: rinse_aid_flag, label: Rinse aid flag, status: assumed}
@@ -104,7 +104,7 @@ commands:
     name: after_end
     title: Run flag (01 at the start, 00 two minutes after the end)
     status: unknown
-    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby"
+    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; also seen as 00 less than a second after the door was opened while the machine was idle after power-on"
   - key: "25/2013"
     name: end_marker
     title: Marker ff00 (at the start and at the end of a run)

@@ -118,3 +118,25 @@ def test_end_marker_command_is_not_called_an_end_marker_alone():
 
 def test_spec_is_still_consistent():
     assert spec.validate_spec("bshdbus") == []
+
+
+def test_glued_power_on_burst_is_split_and_door_changes_decode():
+    """Several frames glued together with ACK bytes in between (power-on) and a damaged prefix: every intact frame is recovered."""
+    from device_bus_analyzer.protocols.bshdbus import parse_burst
+    glued = (b"\x00\x00\x54\x54" + build_frame(0x22, 0x7FF1, b"\x10") + build_frame(0x22, 0x7FF1, b"\x10")
+             + build_frame(0x17, 0x1007, b"\x01") + b"\x1a" + build_frame(0x24, 0x2006, b"\x02") + b"\x2a"
+             + build_frame(0x25, 0x2008, bytes([210, 0x30, 0x30, 3, 30, 0, 3, 30])) + b"\x2a")
+    frames, st = parse_burst(glued)
+    good = [(f.ds, f.cmd, f.ack) for f in frames if f.crc_ok]
+    assert good == [(0x22, 0x7FF1, None), (0x22, 0x7FF1, None), (0x17, 0x1007, 0x1A), (0x24, 0x2006, 0x2A), (0x25, 0x2008, 0x2A)]
+    assert st.ok == 5
+
+
+@pytest.mark.parametrize("byte,closed", [(0x0A, True), (0x02, False)])
+def test_door_state_changes_decode_both_ways(byte, closed):
+    assert spec.decode("bshdbus", 0x24, 0x2006, bytes([byte]))["values"]["door_closed"] is closed
+
+
+def test_door_evidence_says_live_while_awake():
+    ev = next(c for c in spec.load_spec("bshdbus")["commands"] if c["key"] == "24/2006")["evidence"]
+    assert "live" in ev and "switched off" in ev
