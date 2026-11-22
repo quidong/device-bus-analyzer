@@ -13,11 +13,11 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def test_sanitize_removes_private_details_but_keeps_bus_data():
     f = build_frame(0x25, 0x2008, bytes(8)).hex()
-    cases = ["SSID: 'MyHomeNet'", "BSSID: 58:E6:C5:D5:BC:AC", "connect to 192.168.60.23 port 6053", "mac 58:e6:c5:d5:bc:ac",
+    cases = ["SSID: 'MyHomeNet'", "BSSID: 02:00:5E:00:53:AF", "connect to 192.0.2.23 port 6053", "mac 02:00:5e:00:53:af",
              "Hostname: 'geschirrspuler'", "geschirrspuler.local", "api key: abcdEFGH12345678=="]
     for c in cases:
         out = sanitize_line(c)
-        assert out != c and not re.search(r"MyHomeNet|192\.168|58:e6|geschirrspuler|abcdEFGH", out, re.I), out
+        assert out != c and not re.search(r"MyHomeNet|192\.168|02:00:5e|192\.0\.2\.23|geschirrspuler|abcdEFGH", out, re.I), out
     keep = f"RAW1 seq=1 t_us=5 dt_us=5 n=14 hex={f}"
     assert sanitize_line(keep) == keep
     assert sanitize_line("password: !secret wifi_password") == "password: !secret wifi_password"
