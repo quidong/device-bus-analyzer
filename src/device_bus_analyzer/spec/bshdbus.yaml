@@ -77,9 +77,9 @@ enums:
 commands:
   - key: "24/2006"
     name: sensors
-    title: Door, rinse aid, salt
+    title: Door, rinse aid, salt (sent only at power-on/start and at the end of a run)
     status: confirmed
-    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs. Bit 1 = rinse aid needs refilling, bit 0 = salt needs refilling (flag set = refill): reported by the owner while bit 1 was set in every recording and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once): the machine shows rinse aid empty (the reservoir is empty on purpose, the owner uses all-in-one tabs) and salt sufficient. This matches the firmware example (after jowi24, Siemens SX66T096EU) and rules out the reverse mapping in upstream hn DISHWASHER.md (bit 0 = rinse aid LED, bit 1 = salt LED). Still one state each, so both stay assumed: the flags have never been seen toggling; a recording after a short rinse aid fill (bit 1 should clear) or a salt-low state would confirm them"
+    evidence: "Neff S413K60S0E: byte 0 bit 3 = door closed. The frame is sent only twice per run (power-on/start and end of the cycle, 16 frames in six runs plus one partial recording) and never when the door is opened or closed in between: the door was open once at a power-on (0x02), and the door opened after the end of a run was never reported (the bus is silent about two minutes after 27/2007 = 03), so the state only reflects the door at those moments. Bit 1 = rinse aid needs refilling, bit 0 = salt needs refilling (flag set = refill): reported by the owner while bit 1 was set in every recording and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once): the machine shows rinse aid empty (the reservoir is empty on purpose, the owner uses all-in-one tabs) and salt sufficient. This matches the firmware example (after jowi24, Siemens SX66T096EU) and rules out the reverse mapping in upstream hn DISHWASHER.md (bit 0 = rinse aid LED, bit 1 = salt LED). Still one state each, so both stay assumed: the flags have never been seen toggling; a recording after a short rinse aid fill (bit 1 should clear) or a salt-low state would confirm them"
     fields:
       - {byte: 0, bit: 3, name: door_closed, label: Door closed, status: confirmed}
       - {byte: 0, bit: 1, name: rinse_aid_flag, label: Rinse aid flag, status: assumed}
