@@ -79,7 +79,7 @@ commands:
     name: sensors
     title: Door, rinse aid, salt
     status: confirmed
-    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs. Salt and rinse aid bits are NOT verified: the firmware example (after jowi24, Siemens SX66T096EU) reads bit 1 = rinse aid, bit 0 = salt, upstream hn DISHWASHER.md says bit 0 = rinse aid LED, bit 1 = salt LED; in our recordings bit 1 is always set and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once). Needs a recording with low salt or rinse aid, or the physical indicators noted next to a recording"
+    evidence: "Neff S413K60S0E: byte 0 bit 3 follows the door contact in all runs. Bit 1 = rinse aid needs refilling, bit 0 = salt needs refilling (flag set = refill): reported by the owner while bit 1 was set in every recording and bit 0 never (0x0a with the door closed, 15 times; 0x02 with the door open, once), rinse aid empty and salt sufficient. This matches the firmware example (after jowi24, Siemens SX66T096EU) and rules out the reverse mapping in upstream hn DISHWASHER.md (bit 0 = rinse aid LED, bit 1 = salt LED). Still one state each: record the bit after refilling the rinse aid (bit 1 should clear) to confirm"
     fields:
       - {byte: 0, bit: 3, name: door_closed, label: Door closed, status: confirmed}
       - {byte: 0, bit: 1, name: rinse_aid_flag, label: Rinse aid flag, status: assumed}
