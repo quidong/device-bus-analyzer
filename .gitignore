@@ -8,3 +8,9 @@ secrets.yaml
 *.log
 .env
 node_modules/
+
+# SKiDL run output
+hardware/**/*.log
+hardware/**/*.erc
+__pycache__/
+.pytest_cache/

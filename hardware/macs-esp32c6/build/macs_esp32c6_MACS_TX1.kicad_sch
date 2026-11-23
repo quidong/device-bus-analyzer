@@ -1,0 +1,1273 @@
+(kicad_sch
+  (version 20230121)
+  (generator "schematizer")
+  (uuid b0773181-d257-5d79-95a7-51b5b93e44e9)
+  (paper "A4")
+  (title_block
+    (title "MACS-ESP32-C6 Adapter - MACS_TX1")
+    (date "2026-11-08")
+    (company "")
+    (comment 1 "Generated with SKiDL")
+    (comment 2 "")
+    (comment 3 "")
+    (comment 4 ""))
+  (lib_symbols
+    (symbol "Device:R"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "R"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "R"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "R_0_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "R_1_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Transistor_BJT:MMBT3904"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "Q"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "MMBT3904"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "MMBT3904_0_1"
+        (polyline
+          (pts
+            (xy 0.635 0.635)
+            (xy 2.54 2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.635 -0.635)
+            (xy 2.54 -2.54)
+            (xy 2.54 -2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.635 1.905)
+            (xy 0.635 -1.905)
+            (xy 0.635 -1.905))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 1.27 -1.778)
+            (xy 1.778 -1.27)
+            (xy 2.286 -2.286)
+            (xy 1.27 -1.778)
+            (xy 1.27 -1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (circle
+          (center 1.27 0)
+          (radius 2.8194)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "MMBT3904_1_1"
+        (polyline
+          (pts
+            (xy 0.635 0.635)
+            (xy 2.54 2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.635 -0.635)
+            (xy 2.54 -2.54)
+            (xy 2.54 -2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.635 1.905)
+            (xy 0.635 -1.905)
+            (xy 0.635 -1.905))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 1.27 -1.778)
+            (xy 1.778 -1.27)
+            (xy 2.286 -2.286)
+            (xy 1.27 -1.778)
+            (xy 1.27 -1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (circle
+          (center 1.27 0)
+          (radius 2.8194)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (pin input line
+          (at -5.08 0 0)
+          (length 5.715)
+          (name "B"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 2.54 -5.08 90)
+          (length 2.54)
+          (name "E"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 2.54 5.08 270)
+          (length 2.54)
+          (name "C"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "3"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Transistor_FET:AO3401A"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "Q"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "AO3401A"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "http://www.aosmd.com/pdfs/datasheet/AO3401A.pdf"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "AO3401A_0_1"
+        (polyline
+          (pts
+            (xy 0.254 0)
+            (xy -2.54 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.254 1.905)
+            (xy 0.254 -1.905))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 -1.27)
+            (xy 0.762 -2.286))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 0.508)
+            (xy 0.762 -0.508))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 2.286)
+            (xy 0.762 1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 2.54)
+            (xy 2.54 1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 -2.54)
+            (xy 2.54 0)
+            (xy 0.762 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 1.778)
+            (xy 3.302 1.778)
+            (xy 3.302 -1.778)
+            (xy 0.762 -1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.286 0)
+            (xy 1.27 0.381)
+            (xy 1.27 -0.381)
+            (xy 2.286 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (polyline
+          (pts
+            (xy 2.794 -0.508)
+            (xy 2.921 -0.381)
+            (xy 3.683 -0.381)
+            (xy 3.81 -0.254))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 3.302 -0.381)
+            (xy 2.921 0.254)
+            (xy 3.683 0.254)
+            (xy 3.302 -0.381))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 1.651 0)
+          (radius 2.794)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 2.54 -1.778)
+          (radius 0.254)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (circle
+          (center 2.54 1.778)
+          (radius 0.254)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline))))
+      (symbol "AO3401A_1_1"
+        (polyline
+          (pts
+            (xy 0.254 0)
+            (xy -2.54 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.254 1.905)
+            (xy 0.254 -1.905))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 -1.27)
+            (xy 0.762 -2.286))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 0.508)
+            (xy 0.762 -0.508))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 2.286)
+            (xy 0.762 1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 2.54)
+            (xy 2.54 1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 -2.54)
+            (xy 2.54 0)
+            (xy 0.762 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0.762 1.778)
+            (xy 3.302 1.778)
+            (xy 3.302 -1.778)
+            (xy 0.762 -1.778))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.286 0)
+            (xy 1.27 0.381)
+            (xy 1.27 -0.381)
+            (xy 2.286 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (polyline
+          (pts
+            (xy 2.794 -0.508)
+            (xy 2.921 -0.381)
+            (xy 3.683 -0.381)
+            (xy 3.81 -0.254))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 3.302 -0.381)
+            (xy 2.921 0.254)
+            (xy 3.683 0.254)
+            (xy 3.302 -0.381))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 1.651 0)
+          (radius 2.794)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 2.54 -1.778)
+          (radius 0.254)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (circle
+          (center 2.54 1.778)
+          (radius 0.254)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type outline)))
+        (pin input line
+          (at -5.08 0 0)
+          (length 2.54)
+          (name "G"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 2.54 -5.08 90)
+          (length 2.54)
+          (name "S"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 2.54 5.08 270)
+          (length 2.54)
+          (name "D"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "3"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "power:GND"
+      (power)
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0)
+        hide)
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "#PWR"
+        (at 0 -6.35 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Value" "GND"
+        (at 0 -3.81 0)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "ki_keywords" "global power"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "GND_0_1"
+        (polyline
+          (pts
+            (xy 0 0)
+            (xy 0 -1.27)
+            (xy 1.27 -1.27)
+            (xy 0 -2.54)
+            (xy -1.27 -1.27)
+            (xy 0 -1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "GND_1_1"
+        (pin power_in line
+          (at 0 0 270)
+          (length 0)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27))))))))
+  (symbol
+    (lib_id "Transistor_BJT:MMBT3904")
+    (at 34.29 40.64 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 1f7f463b-518d-5891-89ce-c774ec69eb47)
+    (property "Reference" "Q1"
+      (at 34.29 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "MMBT3904"
+      (at 34.29 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Package_TO_SOT_SMD:SOT-23"
+      (at 34.29 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "https://www.onsemi.com/pdf/datasheet/pzt3904-d.pdf"
+      (at 34.29 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 34.29 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C20526"
+      (at 34.29 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "MMBT3904"
+      (at 34.29 46.99 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 3b948977-5849-5503-9624-57140cacfaff))
+    (pin "2"
+      (uuid 1caee4a3-1b08-5e6c-a480-a3027f203f87))
+    (pin "3"
+      (uuid 2d185654-288d-5c67-b987-30785b8bc3d1))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "Q1")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 29.21 40.64)
+      (xy 26.67 40.64))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid cbdb0bef-7a52-5ef9-980b-abbfa1fcca87))
+  (label "Q1_B"
+    (at 26.67 40.64 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid c8a67e2e-d24e-5082-93b3-87c1001f55f7))
+  (wire
+    (pts
+      (xy 36.83 45.72)
+      (xy 36.83 48.26))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid b86c5875-ef83-5581-84e7-098253857d80))
+  (symbol
+    (lib_id "power:GND")
+    (at 36.83 48.26 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid d5916dd2-d346-572d-854a-49fd206753f2)
+    (property "Reference" "#PWR022"
+      (at 36.83 46.989999999999995 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 36.83 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 36.83 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 36.83 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid a58a9b5e-2353-53cb-b402-9184e9318f7c))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "#PWR022")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 36.83 35.56)
+      (xy 36.83 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 8b791119-6b4b-52c5-88f7-ed13c5f9d092))
+  (label "Q2_G"
+    (at 36.83 33.02 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 564c5489-3652-58a2-bed8-9ea512c47c13))
+  (symbol
+    (lib_id "Transistor_FET:AO3401A")
+    (at 52.07 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 9aa41537-19f4-57e8-a595-a3c578eb4828)
+    (property "Reference" "Q2"
+      (at 52.07 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "AO3401A"
+      (at 52.07 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Package_TO_SOT_SMD:SOT-23"
+      (at 52.07 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "http://www.aosmd.com/pdfs/datasheet/AO3401A.pdf"
+      (at 52.07 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 52.07 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C15127"
+      (at 52.07 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "AO3401A"
+      (at 52.07 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 474fc815-dd65-5190-883b-b9ec862fa23d))
+    (pin "2"
+      (uuid 20513ba0-517b-550f-86c3-cc192317da7c))
+    (pin "3"
+      (uuid 3988c814-c7cb-585c-a544-ddac5746102e))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "Q2")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 46.99 43.18)
+      (xy 44.45 43.18))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid e62759b2-7fa8-525d-90ba-ea04ea1fa1bd))
+  (label "Q2_G"
+    (at 44.45 43.18 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid c2dd91d1-33b5-521d-8d06-c7dd48f367b4))
+  (wire
+    (pts
+      (xy 54.61 48.26)
+      (xy 54.61 50.8))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid f95d56d8-61b8-5474-96e5-097ae404fb8a))
+  (global_label "+5V_BUS"
+    (shape bidirectional)
+    (at 54.61 50.8 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 74287e82-dfa6-5d9a-be62-7ad91e0de68d))
+  (wire
+    (pts
+      (xy 54.61 38.1)
+      (xy 54.61 35.56))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 224a0f73-5f9c-50b9-8bfe-d8899772ecc6))
+  (label "TX_DRV"
+    (at 54.61 35.56 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 5c41f03d-7a4f-5de1-a960-7e7b66e0fc13))
+  (symbol
+    (lib_id "Device:R")
+    (at 62.23 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 0a5df805-cffc-56fd-938f-9090939fb1d3)
+    (property "Reference" "R13"
+      (at 62.23 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "4.7k"
+      (at 62.23 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 62.23 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 62.23 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 62.23 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25900"
+      (at 62.23 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid c2527ba2-fcdf-5e4c-9235-243f4e0c8b9a))
+    (pin "2"
+      (uuid 94065971-f19a-5c8d-93e7-a793bdb8e90e))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "R13")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 62.23 39.37)
+      (xy 62.23 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 87a11c8e-3b11-5fe7-b473-6fca23928e5d))
+  (global_label "MACS_TX"
+    (shape bidirectional)
+    (at 62.23 36.83 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 94c4e81c-fa7a-53f2-891c-5f77520ac102))
+  (wire
+    (pts
+      (xy 62.23 46.99)
+      (xy 62.23 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 88abdb70-8ce6-5c72-a9b4-9589b4103fc1))
+  (label "Q1_B"
+    (at 62.23 49.53 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 43b4f667-3e57-5004-bd22-500075509e35))
+  (symbol
+    (lib_id "Device:R")
+    (at 69.85 39.37 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid a1785dc1-4992-59bf-b100-32ef069bc967)
+    (property "Reference" "R14"
+      (at 69.85 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10k"
+      (at 69.85 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 69.85 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 69.85 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 69.85 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25744"
+      (at 69.85 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 2a9e8e81-477c-53dd-ad69-d85885410804))
+    (pin "2"
+      (uuid 594cf905-4b1b-57c3-b590-c8af84ec93bd))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "R14")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 69.85 35.56)
+      (xy 69.85 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid abec9461-83d1-59fe-8568-ca14ead728cb))
+  (label "Q1_B"
+    (at 69.85 33.02 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 7730e42f-13ba-5d2c-a78b-e35b84250553))
+  (wire
+    (pts
+      (xy 69.85 43.18)
+      (xy 69.85 45.72))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 9c832cf6-e698-56bc-a09f-403bd866f2e5))
+  (symbol
+    (lib_id "power:GND")
+    (at 69.85 45.72 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 52a6922d-23af-5669-8c0b-1fca21ed7e0d)
+    (property "Reference" "#PWR023"
+      (at 69.85 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 69.85 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 69.85 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 69.85 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid ddc75c69-2b24-5588-a380-543f49857039))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "#PWR023")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:R")
+    (at 76.2 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 9e9c7ef2-121f-59ab-adf1-63ac98a940c5)
+    (property "Reference" "R15"
+      (at 76.2 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10k"
+      (at 76.2 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 76.2 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 76.2 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 76.2 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25744"
+      (at 76.2 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 1813fc4e-f3c5-5bc5-987f-9509421b3ffa))
+    (pin "2"
+      (uuid 3c09746f-775d-5b74-9c69-98b42d53c0fd))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "R15")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 76.2 39.37)
+      (xy 76.2 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid e93c45dd-48a5-582e-b39c-5acd71de3552))
+  (global_label "+5V_BUS"
+    (shape bidirectional)
+    (at 76.2 36.83 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid e9e54a5d-f680-542a-84b6-90bfbd7e20ed))
+  (wire
+    (pts
+      (xy 76.2 46.99)
+      (xy 76.2 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid da108d75-32b2-51fd-af22-cb86fabee53e))
+  (label "Q2_G"
+    (at 76.2 49.53 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 335a6a57-8597-5f8b-8910-d5a4d52a9e13))
+  (symbol
+    (lib_id "Device:R")
+    (at 83.82 41.91 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid fec08676-756e-50e2-ae96-c129106412df)
+    (property "Reference" "R16"
+      (at 83.82 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "100"
+      (at 83.82 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 83.82 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 83.82 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 83.82 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25076"
+      (at 83.82 46.989999999999995 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid bf79bf13-4f76-5ae9-9162-769d07517854))
+    (pin "2"
+      (uuid 672fe0e9-9b1a-5b5d-adb9-1e104882f2aa))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/b0773181-d257-5d79-95a7-51b5b93e44e9"
+          (reference "R16")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 83.82 38.1)
+      (xy 83.82 35.56))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid f076678e-ded7-5356-94da-5a89b0b5858d))
+  (label "TX_DRV"
+    (at 83.82 35.56 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 6bb4ab15-d2ef-5c44-a105-c52934a419e8))
+  (wire
+    (pts
+      (xy 83.82 45.72)
+      (xy 83.82 48.26))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid e56a41da-992b-5c2e-b2e9-ef91b9a5a369))
+  (global_label "MACS_DATA"
+    (shape bidirectional)
+    (at 83.82 48.26 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 14f0bf27-8083-5cb7-ad02-7165c57606e1)))

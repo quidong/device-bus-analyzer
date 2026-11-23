@@ -1,0 +1,566 @@
+(kicad_sch
+  (version 20230121)
+  (generator "schematizer")
+  (uuid 280ae582-0dce-5587-90cb-04d6772c215b)
+  (paper "A4")
+  (title_block
+    (title "MACS-ESP32-C6 Adapter - MACS_RX1")
+    (date "2026-11-08")
+    (company "")
+    (comment 1 "Generated with SKiDL")
+    (comment 2 "")
+    (comment 3 "")
+    (comment 4 ""))
+  (lib_symbols
+    (symbol "Device:C"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "C"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "C"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "C_0_1"
+        (polyline
+          (pts
+            (xy -2.032 -0.762)
+            (xy 2.032 -0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -2.032 0.762)
+            (xy 2.032 0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "C_1_1"
+        (polyline
+          (pts
+            (xy -2.032 -0.762)
+            (xy 2.032 -0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -2.032 0.762)
+            (xy 2.032 0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at 0 3.81 270)
+          (length 2.794)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 2.794)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Device:R"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "R"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "R"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "R_0_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "R_1_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "power:GND"
+      (power)
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0)
+        hide)
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "#PWR"
+        (at 0 -6.35 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Value" "GND"
+        (at 0 -3.81 0)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "ki_keywords" "global power"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "GND_0_1"
+        (polyline
+          (pts
+            (xy 0 0)
+            (xy 0 -1.27)
+            (xy 1.27 -1.27)
+            (xy 0 -2.54)
+            (xy -1.27 -1.27)
+            (xy 0 -1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "GND_1_1"
+        (pin power_in line
+          (at 0 0 270)
+          (length 0)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27))))))))
+  (symbol
+    (lib_id "Device:C")
+    (at 24.13 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid e744c285-c5b1-528b-9bad-e4f1486abc0a)
+    (property "Reference" "C10"
+      (at 24.13 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "1nF"
+      (at 24.13 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+      (at 24.13 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 24.13 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 24.13 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C1523"
+      (at 24.13 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 8cdbe65b-b77a-59e1-9b22-67ef035e1f90))
+    (pin "2"
+      (uuid e0295122-8dfa-5f5b-a530-2856fc865e10))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/280ae582-0dce-5587-90cb-04d6772c215b"
+          (reference "C10")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 24.13 39.37)
+      (xy 24.13 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 777d43ed-cc23-5b2a-860f-a0635d48f263))
+  (global_label "MACS_RX"
+    (shape bidirectional)
+    (at 24.13 36.83 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 015d040f-afbe-52e7-8494-6ae1fb30bef5))
+  (wire
+    (pts
+      (xy 24.13 46.99)
+      (xy 24.13 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 14664b7c-6b43-55c3-ae9c-6d81811763c5))
+  (symbol
+    (lib_id "power:GND")
+    (at 24.13 49.53 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 2519212d-3481-5443-8d6d-3329fec72476)
+    (property "Reference" "#PWR016"
+      (at 24.13 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 24.13 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 24.13 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 24.13 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid cc90163f-702a-54ca-9183-abeb862b3ffa))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/280ae582-0dce-5587-90cb-04d6772c215b"
+          (reference "#PWR016")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:R")
+    (at 33.02 44.45 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid a72c9ba0-43e9-58a4-9263-3ac29224e82b)
+    (property "Reference" "R11"
+      (at 33.02 41.910000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "4.7k"
+      (at 33.02 46.99 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 33.02 44.45 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 33.02 44.45 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 33.02 44.45 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25900"
+      (at 33.02 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 9eceaac7-9519-5e45-bafd-3c27cb3c9902))
+    (pin "2"
+      (uuid 09bcdab9-1bca-55e3-9f0a-40acb85dfcaf))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/280ae582-0dce-5587-90cb-04d6772c215b"
+          (reference "R11")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 33.02 40.64)
+      (xy 33.02 38.1))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid de8930d6-28f4-5a9e-99bc-24e08acb1bd0))
+  (global_label "MACS_DATA"
+    (shape bidirectional)
+    (at 33.02 38.1 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 27e5039a-acb7-5746-807e-c3fa308d03d4))
+  (wire
+    (pts
+      (xy 33.02 48.26)
+      (xy 33.02 50.8))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid d071c2cd-14c3-5665-ad6e-9e28f9e9e826))
+  (global_label "MACS_RX"
+    (shape bidirectional)
+    (at 33.02 50.8 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 46173ad0-7127-595a-b641-d9d03bf50759))
+  (symbol
+    (lib_id "Device:R")
+    (at 39.37 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 0061b3eb-8081-5bdf-832f-5c1aa307631d)
+    (property "Reference" "R12"
+      (at 39.37 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10k"
+      (at 39.37 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 39.37 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 39.37 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 39.37 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25744"
+      (at 39.37 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid e02a3eed-d813-5326-99fd-30c40772e838))
+    (pin "2"
+      (uuid 91715665-0ebe-5348-aa34-acb4d54f7a2f))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/280ae582-0dce-5587-90cb-04d6772c215b"
+          (reference "R12")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 39.37 39.37)
+      (xy 39.37 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 65349dcc-b350-54b4-8b9e-73bb2355d3ae))
+  (global_label "MACS_RX"
+    (shape bidirectional)
+    (at 39.37 36.83 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 80fe02ba-9719-552e-a9fc-41b87ff3e992))
+  (wire
+    (pts
+      (xy 39.37 46.99)
+      (xy 39.37 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 73c3e8a6-5c4f-5c93-9404-e709ac61455a))
+  (symbol
+    (lib_id "power:GND")
+    (at 39.37 49.53 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 1fe5fc29-4410-5916-9900-bb517569e3be)
+    (property "Reference" "#PWR017"
+      (at 39.37 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 39.37 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 39.37 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 39.37 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 297b6fee-ba63-5eaa-905c-bb8bad2ba2be))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/280ae582-0dce-5587-90cb-04d6772c215b"
+          (reference "#PWR017")
+          (unit 1))))))

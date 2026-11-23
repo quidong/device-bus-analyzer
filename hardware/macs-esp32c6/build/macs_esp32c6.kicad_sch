@@ -1,0 +1,199 @@
+(kicad_sch
+  (version 20230121)
+  (generator "schematizer")
+  (uuid a09ec709-c27b-5540-8eaf-19f45a040b0e)
+  (paper "A4")
+  (title_block
+    (title "MACS-ESP32-C6 Adapter")
+    (date "2026-11-08")
+    (company "")
+    (comment 1 "Generated with SKiDL")
+    (comment 2 "")
+    (comment 3 "")
+    (comment 4 ""))
+  (lib_symbols)
+  (sheet
+    (at 25.4 38.1)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid 7d3bef81-da50-5a18-b62f-d8575de4f62b)
+    (property "Sheetname" "ESP32_C6_1"
+      (at 25.4 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_ESP32_C6_1.kicad_sch"
+      (at 25.4 64.77 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "2")))))
+  (sheet
+    (at 88.9 38.1)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid 280ae582-0dce-5587-90cb-04d6772c215b)
+    (property "Sheetname" "MACS_RX1"
+      (at 88.9 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_MACS_RX1.kicad_sch"
+      (at 88.9 64.77 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "3")))))
+  (sheet
+    (at 152.4 38.1)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid 0ddbd3fd-ec2b-5de0-8896-68cb44d878dd)
+    (property "Sheetname" "MACS_Stecker1"
+      (at 152.4 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_MACS_Stecker1.kicad_sch"
+      (at 152.4 64.77 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "4")))))
+  (sheet
+    (at 215.9 38.1)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid b0773181-d257-5d79-95a7-51b5b93e44e9)
+    (property "Sheetname" "MACS_TX1"
+      (at 215.9 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_MACS_TX1.kicad_sch"
+      (at 215.9 64.77 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "5")))))
+  (sheet
+    (at 25.4 76.2)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid d830cde6-4d95-5133-a035-f6d1d65682b8)
+    (property "Sheetname" "Testpunkte1"
+      (at 25.4 74.93 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_Testpunkte1.kicad_sch"
+      (at 25.4 102.87 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "6")))))
+  (sheet
+    (at 88.9 76.2)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid e6324de9-19f3-5a65-ac31-b7499ba854fd)
+    (property "Sheetname" "USB_C1"
+      (at 88.9 74.93 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_USB_C1.kicad_sch"
+      (at 88.9 102.87 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "7")))))
+  (sheet
+    (at 152.4 76.2)
+    (size 50.8 25.4)
+    (fields_autoplaced)
+    (stroke
+      (width 0.1524)
+      (type solid))
+    (fill
+      (color 0 0 0 0.0))
+    (uuid b1b6de6d-ba3b-5cad-868a-3c9301dcafd9)
+    (property "Sheetname" "Versorgung1"
+      (at 152.4 74.93 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left bottom)))
+    (property "Sheetfile" "macs_esp32c6_Versorgung1.kicad_sch"
+      (at 152.4 102.87 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left top)))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e"
+          (page "8")))))
+  (sheet_instances
+    (path "/"
+      (page "1"))))

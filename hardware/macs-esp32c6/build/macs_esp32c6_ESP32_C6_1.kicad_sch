@@ -1,0 +1,2797 @@
+(kicad_sch
+  (version 20230121)
+  (generator "schematizer")
+  (uuid 7d3bef81-da50-5a18-b62f-d8575de4f62b)
+  (paper "A4")
+  (title_block
+    (title "MACS-ESP32-C6 Adapter - ESP32_C6_1")
+    (date "2026-11-08")
+    (company "")
+    (comment 1 "Generated with SKiDL")
+    (comment 2 "")
+    (comment 3 "")
+    (comment 4 ""))
+  (lib_symbols
+    (symbol "Device:C"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "C"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "C"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "C_0_1"
+        (polyline
+          (pts
+            (xy -2.032 -0.762)
+            (xy 2.032 -0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -2.032 0.762)
+            (xy 2.032 0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "C_1_1"
+        (polyline
+          (pts
+            (xy -2.032 -0.762)
+            (xy 2.032 -0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -2.032 0.762)
+            (xy 2.032 0.762))
+          (stroke
+            (width 0.508)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at 0 3.81 270)
+          (length 2.794)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 2.794)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Device:LED"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "D"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "LED"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "LED_0_1"
+        (polyline
+          (pts
+            (xy -1.27 -1.27)
+            (xy -1.27 1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -1.27 0)
+            (xy 1.27 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 1.27 -1.27)
+            (xy 1.27 1.27)
+            (xy -1.27 0)
+            (xy 1.27 -1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -3.048 -0.762)
+            (xy -4.572 -2.286)
+            (xy -3.81 -2.286)
+            (xy -4.572 -2.286)
+            (xy -4.572 -1.524))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -1.778 -0.762)
+            (xy -3.302 -2.286)
+            (xy -2.54 -2.286)
+            (xy -3.302 -2.286)
+            (xy -3.302 -1.524))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "LED_1_1"
+        (polyline
+          (pts
+            (xy -1.27 -1.27)
+            (xy -1.27 1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -1.27 0)
+            (xy 1.27 0))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 1.27 -1.27)
+            (xy 1.27 1.27)
+            (xy -1.27 0)
+            (xy 1.27 -1.27))
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -3.048 -0.762)
+            (xy -4.572 -2.286)
+            (xy -3.81 -2.286)
+            (xy -4.572 -2.286)
+            (xy -4.572 -1.524))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy -1.778 -0.762)
+            (xy -3.302 -2.286)
+            (xy -2.54 -2.286)
+            (xy -3.302 -2.286)
+            (xy -3.302 -1.524))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at -3.81 0 0)
+          (length 2.54)
+          (name "K"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 3.81 0 180)
+          (length 2.54)
+          (name "A"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Device:R"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "R"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "R"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "R_0_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "R_1_1"
+        (rectangle
+          (start -1.016 -2.54)
+          (end 1.016 2.54)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at 0 3.81 270)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0 -3.81 90)
+          (length 1.27)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "Switch:SW_Push"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "SW"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "SW_Push"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "~"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "SW_Push_0_1"
+        (circle
+          (center -2.032 0)
+          (radius 0.508)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0 1.27)
+            (xy 0 3.048))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 1.27)
+            (xy -2.54 1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 2.032 0)
+          (radius 0.508)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "SW_Push_1_1"
+        (circle
+          (center -2.032 0)
+          (radius 0.508)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0 1.27)
+            (xy 0 3.048))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 2.54 1.27)
+            (xy -2.54 1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (circle
+          (center 2.032 0)
+          (radius 0.508)
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (pin passive line
+          (at -5.08 0 0)
+          (length 2.54)
+          (name "1"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 5.08 0 180)
+          (length 2.54)
+          (name "2"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "macs:ESP32-C6-WROOM-1"
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0))
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "U"
+        (at 2.032 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Value" "ESP32-C6-WROOM-1"
+        (at 0 0 90)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" "https://documentation.espressif.com/esp32-c6-wroom-1_wroom-1u_datasheet_en.pdf"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "ESP32-C6-WROOM-1_0_1"
+        (rectangle
+          (start -12.7 17.78)
+          (end 12.7 -20.32)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type background))))
+      (symbol "ESP32-C6-WROOM-1_1_1"
+        (rectangle
+          (start -12.7 17.78)
+          (end 12.7 -20.32)
+          (stroke
+            (width 0.254)
+            (type default))
+          (fill
+            (type background)))
+        (pin power_in line
+          (at -15.24 15.24 0)
+          (length 2.54)
+          (name "3V3"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "2"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin input line
+          (at -15.24 12.7 0)
+          (length 2.54)
+          (name "EN"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "3"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 10.16 0)
+          (length 2.54)
+          (name "IO0"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "8"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 7.62 0)
+          (length 2.54)
+          (name "IO1"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "9"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 5.08 0)
+          (length 2.54)
+          (name "IO2"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "27"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 2.54 0)
+          (length 2.54)
+          (name "IO3"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "26"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 0.0 0)
+          (length 2.54)
+          (name "IO4"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "4"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -2.54 0)
+          (length 2.54)
+          (name "IO5"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "5"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -5.08 0)
+          (length 2.54)
+          (name "IO6"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "6"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -7.62 0)
+          (length 2.54)
+          (name "IO7"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "7"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -10.16 0)
+          (length 2.54)
+          (name "IO8"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "10"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -12.7 0)
+          (length 2.54)
+          (name "IO9"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "15"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at -15.24 -15.24 0)
+          (length 2.54)
+          (name "IO10"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "11"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 15.24 180)
+          (length 2.54)
+          (name "IO11"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "12"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 12.7 180)
+          (length 2.54)
+          (name "IO12/USB_D-"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "13"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 10.16 180)
+          (length 2.54)
+          (name "IO13/USB_D+"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "14"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 7.62 180)
+          (length 2.54)
+          (name "IO15"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "23"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 5.08 180)
+          (length 2.54)
+          (name "TXD0/IO16"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "25"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 2.54 180)
+          (length 2.54)
+          (name "RXD0/IO17"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "24"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 0.0 180)
+          (length 2.54)
+          (name "IO18"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "16"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 -2.54 180)
+          (length 2.54)
+          (name "IO19"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "17"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 -5.08 180)
+          (length 2.54)
+          (name "IO20"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "18"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 -7.62 180)
+          (length 2.54)
+          (name "IO21"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "19"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 -10.16 180)
+          (length 2.54)
+          (name "IO22"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "20"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin bidirectional line
+          (at 15.24 -12.7 180)
+          (length 2.54)
+          (name "IO23"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "21"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin power_in line
+          (at 0.0 -22.86 90)
+          (length 2.54)
+          (name "GND"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0.0 -22.86 90)
+          (length 2.54) hide
+          (name "GND"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "28"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin passive line
+          (at 0.0 -22.86 90)
+          (length 2.54) hide
+          (name "GND"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "29"
+            (effects
+              (font
+                (size 1.27 1.27)))))
+        (pin no_connect line
+          (at -10.16 20.32 270)
+          (length 2.54) hide
+          (name "NC"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "22"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "power:+3V3"
+      (power)
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0)
+        hide)
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "#PWR"
+        (at 0 -3.81 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Value" "+3V3"
+        (at 0 3.556 0)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Description" "Power symbol creates a global label with name \"+3V3\""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "ki_keywords" "global power"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "+3V3_0_1"
+        (polyline
+          (pts
+            (xy -0.762 1.27)
+            (xy 0 2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0 2.54)
+            (xy 0.762 1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none)))
+        (polyline
+          (pts
+            (xy 0 0)
+            (xy 0 2.54))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "+3V3_1_1"
+        (pin power_in line
+          (at 0 0 90)
+          (length 0)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27)))))))
+    (symbol "power:GND"
+      (power)
+      (pin_numbers
+        hide)
+      (pin_names
+        (offset 0)
+        hide)
+      (in_bom yes)
+      (on_board yes)
+      (property "Reference" "#PWR"
+        (at 0 -6.35 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Value" "GND"
+        (at 0 -3.81 0)
+        (effects
+          (font
+            (size 1.27 1.27))))
+      (property "Footprint" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Datasheet" ""
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (property "ki_keywords" "global power"
+        (at 0 0 0)
+        (effects
+          (font
+            (size 1.27 1.27))
+          hide))
+      (symbol "GND_0_1"
+        (polyline
+          (pts
+            (xy 0 0)
+            (xy 0 -1.27)
+            (xy 1.27 -1.27)
+            (xy 0 -2.54)
+            (xy -1.27 -1.27)
+            (xy 0 -1.27))
+          (stroke
+            (width 0)
+            (type default))
+          (fill
+            (type none))))
+      (symbol "GND_1_1"
+        (pin power_in line
+          (at 0 0 270)
+          (length 0)
+          (name "~"
+            (effects
+              (font
+                (size 1.27 1.27))))
+          (number "1"
+            (effects
+              (font
+                (size 1.27 1.27))))))))
+  (symbol
+    (lib_id "macs:ESP32-C6-WROOM-1")
+    (at 49.53 52.07 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid caa8bf49-89f2-5371-a7c1-d833fb102fcd)
+    (property "Reference" "U1"
+      (at 49.53 49.53 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "ESP32-C6-WROOM-1-N8"
+      (at 49.53 54.61 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "macs:ESP32-C6-WROOM-1"
+      (at 49.53 52.07 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "https://documentation.espressif.com/esp32-c6-wroom-1_wroom-1u_datasheet_en.pdf"
+      (at 49.53 52.07 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 49.53 52.07 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C5366877"
+      (at 49.53 57.15 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "ESP32-C6-WROOM-1-N8"
+      (at 49.53 58.42 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "2"
+      (uuid 5c6e76dc-e9e8-580d-b9d8-47e84fe77940))
+    (pin "3"
+      (uuid 0e7e973f-7165-581a-ba8b-99e95a3bc43e))
+    (pin "8"
+      (uuid c0532ca7-06e9-5897-8359-9eb8bd130beb))
+    (pin "9"
+      (uuid 925a9dd9-b42c-5054-9d3d-17a23fd14e03))
+    (pin "27"
+      (uuid 766949d3-1821-57d7-850f-f299c50d2ef3))
+    (pin "26"
+      (uuid 96b2edd5-c154-54b7-a0b0-5a5c9d5134ff))
+    (pin "4"
+      (uuid c306696b-4e63-5ac1-8921-37a7bd619cd4))
+    (pin "5"
+      (uuid d12ef941-2477-5bae-8b8c-fe330c2a5244))
+    (pin "6"
+      (uuid 62690704-7d8f-574f-ac0c-b10514274abc))
+    (pin "7"
+      (uuid 5168d921-71e1-53c4-bc43-40d14cf1d736))
+    (pin "10"
+      (uuid a360504f-d57f-5e9f-a703-ae96f04235f9))
+    (pin "15"
+      (uuid 2c8078f4-af55-5a3c-9f67-0958e2eefe10))
+    (pin "11"
+      (uuid 5c9b731d-6ee0-58a9-b5a5-7173816d138b))
+    (pin "12"
+      (uuid edbf56bd-8176-5ead-b8cd-71e30e7f3ab8))
+    (pin "13"
+      (uuid 317c7519-fca2-5b68-8f23-f30673e4e479))
+    (pin "14"
+      (uuid 248c34c3-09eb-57bb-baf8-d2c456e9a0aa))
+    (pin "23"
+      (uuid 5fa0065a-b379-5319-a3d4-e9b36920524e))
+    (pin "25"
+      (uuid e5044c1e-60de-5136-b2c5-5c93369f47ae))
+    (pin "24"
+      (uuid eae8ece9-302c-553f-88aa-be97272e96b4))
+    (pin "16"
+      (uuid 2c6288f2-4747-5442-a92c-90f4d3d020bc))
+    (pin "17"
+      (uuid ea7dd3a7-acd8-5926-9340-2c14bb545289))
+    (pin "18"
+      (uuid 24951a17-ad37-53c5-973c-1ee3a8381d1f))
+    (pin "19"
+      (uuid 09908040-2220-5732-826a-1f763eb6ebde))
+    (pin "20"
+      (uuid bae5802e-0b39-5d78-8565-d3d10d58d5e9))
+    (pin "21"
+      (uuid 9d2b04d3-0ab6-55a7-9eb3-b1fba7cf1367))
+    (pin "1"
+      (uuid e2f44c3e-313f-5b03-b6fb-35b3f5634332))
+    (pin "28"
+      (uuid 406a6a7f-6b97-5274-8529-6bdc09de741d))
+    (pin "29"
+      (uuid 795ab6b1-6ad2-5c4e-9f60-98bbb61a6b89))
+    (pin "22"
+      (uuid 1f1babde-9a86-5b42-80f4-2269a2b9aa5d))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "U1")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 34.29 36.83)
+      (xy 31.75 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 2bc99ee5-6614-5b10-8103-edea03e3bfcf))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 31.75 36.83 90.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid e4a49840-e8a9-574f-9da3-9d3e0649df1c)
+    (property "Reference" "#PWR001"
+      (at 31.75 35.559999999999995 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 31.75 33.019999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 31.75 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 31.75 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 8f0e8d40-c16f-566e-ba4a-ded29ff0d82a))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR001")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 34.29 39.37)
+      (xy 31.75 39.37))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid c603cfe9-e55b-5cfb-ad33-b0c6e9109488))
+  (label "ESP_EN"
+    (at 31.75 39.37 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 3ff9d689-472d-5543-ad42-82e079045236))
+  (wire
+    (pts
+      (xy 34.29 41.91)
+      (xy 31.75 41.91))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 82657a06-30ae-5c6f-b23b-4afa97fa60fa))
+  (global_label "V12_SENSE"
+    (shape bidirectional)
+    (at 31.75 41.91 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 01dd276d-934e-520b-af37-becaae2eda96))
+  (wire
+    (pts
+      (xy 34.29 46.99)
+      (xy 31.75 46.99))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 3f0e92bb-92e1-50ee-b94a-60be260466ea))
+  (global_label "IO2"
+    (shape bidirectional)
+    (at 31.75 46.99 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 4cf12e5e-3ee4-54be-887a-cae2dcac32b9))
+  (wire
+    (pts
+      (xy 34.29 49.53)
+      (xy 31.75 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 0e660a49-6e2c-5500-bf8a-2d028f56f37a))
+  (global_label "IO3"
+    (shape bidirectional)
+    (at 31.75 49.53 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right))
+    (uuid 324dff9f-6d95-5b34-ab3c-3236de6f7367))
+  (wire
+    (pts
+      (xy 34.29 62.23)
+      (xy 31.75 62.23))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 55092f2f-be76-5790-9f78-b7b0c824ee47))
+  (label "LED_IO8"
+    (at 31.75 62.23 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 2462771a-af5f-58de-bc20-6e42b5b3827f))
+  (wire
+    (pts
+      (xy 34.29 64.77)
+      (xy 31.75 64.77))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid edee4c7f-1966-5e47-9039-f1e04060ce81))
+  (label "BOOT_IO9"
+    (at 31.75 64.77 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 6e24a014-5540-55e6-ab49-1ab877751581))
+  (wire
+    (pts
+      (xy 64.77 39.37)
+      (xy 67.31 39.37))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 1195f7f7-405d-57ac-b354-be9d12d9ee73))
+  (global_label "USB_DN"
+    (shape bidirectional)
+    (at 67.31 39.37 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid b08f234a-ad50-57a0-b431-3f27ade755e5))
+  (wire
+    (pts
+      (xy 64.77 41.91)
+      (xy 67.31 41.91))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 55704e9d-76cf-5c1c-8a59-fd1f435235e6))
+  (global_label "USB_DP"
+    (shape bidirectional)
+    (at 67.31 41.91 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 9330f16b-b8ea-5839-b71a-16771aa481af))
+  (wire
+    (pts
+      (xy 64.77 52.07)
+      (xy 67.31 52.07))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid dd8e28a8-895d-5cb0-82f9-83553ad79e4c))
+  (global_label "MACS_RX"
+    (shape bidirectional)
+    (at 67.31 52.07 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid d48e465a-6184-57b2-870e-7a32804f7447))
+  (wire
+    (pts
+      (xy 64.77 54.61)
+      (xy 67.31 54.61))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid ef0f15c1-5b65-5392-a730-258e87c0522b))
+  (global_label "MACS_TX"
+    (shape bidirectional)
+    (at 67.31 54.61 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid 137117b9-4411-54cf-863c-154fb56c1be3))
+  (wire
+    (pts
+      (xy 64.77 59.69)
+      (xy 67.31 59.69))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 741e36e0-6b2e-5b2a-be3e-b51bb34bc1b6))
+  (label "LED_ACT"
+    (at 67.31 59.69 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 09921475-5e0b-56b2-ae12-1159de2ff17a))
+  (wire
+    (pts
+      (xy 64.77 62.23)
+      (xy 67.31 62.23))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 6954bec1-443c-5478-86ea-684aff8cc23b))
+  (global_label "IO22"
+    (shape bidirectional)
+    (at 67.31 62.23 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left))
+    (uuid d837ffa5-c27d-583b-aaf3-3be8a2c541ff))
+  (wire
+    (pts
+      (xy 49.53 74.93)
+      (xy 49.53 77.47))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid cca2ac62-57ca-5a09-ba7d-69b13545db36))
+  (symbol
+    (lib_id "power:GND")
+    (at 49.53 77.47 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid b39f1c72-a906-528e-83c6-47c5e16d9c99)
+    (property "Reference" "#PWR002"
+      (at 49.53 76.2 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 49.53 73.66 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 76bb4c12-23bd-5216-bde5-2052fc0b29fd))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR002")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 49.53 74.93)
+      (xy 49.53 77.47))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid d00c152a-320c-5f39-87c3-f290b1993704))
+  (symbol
+    (lib_id "power:GND")
+    (at 49.53 77.47 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid e739e249-801c-5756-912f-976e44c2da82)
+    (property "Reference" "#PWR003"
+      (at 49.53 76.2 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 49.53 73.66 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid a34c896f-6da7-5bd9-b9ec-108b6674cdb4))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR003")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 49.53 74.93)
+      (xy 49.53 77.47))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid e38644b0-99f8-5968-bb82-6579a5b80232))
+  (symbol
+    (lib_id "power:GND")
+    (at 49.53 77.47 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 0c16b60a-cc62-5014-8e85-db9686b063fe)
+    (property "Reference" "#PWR004"
+      (at 49.53 76.2 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 49.53 73.66 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 49.53 77.47 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 6d7a5c3b-5ea9-56aa-96ed-df228bb5d282))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR004")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:C")
+    (at 80.01 39.37 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 6ddf9fc2-8556-5cbe-9050-068f0ea55ee6)
+    (property "Reference" "C7"
+      (at 80.01 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "100nF"
+      (at 80.01 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+      (at 80.01 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 80.01 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 80.01 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C307331"
+      (at 80.01 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid f4cda1fc-9398-5c74-baa6-964b13ad221f))
+    (pin "2"
+      (uuid a6fba1ee-ae5a-5310-89ec-886dced002db))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "C7")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 80.01 35.56)
+      (xy 80.01 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 3d5616f8-16a1-52ed-b943-e6573f0de106))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 80.01 33.02 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 48c35808-7536-55ff-890c-85146e1b6497)
+    (property "Reference" "#PWR005"
+      (at 80.01 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 80.01 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 80.01 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 80.01 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid a0ee564e-1422-5dec-aef5-b9d8a375d78c))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR005")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 80.01 43.18)
+      (xy 80.01 45.72))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid d5064b19-d32c-5135-affe-282c4f807493))
+  (symbol
+    (lib_id "power:GND")
+    (at 80.01 45.72 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 10b13a78-b031-54df-9a09-769132189a0a)
+    (property "Reference" "#PWR006"
+      (at 80.01 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 80.01 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 80.01 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 80.01 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 1656a1a4-e200-5684-8766-0fc4e83cf983))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR006")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:C")
+    (at 88.9 39.37 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 6c818850-ba9d-5b23-973b-036052f7c467)
+    (property "Reference" "C8"
+      (at 88.9 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10uF"
+      (at 88.9 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+      (at 88.9 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 88.9 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 88.9 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C96446"
+      (at 88.9 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 12c1bd51-32da-5698-a11e-57eb8dd4bd71))
+    (pin "2"
+      (uuid 33ffa71a-0201-5163-871a-a46e5256b6e8))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "C8")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 88.9 35.56)
+      (xy 88.9 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 8f358d59-ef36-5ee2-827a-b01bd63d1dd5))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 88.9 33.02 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 848b3100-b6d5-5043-b276-7333ea2138f2)
+    (property "Reference" "#PWR007"
+      (at 88.9 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 88.9 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 88.9 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 88.9 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 39dfd078-af2c-56d7-9804-920e108b7e49))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR007")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 88.9 43.18)
+      (xy 88.9 45.72))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid fd4b96d1-2490-57c1-8e5c-8166b7896433))
+  (symbol
+    (lib_id "power:GND")
+    (at 88.9 45.72 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 12a7a3f6-8931-57bf-81db-f7ce6c1faa44)
+    (property "Reference" "#PWR008"
+      (at 88.9 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 88.9 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 88.9 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 88.9 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 02d02d88-771b-511b-8439-2279252be011))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR008")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:C")
+    (at 99.06 41.91 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 830d1101-98ee-5941-8538-b3f19635336c)
+    (property "Reference" "C9"
+      (at 99.06 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "1uF"
+      (at 99.06 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+      (at 99.06 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 99.06 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 99.06 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C52923"
+      (at 99.06 46.989999999999995 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 615c6b42-2c65-534f-8c04-0da5d049718c))
+    (pin "2"
+      (uuid 7d182a65-acf2-5ee2-9304-d5c06012adf3))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "C9")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 99.06 38.1)
+      (xy 99.06 35.56))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 45c8aa7a-6153-5480-876b-0c04c1f3f1d3))
+  (label "ESP_EN"
+    (at 99.06 35.56 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 2bade563-b6ea-5c44-956a-5ef74424fa22))
+  (wire
+    (pts
+      (xy 99.06 45.72)
+      (xy 99.06 48.26))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 997f4759-5c5a-5e07-a829-122db2fe1e54))
+  (symbol
+    (lib_id "power:GND")
+    (at 99.06 48.26 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid bd13859f-e68f-5795-a14a-0e0ecc4d6e7c)
+    (property "Reference" "#PWR009"
+      (at 99.06 46.989999999999995 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 99.06 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 99.06 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 99.06 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid b4c60c99-e1e5-527c-9811-2b292a9a2a14))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR009")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:LED")
+    (at 116.84 31.75 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 94e2f809-efda-5e85-a0f9-8657cfe15d33)
+    (property "Reference" "D4"
+      (at 116.84 29.21 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "green"
+      (at 116.84 34.29 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "LED_SMD:LED_0603_1608Metric"
+      (at 116.84 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 116.84 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 116.84 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C12624"
+      (at 116.84 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "green"
+      (at 116.84 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid cdb7f585-d3c0-596b-8260-2a16c028f3b0))
+    (pin "2"
+      (uuid 851396ec-3c49-55ff-965a-623a96232ce9))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "D4")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 113.03 31.75)
+      (xy 110.49 31.75))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid ddebc9e5-2829-5b26-9bc7-080f5f82aff7))
+  (label "LED_K"
+    (at 110.49 31.75 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 8948840b-1a31-5002-bcbf-823099dd5d88))
+  (wire
+    (pts
+      (xy 120.65 31.75)
+      (xy 123.19 31.75))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 021e5f94-b24f-57f1-882b-6157dcdd38ce))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 123.19 31.75 270.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 486e2a34-571d-5573-9d04-e99ac52c7d12)
+    (property "Reference" "#PWR010"
+      (at 123.19 30.48 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 123.19 27.94 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 123.19 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 123.19 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid fc37eb69-365f-509b-ac95-445d74418727))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR010")
+          (unit 1)))))
+  (symbol
+    (lib_id "Device:LED")
+    (at 142.24 31.75 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 4f3c11a7-ee1a-5091-982f-23f21b9b38e3)
+    (property "Reference" "D9"
+      (at 142.24 29.21 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "blue"
+      (at 142.24 34.29 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "LED_SMD:LED_0603_1608Metric"
+      (at 142.24 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 142.24 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 142.24 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C965807"
+      (at 142.24 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "blue"
+      (at 142.24 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 26a00625-ef90-574d-bc33-6d8dbe022946))
+    (pin "2"
+      (uuid 548a9b7a-362e-50c6-82b2-633380143f90))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "D9")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 138.43 31.75)
+      (xy 135.89 31.75))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 3dd1d12b-5151-5f76-bad0-4a267ac6950d))
+  (symbol
+    (lib_id "power:GND")
+    (at 135.89 31.75 270.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 3050d07d-972c-5738-8a5c-8f7b3a4d51b9)
+    (property "Reference" "#PWR011"
+      (at 135.89 30.48 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 135.89 27.94 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 135.89 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 135.89 31.75 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 1f9b4397-1120-511d-a2ce-f0c3557ae434))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR011")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 146.05 31.75)
+      (xy 148.59 31.75))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid bfd6355f-e198-57ca-a7ed-61f6741439c6))
+  (label "ACT_A"
+    (at 148.59 31.75 0)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 88966254-ddc4-5bf4-8534-789e1f7d1885))
+  (symbol
+    (lib_id "Device:R")
+    (at 158.75 43.18 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid a0a2f134-b33a-5159-bfcb-daa6446af767)
+    (property "Reference" "R18"
+      (at 158.75 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "1k"
+      (at 158.75 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 158.75 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 158.75 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 158.75 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C11702"
+      (at 158.75 48.26 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid da98a91d-d826-5b12-9b7d-52a61475eaeb))
+    (pin "2"
+      (uuid 56ad6258-607f-5012-8ed4-201217352e34))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "R18")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 158.75 39.37)
+      (xy 158.75 36.83))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 5695b8cf-a866-54cc-8922-9a8bdf934aa1))
+  (label "LED_ACT"
+    (at 158.75 36.83 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid c5f29f8f-5c0c-5859-9dcb-78d80594ccd2))
+  (wire
+    (pts
+      (xy 158.75 46.99)
+      (xy 158.75 49.53))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid cc6e8dc5-cfa5-53d2-82ff-4bbbcf3dbbf8))
+  (label "ACT_A"
+    (at 158.75 49.53 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 79fead73-c94e-58c1-b568-5c050024c54b))
+  (symbol
+    (lib_id "Device:R")
+    (at 166.37 39.37 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid aad9271f-9c07-5c88-a311-7ac27165bac1)
+    (property "Reference" "R6"
+      (at 166.37 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10k"
+      (at 166.37 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 166.37 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 166.37 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 166.37 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25744"
+      (at 166.37 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 3eaa9e0a-a31f-5019-ba23-2d51a8b1d185))
+    (pin "2"
+      (uuid e506ca34-f457-5e98-98c8-3d069b1d4579))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "R6")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 166.37 35.56)
+      (xy 166.37 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 6e0ff512-b441-5a71-a7fe-465da297b9d7))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 166.37 33.02 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid a1c1bfa1-7a43-539c-ae5e-06403d48af8d)
+    (property "Reference" "#PWR012"
+      (at 166.37 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 166.37 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 166.37 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 166.37 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 94fa4a0e-275f-5a15-a70b-ae543a9a8d9b))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR012")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 166.37 43.18)
+      (xy 166.37 45.72))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid de4eb16b-23fa-5155-9ea1-1eaf89d8b59f))
+  (label "ESP_EN"
+    (at 166.37 45.72 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid d225a0a9-810d-5e5e-95da-1aaa51f56008))
+  (symbol
+    (lib_id "Device:R")
+    (at 172.72 39.37 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 96aa3d87-3688-5ec8-9cbb-9e1d40ac1cbc)
+    (property "Reference" "R7"
+      (at 172.72 36.83 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "10k"
+      (at 172.72 41.91 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 172.72 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 172.72 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 172.72 39.37 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C25744"
+      (at 172.72 44.449999999999996 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 9e6453ac-2764-5c20-a875-2c089ca76418))
+    (pin "2"
+      (uuid 27fbd924-c1c6-51f5-937a-40afea926976))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "R7")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 172.72 35.56)
+      (xy 172.72 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid b377317e-a48e-514c-aac6-989f5849dd7c))
+  (symbol
+    (lib_id "power:+3V3")
+    (at 172.72 33.02 0.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 75da8336-59b6-5285-b9e1-ad81838e1c69)
+    (property "Reference" "#PWR013"
+      (at 172.72 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "+3V3"
+      (at 172.72 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 172.72 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 172.72 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 49a88d49-af36-5d25-9a2d-7d79a67657ef))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR013")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 172.72 43.18)
+      (xy 172.72 45.72))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 9bac081e-bfc8-52e1-b8b9-af04d6ac2fd2))
+  (label "BOOT_IO9"
+    (at 172.72 45.72 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 26955274-a0c7-5bd4-bc69-53aa19833a26))
+  (symbol
+    (lib_id "Device:R")
+    (at 180.34 40.64 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 564fb10a-3213-53e1-a09f-e2b517083b3b)
+    (property "Reference" "R8"
+      (at 180.34 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "1k"
+      (at 180.34 43.18 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+      (at 180.34 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 180.34 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 180.34 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C11702"
+      (at 180.34 45.72 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid aaa68860-483a-5628-99d1-f927fee001bd))
+    (pin "2"
+      (uuid 3b25db39-f7ee-57fd-a916-d92a9c745129))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "R8")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 180.34 36.83)
+      (xy 180.34 34.29))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid b5d6d097-5b41-5f7b-aeb3-fbf42628f904))
+  (label "LED_K"
+    (at 180.34 34.29 90)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify left bottom))
+    (uuid 10064b0f-d726-5568-9955-c8a41aa59d72))
+  (wire
+    (pts
+      (xy 180.34 44.45)
+      (xy 180.34 46.99))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid a53c0d56-33ce-59cd-980f-bbc7e693ccac))
+  (label "LED_IO8"
+    (at 180.34 46.99 270)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid 9a6bc93b-0190-57f4-aad0-4dd07e8258f3))
+  (symbol
+    (lib_id "Switch:SW_Push")
+    (at 201.93 33.02 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 0f85d105-5b6d-53f3-acd9-691d22f83814)
+    (property "Reference" "SW1"
+      (at 201.93 30.480000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "BOOT"
+      (at 201.93 35.56 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "macs:SW_TS-3025"
+      (at 201.93 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 201.93 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 201.93 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C2689695"
+      (at 201.93 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "TS-3025-B-C-B"
+      (at 201.93 39.370000000000005 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "DNP" "1"
+      (at 201.93 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid ffaaa4a3-ae1a-5bb2-923e-b4d61e5ab437))
+    (pin "2"
+      (uuid cac00268-68ca-579d-b9c0-a084b2a94c3d))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "SW1")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 196.85 33.02)
+      (xy 194.31 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 273388e3-c318-560e-8349-ac5a593dd301))
+  (label "BOOT_IO9"
+    (at 194.31 33.02 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid d224ff17-b084-501b-9133-45ce50dac6f3))
+  (wire
+    (pts
+      (xy 207.01 33.02)
+      (xy 209.55 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid ebb0231d-44b5-584b-a958-1acefbe12a06))
+  (symbol
+    (lib_id "power:GND")
+    (at 209.55 33.02 90.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid b9a9902c-55b3-5a7b-aefe-3f1f51e1ccf6)
+    (property "Reference" "#PWR014"
+      (at 209.55 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 209.55 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 209.55 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 209.55 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 29b7adba-5b23-5bb8-89ba-4d5d36a41d22))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR014")
+          (unit 1)))))
+  (symbol
+    (lib_id "Switch:SW_Push")
+    (at 229.87 33.02 0)
+    (unit 1)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 9c88f3c5-4498-538a-9fd7-7409ff8e3018)
+    (property "Reference" "SW2"
+      (at 229.87 30.480000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Value" "RESET"
+      (at 229.87 35.56 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        (justify left)))
+    (property "Footprint" "macs:SW_TS-3025"
+      (at 229.87 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" "~"
+      (at 229.87 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Description" ""
+      (at 229.87 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "LCSC" "C2689695"
+      (at 229.87 38.1 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "MPN" "TS-3025-B-C-B"
+      (at 229.87 39.370000000000005 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "DNP" "1"
+      (at 229.87 40.64 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid 73cc80d3-9f68-53b0-8a81-4cf737835a69))
+    (pin "2"
+      (uuid 95fdf90b-33ee-5069-b3dd-e150078124a4))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "SW2")
+          (unit 1)))))
+  (wire
+    (pts
+      (xy 224.79 33.02)
+      (xy 222.25 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 58c129a2-bb10-538c-bb4d-949d43c7078a))
+  (label "ESP_EN"
+    (at 222.25 33.02 180)
+    (fields_autoplaced)
+    (effects
+      (font
+        (size 1.27 1.27))
+      (justify right bottom))
+    (uuid ed749bf1-9676-51b1-8187-7ba561b1f7ab))
+  (wire
+    (pts
+      (xy 234.95 33.02)
+      (xy 237.49 33.02))
+    (stroke
+      (width 0)
+      (type default))
+    (uuid 35950e64-578f-58d6-a55f-b11d43f5fd01))
+  (symbol
+    (lib_id "power:GND")
+    (at 237.49 33.02 90.0)
+    (unit 1)
+    (in_bom no)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced)
+    (uuid 7df33e9a-8c52-57d3-ba84-281bca66676c)
+    (property "Reference" "#PWR015"
+      (at 237.49 31.750000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Value" "GND"
+      (at 237.49 29.210000000000004 0)
+      (effects
+        (font
+          (size 1.27 1.27))))
+    (property "Footprint" ""
+      (at 237.49 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (property "Datasheet" ""
+      (at 237.49 33.02 0)
+      (effects
+        (font
+          (size 1.27 1.27))
+        hide))
+    (pin "1"
+      (uuid f73b9a31-a1d0-5968-b16a-386d5db30ccf))
+    (instances
+      (project "macs_esp32c6"
+        (path "/a09ec709-c27b-5540-8eaf-19f45a040b0e/7d3bef81-da50-5a18-b62f-d8575de4f62b"
+          (reference "#PWR015")
+          (unit 1))))))

@@ -21,6 +21,8 @@ ESP32 board on the appliance bus ──ESPHome native API──▶ collector ─
 * **No private data in the repository.** Logs stay on your server. `dba sanitize` strips SSID, MAC, IP, hostnames and keys
   before you share a log; a test scans the repository for such leftovers.
 
+Hardware: the MACS board (schematic, KiCad, Gerber, enclosure) is in [`hardware/`](hardware/README.md).
+
 ## Quick start (Portainer / Docker)
 
 1. Flash an ESPHome board with firmware that emits Logformat 1 (`docs/LOGFORMAT.md`). The matching ESPHome YAML for each device is shown in the app under **Devices > Firmware** (copy or download); the files live in `src/device_bus_analyzer/firmware/`: `bshdbus-analysis.example.yaml` for the dishwasher, `macs-analysis.example.yaml` + `macs_recorder.h` for the dryer.
