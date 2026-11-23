@@ -88,7 +88,7 @@ commands:
     name: remaining_time
     title: Remaining time
     status: confirmed
-    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time"
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the first frame after power-on shows the previously used program (210 min, bytes 1-2 3030) before the selected program (165 min, bytes 1-2 404c) follows. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
       - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: confirmed}
@@ -97,7 +97,7 @@ commands:
     name: progress
     title: Program progress
     status: confirmed
-    evidence: "two runs: rises in uneven steps to 0x64 (100) when the remaining time hits 0; Eco 50 C showed 0x5F (95) with 11 of 210 min left"
+    evidence: "rises in uneven steps to 0x64 (100) when the remaining time hits 0; Eco 50 C showed 0x5F (95) with 11 of 210 min left. In an Auto 45-65 C run it jumped from 28 to 47 percent within a second when the remaining time was re-estimated (118 to 88 min), so it is derived from the current estimate and not from elapsed time alone"
     fields:
       - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: confirmed}
   - key: "25/2012"
@@ -171,7 +171,7 @@ commands:
     name: phase
     title: Program phase
     status: unknown
-    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Hypothesis: low nibble 1/2/4/8 = step, bit 0x10 = short transition pulse"
+    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Auto 45-65 C run (7216 s), minutes after start: 21 (start), 22 (+19), then 12 for 5 s followed by 22 at +47, +57, +58 and +69, 24 (+70), 28 (+84), 18 for 5 s followed by 28 twice at +86. Hypothesis: low nibble 1/2/4/8 = step in the order 1, 2, 4, 8 (in both runs the last step 8 lasts the final 19 to 35 percent of the run, probably drying), bit 0x10 = short pulse. In the Auto run each pulse in step 2 coincides with a drop of the remaining time (see 25/2008), so the pulses mark moments where the module re-estimates the run time (probably sensor measurements); not verified"
     fields:
       - {byte: 0, kind: u8, name: phase, label: Phase, status: unknown}
   - key: "25/2004"

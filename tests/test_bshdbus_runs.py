@@ -140,3 +140,8 @@ def test_door_state_changes_decode_both_ways(byte, closed):
 def test_door_evidence_says_live_while_awake():
     ev = next(c for c in spec.load_spec("bshdbus")["commands"] if c["key"] == "24/2006")["evidence"]
     assert "live" in ev and "switched off" in ev
+
+
+def test_spec_documents_adaptive_remaining_time_and_phase_pulses():
+    cmds = {c["key"]: c["evidence"] for c in spec.load_spec("bshdbus")["commands"]}
+    assert "adaptive" in cmds["25/2008"] and "re-estimat" in cmds["25/2005"] and "re-estimated" in cmds["25/2000"]
