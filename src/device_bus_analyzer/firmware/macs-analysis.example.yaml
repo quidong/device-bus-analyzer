@@ -18,6 +18,12 @@ esphome:
   friendly_name: ${friendly_name}
   includes:
     - macs_recorder.h
+  on_boot:
+    # Vor dem UART (Priorität 800 > 600): ab dem ersten Byte puffern, bis der Sammler das Log abonniert hat.
+    # 400 Einträge reichen für etwa 5 min Busverkehr (rund 1,3 Frames/s) und belegen gut 30 KB RAM.
+    priority: 800
+    then:
+      - lambda: macs::rec().use_buffer(400);
 
 esp32:
   board: esp32-c6-devkitc-1
@@ -82,10 +88,21 @@ script:
       - delay: 60ms
       - output.turn_off: led_act
 
-# Absolute Zeit von Home Assistant (für die Epoch-Angabe im Heartbeat)
+# Absolute Zeit für die Epoch-Angabe im Heartbeat. SNTP ist meist schon 1-2 s nach dem WLAN da, Home Assistant erst,
+# wenn HA sich verbunden hat; genommen wird die erste gültige. Ist kein NTP-Server erreichbar (IoT-Netz ohne Internet),
+# eigenen Server eintragen (z. B. den Router) oder SNTP weglassen. Bei der ersten Synchronisierung sofort ein Heartbeat:
+# damit bekommen auch die gepufferten Frames ihre echte Zeit.
 time:
+  - platform: sntp
+    id: sntp_time
+    on_time_sync:
+      - lambda: macs::rec().heartbeat(micros(), (long long) id(sntp_time).now().timestamp);
   - platform: homeassistant
     id: ha_time
+    on_time_sync:
+      - lambda: |-
+          if (!id(sntp_time).now().is_valid())
+            macs::rec().heartbeat(micros(), (long long) id(ha_time).now().timestamp);
 
 uart:
   id: uart_macs
@@ -110,15 +127,25 @@ uart:
       - script.execute: blink_act
 
 interval:
-  # Bytes, die nach 40 ms Ruhe noch festhängen (Frame ohne ACK, Rauschen), freigeben
+  # Bytes, die nach 40 ms Ruhe noch festhängen (Frame ohne ACK, Rauschen), freigeben; Puffer nachschicken, sobald ein
+  # Client das Log mindestens auf INFO abonniert hat (der Sammler; Home Assistant allein abonniert kein Log). Höchstens
+  # 4 Zeilen je 20 ms, damit der Sendepuffer der API nicht überläuft.
   - interval: 20ms
     then:
-      - lambda: macs::rec().on_idle(micros(), millis());
+      - lambda: |-
+          macs::rec().on_idle(micros(), millis());
+          bool sub = false;
+          if (api::global_api_server != nullptr)
+            for (auto &cl : api::global_api_server->active_clients())
+              if (cl->get_log_subscription_level() >= ESPHOME_LOG_LEVEL_INFO) sub = true;
+          macs::rec().set_live(sub);
+          macs::rec().flush(4);
   # Heartbeat: Zähler und absolute Zeit (zeigt Lücken im Sammler)
   - interval: 60s
     then:
       - lambda: |-
-          auto t = id(ha_time).now();
+          auto t = id(sntp_time).now();
+          if (!t.is_valid()) t = id(ha_time).now();
           macs::rec().heartbeat(micros(), t.is_valid() ? (long long) t.timestamp : 0);
 
 sensor:
@@ -170,6 +197,20 @@ sensor:
     accuracy_decimals: 0
     update_interval: 60s
     lambda: return (float) macs::rec().c.rest;
+  # ANALYSE: Puffer bis zum Verbinden des Sammlers (Füllstand jetzt, verworfene Einträge seit Neustart)
+  - platform: template
+    name: "MACS Puffer"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: return (float) macs::rec().buffered();
+  - platform: template
+    name: "MACS Puffer verworfen"
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return (float) macs::rec().dropped;
   - platform: wifi_signal
     name: "WLAN-Signal"
     update_interval: 60s
@@ -186,7 +227,7 @@ binary_sensor:
     device_class: running
     lambda: return macs::rec().state == 0x02;
   - platform: template
-    name: "Kompressor-Board aktiv"
+    name: "Motor-Inverter aktiv"
     entity_category: diagnostic
     lambda: return macs::rec().inverter_seen;
 

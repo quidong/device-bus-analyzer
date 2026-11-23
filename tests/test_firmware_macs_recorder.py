@@ -58,7 +58,7 @@ def test_message_waits_for_its_ack_and_ack_in_next_callback_is_attached(harness)
 def test_message_without_ack_is_released_after_idle(harness):
     f = msg(0x2A, 0x22, "5f 03")
     bursts, _, st = run(harness, [f.hex(), "IDLE"])
-    assert bursts == [f] and st[-1] == "pending=0"
+    assert bursts == [f] and "pending=0" in st
 
 
 def test_two_frames_in_one_callback_become_two_bursts(harness):
@@ -115,6 +115,48 @@ def test_random_stream_random_chunking_loses_nothing(harness, seed):
             lines.append("IDLE")
     lines.append("IDLE")
     bursts, _, st = run(harness, lines)
-    assert b"".join(bursts) == stream and st[-1] == "pending=0"
+    assert b"".join(bursts) == stream and "pending=0" in st
     found = [f.raw for b in bursts for f in m.parse_burst(b)[0] if f.crc_ok]
     assert all(e in found for e in expected)                      # every real frame is recovered by the Python parser
+
+
+def _seqs(out):
+    return [parse_line(x)["seq"] for x in out if parse_line(x) and parse_line(x).get("typ") in ("RAW1", "HB1")]
+
+
+def test_without_subscriber_everything_is_buffered_and_replayed_in_order(harness):
+    # the board boots with the dryer; the collector subscribes some seconds later
+    a, b = with_ack(msg(0x2A, 0x22, "5f 03")), with_ack(msg(0x2A, 0x22, "52 03 03 00 00 00 00 43 00 70"))
+    lines = ["BUF 100", a.hex(), "IDLE", "HB", b.hex(), "IDLE", "FLUSH 10"]
+    bursts, out, st = run(harness, lines)
+    assert bursts == [] and "buffered=3" in st and "FLUSHED 0" in out        # not live: nothing is written
+    lines += ["LIVE 1", "FLUSH 2", a.hex(), "IDLE", "FLUSH 10"]
+    bursts, out, st = run(harness, lines)
+    assert bursts == [a, b, a] and "buffered=0" in st
+    assert _seqs(out) == [1, 1, 2, 3]                                       # HB1 after burst 1 keeps its place and its seq
+    hb = [parse_line(x) for x in out if " HB1 " in f" {x} "][0]
+    assert hb["bursts"] == 1 and hb["epoch"] == 1800000000
+
+
+def test_live_frames_wait_behind_the_replay(harness):
+    a, b = with_ack(msg(0x2A, 0x22, "5f 03")), with_ack(msg(0x22, 0x2A, "51 00 60 00 00 1b 03"))
+    bursts, out, _ = run(harness, ["BUF 100", a.hex(), "IDLE", "LIVE 1", b.hex(), "IDLE", "FLUSH 1", "FLUSH 1"])
+    assert bursts == [a, b] and _seqs(out) == [1, 2]
+
+
+def test_buffer_overflow_drops_the_oldest_and_shows_as_a_seq_gap(harness):
+    f = with_ack(msg(0x2A, 0x22, "5f 03"))
+    bursts, out, st = run(harness, ["BUF 3"] + [f.hex(), "IDLE"] * 5 + ["LIVE 1", "FLUSH 10"])
+    assert _seqs(out) == [3, 4, 5] and "dropped=2" in st
+
+
+def test_connection_lost_mid_run_buffers_again(harness):
+    f = with_ack(msg(0x2A, 0x22, "5f 03"))
+    bursts, out, st = run(harness, ["BUF 10", "LIVE 1", f.hex(), "IDLE", "LIVE 0", f.hex(), "IDLE", f.hex(), "IDLE"])
+    assert _seqs(out) == [1] and "buffered=2" in st
+
+
+def test_without_buffer_lines_are_written_immediately(harness):
+    f = with_ack(msg(0x2A, 0x22, "5f 03"))
+    bursts, out, _ = run(harness, ["LIVE 0", f.hex(), "IDLE"])
+    assert bursts == [f]

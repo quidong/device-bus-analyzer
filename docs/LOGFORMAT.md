@@ -30,6 +30,12 @@ Beim MACS-Bus sind die Pausen innerhalb eines Frames nicht verlässlich kürzer 
 bilden einen eigenen Burst. `t_us` ist der Zeitpunkt, an dem der Burst vollständig war (bis ca. 40 ms nach Busende, wenn
 kein ACK kam). Das Format der Zeilen ist unverändert.
 
+### Gepufferte Zeilen
+Eine Firmware darf Zeilen puffern und später nachschicken (MACS-Rekorder: bis der Sammler das Log abonniert hat oder
+nach einem Verbindungsabbruch). Reihenfolge, `seq` und `t_us` bleiben dabei unverändert, nur die Empfangszeit ist später.
+Maßgeblich ist deshalb immer `t_us`: Frames, die vor dem ersten Heartbeat mit `epoch` ankamen, bekommen ihre Zeit
+nachträglich aus `epoch` und `t_us`.
+
 ## Verlustprüfung
 * `seq` springt in `RAW1`: es fehlen Bursts im Sammler (Verbindung unterbrochen oder Logzeilen verworfen).
 * `HB1.seq` ≠ zuletzt gesehenes `RAW1.seq`: Bursts gingen auf dem Weg verloren.

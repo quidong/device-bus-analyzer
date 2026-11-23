@@ -382,6 +382,10 @@ class Store:
         if e["epoch"] and sess["boot_epoch"] is None:
             sess["boot_epoch"] = e["epoch"] - e["t_us"] / 1e6
             self.db.execute("UPDATE sessions SET boot_epoch=? WHERE id=?", (sess["boot_epoch"], sess["id"]))
+            # frames stored before the first clock time carry their receive time; a buffered firmware sends them late,
+            # so give them their real time from the board's own clock (t_us of their burst)
+            self.db.execute("UPDATE frames SET ts = ? + (SELECT b.t_us FROM bursts b WHERE b.id = frames.burst_id) / 1e6 "
+                            "WHERE session_id=? AND burst_id IS NOT NULL", (sess["boot_epoch"], sess["id"]))
         if sess["last_seq"] is not None and e["seq"] > sess["last_seq"]:
             self.db.execute("INSERT INTO gaps(source_id, session_id, recv_ts, message) VALUES(?,?,?,?)",
                             (source_id, sess["id"], recv_ts,

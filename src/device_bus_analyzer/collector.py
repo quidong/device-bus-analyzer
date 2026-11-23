@@ -1,7 +1,8 @@
 """Read-only collector: subscribes to the ESPHome log stream over the native API and stores bus lines.
 
 It never calls services, never writes entities and never sends anything to the device; the only API calls are
-connect and subscribe_logs. Reconnects forever with back-off; every reconnect is logged so gaps are explainable.
+connect and subscribe_logs. Reconnects forever with back-off (at most 15 s, so a board that is powered from the appliance
+and only online while it runs is picked up quickly); every reconnect is logged so gaps are explainable.
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ def default_client_factory(dev: Device):
 
 class Collector:
     def __init__(self, store: Store, device: Device, client_factory: Callable[[Device], Any] = default_client_factory,
-                 backoff: tuple[float, float] = (2.0, 60.0)):
+                 backoff: tuple[float, float] = (2.0, 15.0)):
         self.store, self.device, self.factory, self.backoff = store, device, client_factory, backoff
         self.source_id = store.source(device.name, device.protocol)
         self.lines = 0

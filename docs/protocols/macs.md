@@ -18,8 +18,12 @@ RAST 2.5 connector, 4 pins: 1 = +12 V, 2 = +5 V, 3 = DATA, 4 = GND. 9600 baud, 8
 on; the dryer switches itself off a few minutes after the last use. The collector copes with that (reconnect with back-off).
 The bus supply is NOT permanent: measured on a neighbouring connector of the same bus, +12 V appears when the mains plug is
 inserted and again drops after 10 to 15 s, and the same happens after switching the dryer off (+12 V for 10 to 15 s, then dead;
-measured once, with a multimeter). A board powered only from the bus is online for a few seconds after power-up at best, so
-it needs fast WLAN reconnect (`fast_connect`, optionally a static address) or it misses the first telegrams.
+measured once, with a multimeter). A board powered only from the bus boots when the dryer is switched on; until the
+collector has connected and subscribed to the log, ESPHome drops log lines. Without a buffer the first telegrams were lost
+(in one session the first 18 bursts, about 18 s). The recorder therefore buffers RAW1/HB1 lines in RAM (`use_buffer(400)`,
+about 5 min of traffic) until a client subscribes to the log at INFO level, then replays them in order with their original
+`seq` and `t_us`; it buffers again if the connection drops. The store gives such frames their board time once the first
+heartbeat with a clock time arrives. Fast WLAN reconnect (`fast_connect`, optionally a static address) still helps.
 
 ## Pause and resume (second recording)
 Start, pause 4 s later, 3 h of silence, resume, off. During the pause the bus stays powered and carries only the heartbeat

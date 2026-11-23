@@ -6,12 +6,19 @@
 // 98 XX XX2) und schreibt je Frame (mit seinem ACK) EINEN RAW1-Burst. Bytes, die zu keinem Frame passen, gehen
 // unverändert und ungedeutet als eigener Burst raus ("rest"). Nichts wird gesendet, nichts verworfen.
 //
+// Puffer: Das Board hängt am Bus und bootet erst, wenn der Trockner eingeschaltet wird. Bis der Sammler verbunden ist und
+// das Log abonniert hat, vergehen einige Sekunden; ohne Puffer wären die Logzeilen dieser Zeit verloren (ESPHome schickt
+// Logzeilen nur an verbundene Abonnenten). Mit use_buffer(n) sammelt der Rekorder RAW1/HB1 im RAM, solange set_live(false)
+// gilt, und flush() schickt sie danach in Originalreihenfolge mit Originalwerten (seq, t_us) nach. Läuft der Puffer über,
+// fallen die ältesten Einträge weg; der Sammler sieht das als seq-Lücke.
+//
 // Format der Zeilen: docs/LOGFORMAT.md (RAW1 / HB1). Dekodiert wird erst im Analyzer; die kleinen Dekoder hier
 // (Zustand, Programm) füttern nur Home-Assistant-Sensoren und sind so unsicher wie in spec/macs.yaml markiert.
 #pragma once
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -48,7 +55,7 @@ class Recorder {
   int state = -1;           // 2a/2252 Byte 1: 0b aus, 01 bereit, 02 läuft, 04 pausiert
   int program = -1;         // 22/2a50 Byte 13: Programmnummer
   int last_command = -1;    // 22/2a51 Byte 1: 60 Start, 61 angewählt, 62 Stopp
-  bool inverter_seen = false;  // Verkehr vom Kompressor-Board (0x30) gesehen
+  bool inverter_seen = false;  // Verkehr vom Motor-Inverter-Board (0x30) gesehen
 
   // Neue UART-Bytes. now_us32 = micros(), now_ms = millis().
   void on_bytes(const std::vector<uint8_t> &bytes, uint32_t now_us32, uint32_t now_ms) {
@@ -66,14 +73,53 @@ class Recorder {
 
   void heartbeat(uint32_t now_us32, long long epoch) {
     tick_(now_us32);
-    ESP_LOGI("dbus_raw", "HB1 seq=%u t_us=%llu epoch=%lld bytes=%u bursts=%u ok=%u crc=%u noack=%u rest=%u",
-             (unsigned) seq, (unsigned long long) us64_, epoch, (unsigned) bytes_total, (unsigned) bursts,
-             (unsigned) c.ok, (unsigned) c.crc, (unsigned) c.noack, (unsigned) c.rest);
+    Entry e;
+    e.hb = true;
+    e.seq = seq;
+    e.t_us = us64_;
+    e.epoch = epoch;
+    e.bytes = bytes_total;
+    e.bursts = bursts;
+    e.cnt = c;
+    out_(std::move(e));
   }
+
+  // Puffer einschalten (max. n Einträge, RAW1 und HB1). Danach gilt "nicht live", bis set_live(true) kommt.
+  void use_buffer(size_t n) {
+    cap_ = n;
+    live_ = n == 0;
+  }
+  // live = ein Log-Abonnent ist verbunden. Wechselt der Zustand auf "nicht live", wird wieder gepuffert.
+  void set_live(bool live) { live_ = live || cap_ == 0; }
+  bool live() const { return live_; }
+  // Bis zu max gepufferte Zeilen ausgeben (nur wenn live). Gibt die Anzahl der ausgegebenen Zeilen zurück.
+  size_t flush(size_t max) {
+    size_t n = 0;
+    while (live_ && n < max && !q_.empty()) {
+      print_(q_.front());
+      q_.pop_front();
+      n++;
+    }
+    return n;
+  }
+  size_t buffered() const { return q_.size(); }
+  uint32_t dropped = 0;     // wegen vollem Puffer verworfene Einträge
 
   size_t pending() const { return buf_.size(); }
 
  private:
+  struct Entry {
+    bool hb = false;
+    uint32_t seq = 0;
+    uint64_t t_us = 0, dt = 0;
+    long long epoch = 0;
+    uint32_t bytes = 0, bursts = 0;
+    Counters cnt;
+    std::vector<uint8_t> data;
+  };
+  std::deque<Entry> q_;
+  size_t cap_ = 0;
+  bool live_ = true;
   std::vector<uint8_t> buf_;
   uint64_t us64_ = 0, prev_burst_us_ = 0;
   uint32_t last_us32_ = 0, last_rx_ms_ = 0;
@@ -90,15 +136,47 @@ class Recorder {
     seq++;
     bursts++;
     bytes_total += (uint32_t) n;
+    Entry e;
+    e.seq = seq;
+    e.t_us = us64_;
+    e.dt = dt;
+    e.data.assign(d, d + n);
+    out_(std::move(e));
+  }
+
+  // Live und nichts im Puffer: sofort schreiben. Sonst hinten anstellen (Reihenfolge bleibt erhalten).
+  void out_(Entry &&e) {
+    if (live_ && q_.empty()) {
+      print_(e);
+      return;
+    }
+    if (cap_ == 0) {          // ohne Puffer (nie konfiguriert) wird immer sofort geschrieben
+      print_(e);
+      return;
+    }
+    if (q_.size() >= cap_) {
+      q_.pop_front();
+      dropped++;
+    }
+    q_.push_back(std::move(e));
+  }
+
+  static void print_(const Entry &e) {
+    if (e.hb) {
+      ESP_LOGI("dbus_raw", "HB1 seq=%u t_us=%llu epoch=%lld bytes=%u bursts=%u ok=%u crc=%u noack=%u rest=%u",
+               (unsigned) e.seq, (unsigned long long) e.t_us, e.epoch, (unsigned) e.bytes, (unsigned) e.bursts,
+               (unsigned) e.cnt.ok, (unsigned) e.cnt.crc, (unsigned) e.cnt.noack, (unsigned) e.cnt.rest);
+      return;
+    }
     static const char *H = "0123456789abcdef";
     std::string hex;
-    hex.reserve(n * 2);
-    for (size_t i = 0; i < n; i++) {
-      hex += H[d[i] >> 4];
-      hex += H[d[i] & 15];
+    hex.reserve(e.data.size() * 2);
+    for (uint8_t b : e.data) {
+      hex += H[b >> 4];
+      hex += H[b & 15];
     }
-    ESP_LOGI("dbus_raw", "RAW1 seq=%u t_us=%llu dt_us=%llu n=%u hex=%s", (unsigned) seq,
-             (unsigned long long) us64_, (unsigned long long) dt, (unsigned) n, hex.c_str());
+    ESP_LOGI("dbus_raw", "RAW1 seq=%u t_us=%llu dt_us=%llu n=%u hex=%s", (unsigned) e.seq,
+             (unsigned long long) e.t_us, (unsigned long long) e.dt, (unsigned) e.data.size(), hex.c_str());
   }
 
   void learn_(const uint8_t *f, size_t n) {   // f = kompletter, geprüfter Frame

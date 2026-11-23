@@ -138,3 +138,16 @@ def test_quality_separates_repeated_damaged_spots_from_lost_ones(store):
     store.ingest_line(sid, raw1(2, 2000, lost[:-1] + b"\x00"), 1_000_100.0)             # damaged, never repeated
     q = store.quality("dw")
     assert q["crc_errors"] == 2 and q["not_repeated"] == 1 and q["ok"] == 1
+
+
+def test_frames_received_before_the_first_clock_time_get_their_board_time(store):
+    # a buffered board replays its first bursts late; their receive time is wrong, t_us is right
+    from conftest import hb1, raw1
+    from device_bus_analyzer.protocols import macs as m
+    sid = store.source("tr", "macs")
+    f = m.build_frame(0x2A, 0x22, bytes.fromhex("5f03"))
+    store.ingest_line(sid, raw1(1, 1_000_000, f), 5000.0)       # sent at boot + 1 s, received 40 s later
+    store.ingest_line(sid, raw1(2, 4_000_000, f), 5000.1)
+    assert [r["ts"] for r in store.frames("tr")] == [5000.0, 5000.1]
+    store.ingest_line(sid, hb1(2, 41_000_000, epoch=1_800_000_041), 5001.0)
+    assert [r["ts"] for r in store.frames("tr")] == [1_800_000_001.0, 1_800_000_004.0]
