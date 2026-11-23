@@ -5,9 +5,9 @@
     "firmware/macs-analysis.example.yaml": "08671d81f8a4498e14f77ff67b2a924d3785be20719c70d949749f98ff3c607b",
     "firmware/macs_recorder.h": "06110ab41c7e2aab73c02f89bdc3e6ec7e6d668b138ad80eec788a7f0192148d",
     "spec/bshdbus.yaml": "cf1592ac3c6412a4012586f4233b8e010c6a56db51af257adaac970ab7f54a36",
-    "spec/macs.yaml": "2096000d7aaa74e1fc7e6f562efcfe0a2eaa9fec621558ce263ca12e9454918a"
+    "spec/macs.yaml": "99b40e95396266ccabf271391db82af1b97270ec6a22464ffedd1b6b97b3c74e"
   },
   "format": 1,
-  "revision": "d60f7fc635ad3b36",
-  "version": "2026-11-23.1"
+  "revision": "d1a57b18c4aa1914",
+  "version": "2026-11-23.2"
 }

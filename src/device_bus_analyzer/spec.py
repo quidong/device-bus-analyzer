@@ -104,6 +104,9 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
     notes: list[str] = []
     for f in entry.get("fields", []):
         b = f["byte"]
+        when = f.get("when")      # field only exists in one layout of the message: {byte: n, value: v}
+        if when is not None and not (len(data) > when["byte"] and data[when["byte"]] == when["value"]):
+            continue
         if b >= len(data):
             notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
             continue
@@ -117,11 +120,15 @@ def decode(protocol: str, ds: int, cmd: int, data: bytes, ack: int | None = None
             fields.append({"name": f["name"], "label": f.get("label", f["name"]), "value": v, "unit": f.get("unit"),
                            "status": f.get("status", entry["status"])})
             continue
-        if f.get("kind") in ("u16", "u16le"):
+        if f.get("kind") in ("u16", "u16le", "s16"):
             if b + 1 >= len(data):
                 notes.append(f"{f['name']}: data too short ({len(data)} bytes)")
                 continue
-            v: Any = data[b] << 8 | data[b + 1] if f["kind"] == "u16" else data[b + 1] << 8 | data[b]
+            v: Any = data[b] << 8 | data[b + 1] if f["kind"] != "u16le" else data[b + 1] << 8 | data[b]
+            if f.get("mask") is not None:
+                v &= int(f["mask"])
+            if f["kind"] == "s16" and v >= 0x8000:
+                v -= 0x10000
         elif "bit" in f:
             v = bool(data[b] >> f["bit"] & 1)
         elif f.get("kind") == "enum":

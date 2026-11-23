@@ -101,7 +101,7 @@ def test_program_number_is_decoded():
     assert spec.decode("macs", 0x22, 0x2A50, prog(0x33)[1:])["values"]["program"] == "0x33"
 
 
-@pytest.mark.parametrize("raw,label", [(0x0B, "off"), (0x01, "on / ready"), (0x02, "running"), (0x04, "paused"), (0x03, "starting (after power-on)"), (0x77, "0x77")])
+@pytest.mark.parametrize("raw,label", [(0x0B, "off"), (0x01, "on / ready"), (0x02, "running"), (0x04, "paused"), (0x03, "idle (after power-on or programme ended)"), (0x09, "cancelled"), (0x77, "0x77")])
 def test_device_state(raw, label):
     d = spec.decode("macs", 0x2A, 0x2252, state(raw)[1:])
     assert d["values"]["state"] == label and d["status"] == "assumed"
@@ -209,3 +209,110 @@ def test_drying_time_and_delayed_start_are_decoded():
     assert v["drying_time"] == 0x32 and v["delayed_start"] == 300 and v["delayed_start_set"] is True and v["program"] == "Cotton"
     v = spec.decode("macs", 0x22, 0x2A50, bytes.fromhex("030000000000011e4b000000000300000100"))["values"]
     assert v["drying_time"] == 30 and v["delayed_start_set"] is False and v["delayed_start"] == 0
+
+
+# --- complete runs: phases, end, remaining time, drum status (payloads as seen on the dryer) ---
+
+def state_full(s: int, phase: int = 0, b5: int = 0, b6: int = 0x41, end: int = 0) -> bytes:
+    return bytes([0x52, 0x03, s, phase, 0, 0, b5, b6, 0, end])
+
+
+def remaining(vv: int, cs: int) -> bytes:
+    return bytes([0x56, 0x03, 0x00, 0x00, vv, 0x00, cs])
+
+
+DRUM_ON = bytes.fromhex("12 00 0a c8 06 4a 01 00")
+DRUM_IDLE = bytes.fromhex("12 00 00 e6 06 4a 80 00")
+
+
+def test_phase_and_end_type_are_decoded():
+    v = spec.decode("macs", 0x2A, 0x2252, state_full(2, 4, 5, end=0x70)[1:])["values"]
+    assert v["state"] == "running" and v["phase"] == "anti-crease" and v["end_type"] == "ended normally (after anti-crease)"
+    v = spec.decode("macs", 0x2A, 0x2252, state_full(3, end=0x40)[1:])["values"]
+    assert v["state"].startswith("idle") and v["end_type"] == "ended early (laundry already dry)"
+    assert spec.decode("macs", 0x2A, 0x2252, state_full(2, 2, 5)[1:])["values"]["phase"] == "cooling"
+
+
+def test_time_layouts_decode_only_their_own_fields():
+    d = spec.decode("macs", 0x2A, 0x2256, remaining(0xAD, 0xCB)[1:])
+    assert d["values"] == {"layout": "remaining time", "remaining": 173, "counter_b5": 203} and not d["notes"]
+    assert [f["status"] for f in d["fields"] if f["name"] == "remaining"] == ["confirmed"]
+    d = spec.decode("macs", 0x2A, 0x2256, bytes.fromhex("03051d"))
+    assert d["values"] == {"layout": "anti-crease countdown", "anti_crease_remaining": 29} and not d["notes"]
+    assert spec.decode("macs", 0x2A, 0x2256, bytes.fromhex("0302122f9f00"))["values"]["idle_counter"] == 0x122F
+
+
+def test_drum_command_and_status_are_signed_and_masked():
+    assert spec.decode("macs", 0x30, 0x2212, bytes.fromhex("00f874064a0100"))["values"]["speed_setpoint"] == -1932
+    assert spec.decode("macs", 0x30, 0x2212, DRUM_ON[1:])["values"]["speed_setpoint"] == 2760
+    v = spec.decode("macs", 0x22, 0x3012, bytes.fromhex("038ac90ac80000280190007600000079007a"))["values"]
+    assert v["speed"] == 2761 and v["at_setpoint"] is True and v["speed_ramp"] == 2760 and v["temperature"] == 40
+    assert (v["motor_current"], v["moisture_a"], v["moisture_b"]) == (400, 121, 122)
+    v = spec.decode("macs", 0x22, 0x3012, bytes.fromhex("03008c00a30000270 2df000100000000 0000".replace(" ", "")))["values"]
+    assert v["speed"] == 140 and v["at_setpoint"] is False
+
+
+def test_power_arguments():
+    for raw, label in ((0x10, "off"), (0x20, "off after cancel"), (0x00, "synchronise (power-on)")):
+        assert spec.decode("macs", 0x22, 0x2A53, bytes([0x03, raw, 0x02, 0, 0]))["values"]["power_arg"] == label
+
+
+def test_complete_run_ends_at_the_idle_state_with_remaining_time(store):
+    # wet run: start, drying with remaining time, cooling, anti-crease, end (state 03), self power-off 5 min later
+    sid = store.source("tr", "macs")
+    n = iter(range(1, 1000))
+    _ingest(store, sid, 100.0, next(n), 0x22, 0x2A, prog(2))
+    _ingest(store, sid, 101.0, next(n), 0x2A, 0x22, remaining(0xAF, 0xCD))
+    _ingest(store, sid, 110.0, next(n), 0x22, 0x2A, START)
+    _ingest(store, sid, 110.1, next(n), 0x2A, 0x22, state_full(2, 1))
+    _ingest(store, sid, 111.0, next(n), 0x30, 0x22, DRUM_ON)
+    for k in range(20):
+        _ingest(store, sid, 140.0 + 60 * k, next(n), 0x2A, 0x22, remaining(0xAD - k, 0xCB - k))
+    _ingest(store, sid, 1400.0, next(n), 0x2A, 0x22, state_full(2, 4, 5, end=0x70))
+    _ingest(store, sid, 1700.0, next(n), 0x30, 0x22, DRUM_IDLE)
+    _ingest(store, sid, 1700.1, next(n), 0x2A, 0x22, state_full(3, end=0x70))
+    _ingest(store, sid, 1990.0, next(n), 0x22, 0x2A, bytes.fromhex("53 03 10 02 00 00"))
+    _ingest(store, sid, 1990.1, next(n), 0x2A, 0x22, state_full(0x0B, b6=0x03, end=0x70))
+    runs = store.runs("tr")
+    assert len(runs) == 1
+    r = runs[0]
+    assert r["end_by"] == "marker" and r["end_ts"] == pytest.approx(1700.1) and r["start_by"] == "command"
+    assert r["program"] == "Eco" and (r["remaining_start_min"], r["remaining_end_min"]) == (0xAD, 0xAD - 19)
+
+
+def test_missed_start_command_falls_back_to_the_drum(store):
+    # the board booted too late: no start command, the first telegram is the drum turning
+    sid = store.source("tr", "macs")
+    n = iter(range(1, 1000))
+    _ingest(store, sid, 100.0, next(n), 0x30, 0x22, DRUM_ON)
+    for k in range(5):
+        _ingest(store, sid, 130.0 + 60 * k, next(n), 0x2A, 0x22, remaining(0x54 - k, 0xCA - k))
+        _ingest(store, sid, 131.0 + 60 * k, next(n), 0x30, 0x22, DRUM_ON)
+    _ingest(store, sid, 500.0, next(n), 0x2A, 0x22, state_full(3, end=0x70))
+    # a later, normally recorded run must not be swallowed or duplicated by the fallback
+    _ingest(store, sid, 3000.0, next(n), 0x22, 0x2A, START)
+    _ingest(store, sid, 3001.0, next(n), 0x30, 0x22, DRUM_ON)
+    _ingest(store, sid, 3300.0, next(n), 0x2A, 0x22, state_full(3, end=0x40))
+    runs = store.runs("tr")
+    assert [r["start_by"] for r in runs] == ["fallback", "command"]
+    a, b = runs
+    assert a["start_ts"] == 100.0 and a["end_by"] == "marker" and a["end_ts"] == 500.0 and a["start_status"] == "assumed"
+    assert "not recorded" in a["start_evidence"] and a["remaining_start_min"] == 0x54
+    assert b["start_ts"] == 3000.0 and b["end_ts"] == 3300.0
+
+
+def test_drum_shortly_before_a_recorded_start_is_not_a_separate_run(store):
+    sid = store.source("tr", "macs")
+    _ingest(store, sid, 100.0, 1, 0x30, 0x22, DRUM_ON)
+    _ingest(store, sid, 160.0, 2, 0x22, 0x2A, START)
+    _ingest(store, sid, 161.0, 3, 0x30, 0x22, DRUM_ON)
+    assert [r["start_by"] for r in store.runs("tr")] == ["command"]
+
+
+def test_silent_gap_ends_a_run_even_if_an_end_state_comes_much_later(store):
+    sid = store.source("tr", "macs")
+    _ingest(store, sid, 100.0, 1, 0x22, 0x2A, START)
+    _ingest(store, sid, 160.0, 2, 0x2A, 0x22, HEARTBEAT)
+    _ingest(store, sid, 90000.0, 3, 0x2A, 0x22, state_full(0x0B, b6=0x03))
+    runs = store.runs("tr")
+    assert len(runs) == 1 and runs[0]["end_by"] == "gap" and runs[0]["end_ts"] == 160.0

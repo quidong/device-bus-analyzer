@@ -7,8 +7,9 @@ frontend under "Findings"). Every command, field, device and the run rules carry
 * **assumed** – plausible and consistent with the recording, not yet verified by a targeted test
 * **unknown** – seen on the bus, meaning not understood
 
-Everything below comes from **one** AEG heat-pump dryer and **one** recording (idle heartbeat, every programme and option
-stepped through, start, stop, switch-off). Anything that rests on a single recording is "assumed" at best.
+Everything below comes from **one** AEG heat-pump dryer: a first recording (idle heartbeat, every programme and option
+stepped through, start, stop, switch-off), a pause/resume recording, one complete wet run from start to self power-off,
+and one short run with laundry that was already dry. Anything that rests on a single recording is "assumed" at best.
 The expansion of the abbreviation "MACS" could not be verified and is not used here.
 
 ## Physical layer (confirmed)
@@ -50,8 +51,8 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 |---|---|---|
 | `0x22` | dryer control board (main controller) | sends heartbeat, state and time; wakes and polls `0x30` |
 | `0x2A` | user panel | sends programme, start/stop, on/off; acknowledges the heartbeat |
-| `0x30` | compressor / inverter board | answers status queries from power-on, also while idle; identifies as ASCII `M1IB1606` |
-| `0x00` | broadcast | target of the compressor board's wake-up |
+| `0x30` | motor inverter board (drum motor) | answers status queries from power-on, also while idle; identifies as ASCII `M1IB1606`; takes a signed drum speed set point and reports the actual speed (whether it also drives the compressor is unknown) |
+| `0x00` | broadcast | target of the wake-up messages at power-on and start |
 
 ## Messages seen
 | Key | Meaning | Status |
@@ -59,25 +60,45 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 | `2a/225f` | heartbeat `5f 03`, every 3 s, always acknowledged | confirmed |
 | `22/2a50` | programme selection; byte 13 = programme number 1…10 | confirmed (names not mapped) |
 | `22/2a51` | panel command: `60` start, `61` programme selected, `62` stop/pause | assumed |
-| `2a/2252` | device state: `0b` off, `03` starting after power-on, `01` ready, `02` running, `04` paused | assumed |
-| `22/2a53` | on/off from the panel (one message, followed by state `0b`) | assumed |
-| `22/3011` | compressor board identification `M1IB1606` | confirmed |
-| `30/2210`, `00/3010`, `30/2214`, `22/3014` | wake-up and query handshake with the compressor board | assumed / unknown |
-| `2a/2256` | time: falls by 1 per minute during a run, probably remaining minutes (not yet compared with the display) | unknown |
+| `2a/2252` | device state (byte 1): `0b` off, `03` idle after power-on or after the programme ended, `01` ready, `02` running, `04` paused, `09` cancelled; byte 2 = phase (`01` drying, `02` cooling, `04` anti-crease); byte 8 = how it ended (`70` normally, `40` early, laundry already dry) | assumed |
+| `22/2a53` | on/off from the panel: `10` off (button and self power-off), `20` off after a cancel, `00` once at power-on | assumed |
+| `22/3011` | motor inverter board identification `M1IB1606` | confirmed |
+| `30/2210`, `00/3010`, `30/2214`, `22/3014` | wake-up and query handshake with the motor inverter board | assumed / unknown |
+| `2a/2256` | time, byte 1 = layout. Layout `00`: **byte 3 = remaining time in minutes as on the display**; layout `05`: anti-crease countdown; `02` while ready; `03` at the end; `04` programme default? | confirmed (remaining time) / assumed |
+| `2a/2257` | alarm? only `03 00 00 00 00` once per power-on (no alarm) | unknown |
 | `22/2a11` | panel identification (ASCII `U1CB820GZ`), sent once at power-on | assumed |
 | `22/2a55`, `2a/2255` | programme data / option bits | unknown |
-| `30/2211`, `30/2212`, `22/3012` | compressor parameters, inverter command and status | unknown |
+| `30/2211` | parameter blocks for the motor inverter board, sent at every start | unknown |
+| `30/2212` | drum command: bytes 1-2 signed speed set point (`+1840`, `+2760`, `-2760` reversal, `+-1932` anti-crease, `0` stop) | assumed |
+| `22/3012` | drum status: actual speed (bytes 1-2, bit 15 = set point reached), temperature in deg C (byte 7), motor current (bytes 8-9), **laundry moisture** (bytes 14-15 and 16-17) | assumed |
+| `2a/2210`, `2a/2211`, `2a/2253`, `00/2210`, `00/2a10` | power-on sequence (wake-ups, controller identification, on/off echo) | unknown / assumed |
+
+## A complete run (one wet run, Eco)
+| Phase | What the bus shows |
+|---|---|
+| start | `22/2a51 = 60`, state `02`, phase `01`; wake-up and parameter blocks for `0x30`; drum starts at +1840 and, with wet laundry, goes to +2760 after the first reversal (with dry laundry it stayed at 1840) |
+| drying (about 3.9 h) | remaining time in `2a/2256` layout `00`, re-estimated several times; a short reversal (stop, -2760, stop, +2760) every 40 min; moisture fell from about 320 to 120 |
+| cooling (about 40 min) | phase `02`, byte 5 = `05`; the temperature falls |
+| anti-crease (about 30 min) | phase `04` when the remaining time reaches 0; drum +-1932 for 5 s every 33 s, layout `05` counts down from 29 |
+| end | state `03`, byte 8 = `70`; drum idle command; moisture and current go to 0 |
+| self power-off (5 min later) | `22/2a53 = 10`, state `0b`, the bus goes dead |
+
+With laundry that was already dry the moisture read 62-66 from the first minute and the programme ended after 5 min with
+state `03`, byte 8 = `40` (no cooling, no anti-crease), followed by the same self power-off.
 
 ## Runs
-A run starts at the start command (`22/2a51` with byte 1 = `60`) and ends at the last telegram before a 10-minute silence;
-both are marked *assumed*. No end-of-programme marker and no remaining-time message has been identified yet.
+A run starts at the start command (`22/2a51` with byte 1 = `60`) and ends at the first device state `03`, `09` or `0b`
+after it, or at the last telegram before a 10-minute silence (the board is powered from the bus). The remaining time at
+the start and end comes from `2a/2256` layout `00`. When the start command was missed because the board was still booting
+(about 18 s after power-on), the first drum command with a speed set point outside every detected run starts the run
+(`fallback_start`, `start_by = fallback`). All of this is *assumed*.
 
 ## Open points (need labelled recordings)
-* meaning of the time messages (`2a/2256`), remaining time during a run
 * option bits in `22/2a50` / `22/2a55` (only one option toggle was recorded), programme names
-* end-of-programme and alarm messages (`2a/2257` was not seen)
-* compressor values in the inverter status (`22/3012`)
-* a second `51 00 60` appeared after the stop followed by an off sequence: resume or part of switching off is unclear
+* alarm messages (`2a/2257` only ever carried zeros)
+* byte 5 of `2a/2256` layout `00` (a second minute counter), layouts `02`, `03`, `04`
+* units of motor current and moisture, whether `0x30` also drives the compressor
+* door open/closed (`2a/2252` byte 6 toggled 41/43, not yet tested with a single labelled action)
 
 ## Recording
 Use `src/device_bus_analyzer/firmware/macs-analysis.example.yaml` with `src/device_bus_analyzer/firmware/macs_recorder.h`. The recorder assembles frames by their length

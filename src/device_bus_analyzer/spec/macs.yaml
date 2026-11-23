@@ -2,8 +2,9 @@
 # status: confirmed = verified (frame structure: arithmetic; values: against what was done on the appliance);
 #         assumed   = plausible and consistent with the recording, not yet verified by a targeted test;
 #         unknown   = seen on the bus, meaning not understood.
-# Observed so far on ONE AEG heat-pump dryer in ONE recording (idle heartbeat, all programs and options stepped through,
-# start, stop, power off). Everything marked "single recording" needs a second, labelled recording before it is confirmed.
+# Observed so far on ONE AEG heat-pump dryer (first recording: idle heartbeat, all programs and options stepped through,
+# start, stop, power off; later recordings: pause/resume, a complete wet run from start to self power-off, and a short run
+# with laundry that was already dry). Everything marked "single recording" needs a second, labelled recording first.
 # Nothing in here may contain private data (no addresses of the board, no network names, no keys).
 protocol: macs
 title: Electrolux / AEG MACS bus (tumble dryer)
@@ -23,13 +24,13 @@ devices:
     status: assumed
     evidence: "sends program selection, start/stop and on/off; acknowledges the heartbeat; receives state and time"
   "30":
-    name: "compressor / inverter board"
+    name: "motor inverter board (drum motor)"
     status: assumed
-    evidence: "answers the controller's status queries (22/3012 every 2 s) as soon as the bus is powered, also while no programme runs; announces itself with a wake-up when a run starts; identifies itself with the ASCII text M1IB1606 (message 22/3011)"
+    evidence: "answers the controller's status queries (22/3012 every 2 s) as soon as the bus is powered, also while no programme runs; announces itself with a wake-up when a run starts; identifies itself with the ASCII text M1IB1606 (message 22/3011). Its command 30/2212 carries a signed speed set point (+1840 / +2760, -1840 / -2760 for reversing, +-1932 in the anti-crease phase) and its status reports the actual speed, so it drives the drum motor; whether it also drives the compressor is unknown (two full runs)"
   "00":
     name: "broadcast"
     status: assumed
-    evidence: "the compressor board sends its wake-up message 10 00 23 to 0x00 when it starts; single recording"
+    evidence: "the motor inverter board sends its wake-up message 10 00 23 to 0x00 when it starts; single recording"
 acks:
   "9":
     node: "addressed node (receiver of the acknowledged message)"
@@ -45,11 +46,28 @@ runs:
     status: assumed
     evidence: "51 00 60 00 00 1b 03 was sent when the start button was pressed; the controller then reported state 02 (running); repeated start messages within 60 s are merged; a start while the controller reports state 04 (paused) continues the same run (resume after a 3 h pause, 23:20; the resume message is identical to the start message); two recordings"
   end:
+    marker:                 # first device state after the start that is idle (03), cancelled (09) or off (0b)
+      key: "2a/2252"
+      byte: 1
+      values: [0x03, 0x09, 0x0b]
+      status: assumed
+      evidence: "a complete run ended with state 03 (byte 8 = 70) right after the anti-crease countdown reached 0, then the dryer switched itself off about 5 min later (22/2a53 = 10, state 0b); a run with dry laundry ended after about 5 min with state 03 (byte 8 = 40); cancelling in the ready state gave 09; switching off during a run gives 0b; two complete runs"
     gap_minutes: 10         # the board is powered from the bus: when the dryer switches off, telegrams stop
+    gap_ends_run: true      # a silent gap ends the run even if a marker follows much later (the board was off)
     status: assumed
-    evidence: "no end-of-programme marker has been captured yet; the run ends with the last telegram before a silent gap (the dryer powers itself and the board off after a few minutes without use)"
+    evidence: "fallback when no end state was recorded: the run ends with the last telegram before a silent gap (the dryer powers itself and the board off a few minutes after the end)"
+  fallback_start:           # Plan B when the start command was missed (the board boots for about 18 s after power-on)
+    key: "30/2212"
+    byte: 1
+    length: 2
+    nonzero: true           # drum speed set point not zero = a programme is running
+    status: assumed
+    evidence: "start command not recorded; the run starts at the first drum command with a speed set point outside every detected run. The drum only turns while a programme runs (two complete runs: from the start until the end of the anti-crease phase, idle 00 00 otherwise). A recorded start within 300 s after it takes precedence"
   context_seconds: 300      # telegrams shown before the start (programme selection, power on)
   program_key: "22/2a50"    # programme selection used to name the run
+  remaining_key: "2a/2256"  # remaining time in minutes as shown on the display
+  remaining_byte: 3
+  remaining_when: {byte: 1, value: 0x00}
 enums:
   program:
     "0x01": "Mix Dry"
@@ -64,10 +82,30 @@ enums:
     "0x0a": "Refresh"
   device_state:
     "0x0b": "off"
-    "0x03": "starting (after power-on)"
+    "0x03": "idle (after power-on or programme ended)"
     "0x01": "on / ready"
     "0x02": "running"
     "0x04": "paused"
+    "0x09": "cancelled"
+  run_phase:
+    "0x00": "none"
+    "0x01": "drying"
+    "0x02": "cooling"
+    "0x04": "anti-crease"
+  end_type:
+    "0x00": "none"
+    "0x40": "ended early (laundry already dry)"
+    "0x70": "ended normally (after anti-crease)"
+  time_layout:
+    "0x00": "remaining time"
+    "0x02": "ready / idle counter"
+    "0x03": "end summary"
+    "0x04": "programme default"
+    "0x05": "anti-crease countdown"
+  power_arg:
+    "0x00": "synchronise (power-on)"
+    "0x10": "off"
+    "0x20": "off after cancel"
   panel_action:
     "0x60": "start"
     "0x61": "programme selected (after power-on)"
@@ -118,84 +156,132 @@ commands:
     name: power
     title: On / off (panel to controller)
     status: assumed
-    evidence: "one message (53 03 10 02 00 00) in the recording, followed within 50 ms by device state 0b (off); the on direction and the meaning of byte 1 were not recorded"
+    evidence: "53 03 10 02 00 00 is followed within 50 ms by device state 0b (off): when the off button is pressed and also when the dryer switches itself off about 5 min after the end of a programme (twice); 53 03 20 02 00 00 followed by state 0b came 6 s after a cancel (state 09); 53 03 00 02 00 00 is sent once at power-on and answered by the controller with 2a/2253 03 00 02 00 00"
     fields:
-      - {byte: 1, kind: u8, name: power_arg, label: Argument, status: unknown}
+      - {byte: 1, kind: enum, enum: power_arg, name: power_arg, label: Argument, status: assumed}
   - key: "2a/2252"
     name: device_state
     title: Device state (controller to panel)
     status: assumed
-    evidence: "byte 1: 03 right after the board gets power (about 5 s, then 01), 01 ready, 02 after start, 04 after stop, 0b when switched off (twice: 22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it); two recordings"
+    evidence: "sent only when something changes. Byte 1: 03 right after the board gets power (about 5 s, then 01) and again when a programme has ended, 01 ready, 02 after start, 04 after stop, 09 after a cancel in the ready state, 0b when switched off (22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it). Byte 2 during a run: 01 at the start, 02 when the temperature began to fall about 40 min before the drying end (cooling), 04 when the remaining time reached 0 and the drum started the anti-crease pattern; byte 5 was 05 in the cooling phase. Byte 8: 70 after a complete run with anti-crease, 40 after a run that stopped after 5 min with laundry that was already dry; one run each"
     fields:
       - {byte: 1, kind: enum, enum: device_state, name: state, label: State, status: assumed}
-      - {byte: 2, kind: u8, name: run_flag, label: 01 in states running and paused, status: unknown}
+      - {byte: 2, kind: enum, enum: run_phase, name: phase, label: Programme phase, status: assumed}
+      - {byte: 5, kind: u8, name: state_b5, label: 05 in the cooling phase, status: unknown}
       - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 or 03 when off or starting; toggled 41/43 about every 2.5 s while the door was opened and closed (not yet verified with a single labelled action), status: unknown}
+      - {byte: 8, kind: enum, enum: end_type, name: end_type, label: How the programme ended, status: assumed}
   - key: "2a/2256"
     name: time
     title: Time (controller to panel)
-    status: unknown
-    evidence: "two layouts. 56 03 00 00 VV 00 CS: VV took the values af 86 5c 5a 83 50 b4 32 23 while programmes were switched, and after the start fell by exactly 1 every 60 s (ae ad ac ab aa, 13:12:53 to 13:16:53), CS = VV + 0x1e in most messages; consistent with the remaining time in minutes, but NOT yet compared with the display. 56 03 04 00 00 VV 00 80 01: VV took 50 28 14 2d 1e 0a 32, possibly the programme default; single recording"
+    status: assumed
+    evidence: "byte 1 selects the layout. Layout 00: byte 3 is the remaining time in minutes exactly as shown on the display (af = 2:55 for Eco and 86 = 2:14 for Cotton when selected; ad = 2:53 at the moment the display changed to 2:53 after the start); during a wet run it was re-estimated several times (up and down) and counted down to 0; byte 5 is a second minute counter, 30 above byte 3 at the start, updated 30 s after byte 3, meaning unknown. Layout 05 counts down once a minute from 1d (29) to 0 during the anti-crease phase. Layout 02 is sent while ready: bytes 2-3 fall by 6 per minute, only while the dryer is on. Layout 03 (1d f6 00 f7 and similar) appears once at the end of a run. Layout 04: byte 4 took 50 28 14 2d 1e 0a 32, possibly the programme default"
     fields:
-      - {byte: 1, kind: u8, name: layout, label: Layout (00 or 04), status: unknown}
+      - {byte: 1, kind: enum, enum: time_layout, name: layout, label: Layout, status: assumed}
+      - {byte: 3, kind: u8, name: remaining, label: Remaining time, unit: min, when: {byte: 1, value: 0x00}, status: confirmed}
+      - {byte: 5, kind: u8, name: counter_b5, label: Second minute counter, unit: min, when: {byte: 1, value: 0x00}, status: unknown}
+      - {byte: 2, kind: u8, name: anti_crease_remaining, label: Anti-crease remaining, unit: min, when: {byte: 1, value: 0x05}, status: assumed}
+      - {byte: 2, kind: u16, name: idle_counter, label: Counter while ready (falls by 6 per minute), when: {byte: 1, value: 0x02}, status: unknown}
+      - {byte: 4, kind: u8, name: programme_default, label: Possibly the programme default, when: {byte: 1, value: 0x04}, status: unknown}
   - key: "2a/2257"
     name: alarm
     title: Alarm
     status: unknown
-    evidence: "type is listed as alarm in third-party notes for the washing machine; not seen on this dryer"
+    evidence: "type is listed as alarm in third-party notes for the washing machine; on this dryer only 57 03 00 00 00 00 was seen, once per power-on, probably 'no alarm'"
     fields: []
   - key: "22/2a11"
     name: panel_identification
     title: Identification (panel)
     status: assumed
-    evidence: "sent once at power-on: 11 00 followed by the ASCII text U1CB820GZ and 12 more bytes (meaning unknown); same layout as the compressor board identification; single recording"
+    evidence: "sent once at power-on: 11 00 followed by the ASCII text U1CB820GZ and 12 more bytes (meaning unknown); same layout as the motor inverter board identification; single recording"
     fields:
       - {byte: 1, kind: ascii, length: 9, name: ident, label: Identification text, status: assumed}
   - key: "30/2210"
     name: wakeup_to_compressor
-    title: Wake-up (controller to compressor board)
+    title: Wake-up (controller to motor inverter board)
     status: assumed
-    evidence: "10 00 24 (8 times) and 10 01 (twice) at the start of a run; the compressor board answers with its own wake-up, a broadcast 10 00 23"
+    evidence: "10 00 24 (8 times) and 10 01 (twice) at the start of a run; the motor inverter board answers with its own wake-up, a broadcast 10 00 23"
     fields: []
   - key: "00/3010"
     name: wakeup_from_compressor
-    title: Wake-up (compressor board, broadcast)
+    title: Wake-up (motor inverter board, broadcast)
     status: assumed
-    evidence: "10 00 23, twice, only while the compressor board starts up"
+    evidence: "10 00 23, twice, only while the motor inverter board starts up"
     fields: []
   - key: "22/3011"
     name: identification
-    title: Identification (compressor board)
+    title: Identification (motor inverter board)
     status: confirmed
     evidence: "payload 11 00 followed by the ASCII text M1IB1606 and two more bytes (3d d4, meaning unknown)"
     fields:
       - {byte: 1, kind: ascii, length: 8, name: ident, label: Identification text, status: confirmed}
   - key: "30/2211"
     name: parameter_blocks
-    title: Parameter blocks (controller to compressor board)
+    title: Parameter blocks (controller to motor inverter board)
     status: unknown
-    evidence: "four long blocks 11 03 00 .. 11 03 03 plus a short 11 01 2e 00; looks like a parameter set for the compressor board, values not interpreted"
+    evidence: "four long blocks 11 03 00 .. 11 03 03 plus a short 11 01 2e 00; looks like a parameter set for the motor inverter board, sent at every start, values not interpreted"
     fields: []
   - key: "30/2212"
     name: inverter_command
-    title: Inverter command (controller to compressor board)
+    title: Drum command (controller to motor inverter board)
     status: unknown
-    evidence: "12 00 00 e6 06 4a 80 00 (and 81, 00 07 30 ... variants) 25 times during a run; byte 6 toggles 80/81"
-    fields: []
+    evidence: "sent about every 2 s while the bus is powered and changed whenever the drum changes: bytes 1-2 are a signed speed set point (07 30 = +1840 at the start, 0a c8 = +2760 with wet laundry, f5 38 / f8 d0 = -2760 / -1840 for a short reversal every 40 min, 07 8c / f8 74 = +-1932 for 5 s every 33 s in the anti-crease phase, 00 00 = stop); the status 22/3012 reports the same value as actual speed. Bytes 3-4 are 06 4a while turning and 09 e2 when stopping (ramp or braking profile?); byte 5 is 01 while the drum is enabled. 00 00 e6 06 4a 80 00 is the idle command before the start and after the end; two complete runs"
+    fields:
+      - {byte: 1, kind: s16, name: speed_setpoint, label: Drum speed set point (sign = direction), status: assumed}
+      - {byte: 3, kind: u16, name: profile, label: 064a turning / 09e2 stopping, status: unknown}
+      - {byte: 5, kind: u8, name: enable, label: 01 while the drum is enabled, status: assumed}
   - key: "22/3012"
     name: inverter_status
-    title: Inverter status (compressor board to controller)
+    title: Drum status (motor inverter board to controller)
     status: unknown
-    evidence: "19-byte payload roughly every 2 s during a run, 13 different values; bytes 8 and 9 change slowly (18 / 19 / 20, 00..02), others stay 00; no compressor values (speed, temperatures) mapped yet"
-    fields: []
+    evidence: "19-byte payload every 2 s while the bus is powered. Bytes 1-2: actual drum speed in the low 15 bits (8a c9 = 2761 for set point 2760, 87 8b = 1931 for 1932, 80 00 = stopped), bit 15 set once the set point is reached (clear while ramping up: 00 8c = 140). Bytes 3-4: current ramp set point. Byte 7: rose from 29 to 55 during drying and fell from 52 to 36 in the cooling and anti-crease phases, a temperature in deg C. Bytes 8-9 about 735 peak while starting, 300-400 at speed, 2-10 at rest (motor current?); bytes 10-11 follow them with a delay (power or torque?). Bytes 14-15 and 16-17: fell from about 320 to 120 during a wet run of 4.5 h, were 62-66 from the first minute with laundry that was already dry (the dryer then ended after 5 min), are 0 while the drum stops or reverses and during the whole anti-crease phase: the laundry moisture measurement (two channels); two runs"
+    fields:
+      - {byte: 1, kind: u16, mask: 0x7fff, name: speed, label: Drum speed (actual), status: assumed}
+      - {byte: 1, bit: 7, name: at_setpoint, label: Speed set point reached, status: assumed}
+      - {byte: 3, kind: s16, name: speed_ramp, label: Current ramp set point, status: assumed}
+      - {byte: 7, kind: u8, name: temperature, label: Temperature, unit: "deg C", status: assumed}
+      - {byte: 8, kind: u16, name: motor_current, label: Motor current (raw), status: assumed}
+      - {byte: 10, kind: u16, name: motor_load, label: Follows the current with a delay (raw), status: unknown}
+      - {byte: 14, kind: u16, name: moisture_a, label: Laundry moisture, channel A (raw), status: assumed}
+      - {byte: 16, kind: u16, name: moisture_b, label: Laundry moisture, channel B (raw), status: assumed}
   - key: "30/2214"
     name: query_14
-    title: Query 0x14 (controller to compressor board)
+    title: Query 0x14 (controller to motor inverter board)
     status: unknown
     evidence: "14 00 ff ff, eight times, each answered by 14 01 00"
     fields: []
   - key: "22/3014"
     name: query_14_answer
-    title: Answer to query 0x14 (compressor board)
+    title: Answer to query 0x14 (motor inverter board)
     status: unknown
     evidence: "14 01 00, always right after the query"
+    fields: []
+  - key: "2a/2211"
+    name: controller_identification
+    title: Identification (controller to panel)
+    status: unknown
+    evidence: "11 01, once per power-on right after the panel identification"
+    fields: []
+  - key: "2a/2253"
+    name: power_echo
+    title: On / off echo (controller to panel)
+    status: assumed
+    evidence: "53 03 00 02 00 00 once per power-on, right after the panel sent the same 22/2a53 message"
+    fields: []
+  - key: "2a/2210"
+    name: wakeup_to_panel
+    title: Wake-up (controller to panel)
+    status: unknown
+    evidence: "once per power-on, together with 00/2210 and 00/2a10"
+    fields: []
+  - key: "00/2210"
+    name: wakeup_from_controller
+    title: Wake-up (controller, broadcast)
+    status: unknown
+    evidence: "once per power-on, not acknowledged"
+    fields: []
+  - key: "00/2a10"
+    name: wakeup_from_panel
+    title: Wake-up (panel, broadcast)
+    status: unknown
+    evidence: "once per power-on, not acknowledged"
     fields: []
