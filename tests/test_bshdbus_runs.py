@@ -145,3 +145,8 @@ def test_door_evidence_says_live_while_awake():
 def test_spec_documents_adaptive_remaining_time_and_phase_pulses():
     cmds = {c["key"]: c["evidence"] for c in spec.load_spec("bshdbus")["commands"]}
     assert "adaptive" in cmds["25/2008"] and "re-estimat" in cmds["25/2005"] and "re-estimated" in cmds["25/2000"]
+
+
+def test_spec_records_program_echo_and_auto_run_lengths():
+    cmds = {c["key"]: c["evidence"] for c in spec.load_spec("bshdbus")["commands"]}
+    assert "14 of 15" in cmds["25/2010"] and "110 to 120" in cmds["25/2008"] and "36 min" in cmds["25/2005"]
