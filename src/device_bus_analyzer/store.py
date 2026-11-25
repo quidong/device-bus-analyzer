@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS markers(
   id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, ts REAL NOT NULL, ts_end REAL,   -- ts_end set = an action with a duration
   kind TEXT NOT NULL, label TEXT NOT NULL, menu TEXT, note TEXT, step_group TEXT);
 CREATE INDEX IF NOT EXISTS ix_markers_src ON markers(source_id, ts);
+-- Raw bytes (LL..CRC plus ACK) recomputed from intact frames of legacy recordings that only had decoded lines.
+-- Derived data, marked as such: never mixed with the real bursts.
+CREATE TABLE IF NOT EXISTS legacy_raw(frame_id INTEGER PRIMARY KEY, raw BLOB NOT NULL);
 CREATE TABLE IF NOT EXISTS learned(               -- findings the person accepted from the analysis (local, per device)
   id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, meaning TEXT NOT NULL, kind TEXT, ds INTEGER, cmd INTEGER, pos INTEGER,
   from_val INTEGER, to_val INTEGER, hits INTEGER, n INTEGER, status TEXT NOT NULL, created_ts REAL NOT NULL);
@@ -394,6 +397,35 @@ class Store:
         self.db.execute(
             "INSERT INTO heartbeats(session_id, seq, t_us, epoch, bytes, bursts, ok, crc, noack, rest, recv_ts) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (sess["id"], e["seq"], e["t_us"], e["epoch"], e["bytes"], e["bursts"], e["ok"], e["crc"], e["noack"], e["rest"], recv_ts))
+
+    def reconstruct_raw(self, source: str) -> int:
+        """Recompute the raw bytes of intact legacy frames (no burst, so far only decoded) from their fields.
+        The protocol is fully determined by ds, cmd, data and the ACK byte, so this is lossless for intact frames;
+        damaged candidates are skipped because their real bytes are unknown. Returns the number of rows written."""
+        src = self.source_by_name(source)
+        if not src:
+            return 0
+        proto = protocols.get(src["protocol"])
+        build = getattr(proto, "build_frame", None)
+        if build is None:
+            return 0
+        n = 0
+        with self.lock:
+            rows = self.db.execute("SELECT id, ds, cmd, data, ack FROM frames WHERE source_id=? AND burst_id IS NULL AND crc_ok=1 "
+                                   "AND id NOT IN (SELECT frame_id FROM legacy_raw)", (src["id"],)).fetchall()
+            for r in rows:
+                raw = build(r["ds"], r["cmd"], bytes(r["data"])) + (bytes([r["ack"]]) if r["ack"] is not None else b"")
+                self.db.execute("INSERT INTO legacy_raw(frame_id, raw) VALUES(?,?)", (r["id"], raw))
+                n += 1
+            self.db.commit()
+        return n
+
+    def legacy_raw(self, source: str, limit: int = 200) -> list[dict]:
+        src = self.source_by_name(source)
+        if not src:
+            return []
+        return self._q("SELECT f.ts, f.ds, f.cmd, l.raw FROM legacy_raw l JOIN frames f ON f.id=l.frame_id "
+                       "WHERE f.source_id=? ORDER BY f.ts LIMIT ?", (src["id"], min(limit, 5000)))
 
     def rebuild_frames(self, source_id: int | None = None) -> int:
         """Re-derive frames from raw bursts, for example after the decoder improved. Raw data is never touched."""

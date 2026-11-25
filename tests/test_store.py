@@ -181,3 +181,22 @@ def test_command_list_hides_entries_seen_only_as_damaged_candidates(store):
     assert keys(store.command_stats("dw")) == {(0x25, 0x2008)}
     assert keys(store.command_stats("dw", include_damaged=True)) == {(0x25, 0x2008), (0x17, 0x1010)}
     assert store.damaged_only_commands("dw") == 1
+
+
+def test_reconstruct_raw_for_intact_legacy_frames_roundtrips(store):
+    from device_bus_analyzer.protocols.bshdbus import build_frame, parse_burst
+    sid = store.source("old", "bshdbus")
+    for ack in (0x2A, None):
+        store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+                         (sid, None, None, 1.0, 0x25, 0x2008, bytes([0, 1, 2]), 1, ack))
+    store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+                     (sid, None, None, 2.0, 0x99, 0x1234, b"\x01", 0, None))      # damaged candidate: skipped
+    store.db.commit()
+    assert store.reconstruct_raw("old") == 2
+    assert store.reconstruct_raw("old") == 0                                     # idempotent
+    rows = store.legacy_raw("old")
+    assert len(rows) == 2
+    for r in rows:
+        frames, st = parse_burst(bytes(r["raw"]))
+        assert st.crc == 0 and frames[0].ds == 0x25 and frames[0].data == bytes([0, 1, 2])
+    assert store._q("SELECT COUNT(*) n FROM bursts")[0]["n"] == 0                # never mixed with real bursts
