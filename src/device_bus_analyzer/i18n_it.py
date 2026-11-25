@@ -40,6 +40,8 @@ sessions | Avvii
 ok | valido
 bad | punti danneggiati (CRC)
 not_repeated | di cui non ripetuti integri
+raw_data | con dati grezzi (RAW1)
+legacy_data | registrazione precedente senza dati grezzi
 values | Valori
 confirmed | confermato
 assumed | presunto

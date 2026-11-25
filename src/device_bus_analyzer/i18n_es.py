@@ -40,6 +40,8 @@ sessions | Arranques
 ok | válida
 bad | puntos dañados (CRC)
 not_repeated | de ellos no repetidos intactos
+raw_data | con datos brutos (RAW1)
+legacy_data | grabación antigua sin datos brutos
 values | Valores
 confirmed | confirmado
 assumed | supuesto

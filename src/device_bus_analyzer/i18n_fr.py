@@ -40,6 +40,8 @@ sessions | Démarrages
 ok | valide
 bad | points endommagés (CRC)
 not_repeated | dont non répétés intacts
+raw_data | avec données brutes (RAW1)
+legacy_data | ancien enregistrement sans données brutes
 values | Valeurs
 confirmed | confirmé
 assumed | supposé

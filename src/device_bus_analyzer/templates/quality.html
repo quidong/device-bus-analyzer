@@ -1,6 +1,12 @@
 {% extends "base.html" %}{% block nav %}{% include "_srcnav.html" %}{% endblock %}{% block body %}
 <h1>{{ src.name }} · {{ t.quality }}</h1>
-<div data-live="quality"><div class="tbl"><table><tr><th>{{ t.frames }}</th><td>{{ q.frames }}</td></tr><tr><th>{{ t.ok }}</th><td>{{ q.ok }}</td></tr><tr><th>{{ t.bad }}</th><td>{{ q.crc_errors }}</td></tr><tr><th>{{ t.not_repeated }}</th><td>{{ q.not_repeated }}</td></tr>
-<tr><th>ok / {{ t.ack }} –</th><td>{{ q.ok_without_ack }}</td></tr><tr><th>{{ t.sessions }}</th><td>{{ q.sessions }}</td></tr></table></div>
+<div data-live="quality"><div class="tbl"><table>
+<tr><th></th><th>{{ t.raw_data }}</th><th>{{ t.legacy_data }}</th></tr>
+<tr><th>{{ t.frames }}</th><td>{{ q.raw.frames }}</td><td>{{ q.legacy.frames }}</td></tr>
+<tr><th>{{ t.ok }}</th><td>{{ q.raw.ok }}</td><td>{{ q.legacy.ok }}</td></tr>
+<tr><th>{{ t.bad }}</th><td>{{ q.raw.crc_errors }}</td><td>{{ q.legacy.crc_errors }}</td></tr>
+<tr><th>{{ t.not_repeated }}</th><td>{{ q.raw.not_repeated }}</td><td>{{ q.legacy.not_repeated }}</td></tr>
+<tr><th>ok / {{ t.ack }} –</th><td>{{ q.raw.ok_without_ack }}</td><td>{{ q.legacy.ok_without_ack }}</td></tr>
+<tr><th>{{ t.sessions }}</th><td colspan="2">{{ q.sessions }}</td></tr></table></div>
 <h2>{{ t.gaps }}</h2>{% if not q.gaps %}<p>–</p>{% else %}<div class="tbl"><table>{% for g in q.gaps %}<tr><td>{{ fmt(g.recv_ts) }}</td><td>{{ g.message }}</td></tr>{% endfor %}</table></div>{% endif %}</div>
 {% endblock %}

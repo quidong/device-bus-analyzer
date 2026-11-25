@@ -624,17 +624,25 @@ class Store:
                        f"FROM bursts b JOIN sessions s ON s.id=b.session_id WHERE {' AND '.join(w)} ORDER BY b.id LIMIT ? OFFSET ?",
                        [*a, min(limit, 5000), offset])
 
+    def _frame_quality(self, source_id: int, where: str = "1=1") -> dict:
+        f = self._q("SELECT COUNT(*) n, SUM(crc_ok) ok, SUM(crc_ok=1 AND ack IS NULL) noack FROM frames "
+                    f"WHERE source_id=? AND {where}", (source_id,))[0]
+        # A damaged spot counts as repeated when an intact frame with the same destination and command follows within
+        # two seconds (senders repeat aborted or unacknowledged transmissions); only the others are real losses.
+        lost = self._q("SELECT COUNT(*) n FROM frames d WHERE d.source_id=? AND d.crc_ok=0 AND "
+                       f"{where.replace('burst_id', 'd.burst_id')} AND NOT EXISTS ("
+                       "SELECT 1 FROM frames o WHERE o.source_id=d.source_id AND o.crc_ok=1 AND o.ds=d.ds AND o.cmd=d.cmd "
+                       "AND o.ts>=d.ts AND o.ts<=d.ts+2.0)", (source_id,))[0]["n"]
+        return {"frames": f["n"], "ok": f["ok"] or 0, "crc_errors": f["n"] - (f["ok"] or 0), "not_repeated": lost,
+                "ok_without_ack": f["noack"] or 0}
+
     def quality(self, source: str) -> dict:
+        """Totals plus the same figures split by origin: ``raw`` = recorded with raw bursts (RAW1, a damaged spot is one
+        spot), ``legacy`` = older recordings that only carried decoded frame lines (every resync retry was one "error")."""
         src = self.source_by_name(source)
         if not src:
             return {}
-        f = self._q("SELECT COUNT(*) n, SUM(crc_ok) ok, SUM(crc_ok=1 AND ack IS NULL) noack FROM frames WHERE source_id=?", (src["id"],))[0]
         g = self._q("SELECT recv_ts, message FROM gaps WHERE source_id=? ORDER BY id DESC LIMIT 50", (src["id"],))
         s = self._q("SELECT COUNT(*) n FROM sessions WHERE source_id=?", (src["id"],))[0]["n"]
-        # A damaged spot counts as repeated when an intact frame with the same destination and command follows within
-        # two seconds (senders repeat aborted or unacknowledged transmissions); only the others are real losses.
-        lost = self._q("SELECT COUNT(*) n FROM frames d WHERE d.source_id=? AND d.crc_ok=0 AND NOT EXISTS ("
-                       "SELECT 1 FROM frames o WHERE o.source_id=d.source_id AND o.crc_ok=1 AND o.ds=d.ds AND o.cmd=d.cmd "
-                       "AND o.ts>=d.ts AND o.ts<=d.ts+2.0)", (src["id"],))[0]["n"]
-        return {"frames": f["n"], "ok": f["ok"] or 0, "crc_errors": f["n"] - (f["ok"] or 0), "not_repeated": lost,
-                "ok_without_ack": f["noack"] or 0, "sessions": s, "gaps": g}
+        return {**self._frame_quality(src["id"]), "raw": self._frame_quality(src["id"], "burst_id IS NOT NULL"),
+                "legacy": self._frame_quality(src["id"], "burst_id IS NULL"), "sessions": s, "gaps": g}
