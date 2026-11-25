@@ -72,9 +72,10 @@ def test_noise_does_not_crash(blob):
     assert not any(f.crc_ok for f in frames)
 
 
-def test_empty_payload_gets_type_zero():
-    frames, _ = m.parse_burst(m.build_frame(0x22, 0x2A, b""))
-    assert frames[0].crc_ok and frames[0].cmd == 0x2A00 and frames[0].data == b""
+def test_empty_payload_is_not_a_message():
+    # every message carries a type byte; LL = 0 only came from a disturbance whose XOR happened to fit
+    frames, st = m.parse_burst(m.build_frame(0x22, 0x2A, b""))
+    assert frames == [] and st.rest == 5
 
 
 def test_spec_is_consistent_and_has_no_private_data():
@@ -316,3 +317,30 @@ def test_silent_gap_ends_a_run_even_if_an_end_state_comes_much_later(store):
     _ingest(store, sid, 90000.0, 3, 0x2A, 0x22, state_full(0x0B, b6=0x03))
     runs = store.runs("tr")
     assert len(runs) == 1 and runs[0]["end_by"] == "gap" and runs[0]["end_ts"] == 160.0
+
+
+def test_idle_drum_command_after_the_end_is_no_run(store):
+    # regression: the idle command 00 00 e6 06 4a 80 00 (and 00 ff 1a ...) has a non-zero set point but byte 5 = 80
+    sid = store.source("tr", "macs")
+    n = iter(range(1, 1000))
+    _ingest(store, sid, 100.0, next(n), 0x22, 0x2A, START)
+    _ingest(store, sid, 101.0, next(n), 0x30, 0x22, DRUM_ON)
+    _ingest(store, sid, 500.0, next(n), 0x2A, 0x22, state_full(3, end=0x50))
+    for k, raw in enumerate(("12 00 ff 1a 06 4a 80 00", "12 00 00 00 09 e2 80 00", "12 00 00 e6 06 4a 80 00")):
+        _ingest(store, sid, 501.0 + 2 * k, next(n), 0x30, 0x22, bytes.fromhex(raw))
+    _ingest(store, sid, 530.0, next(n), 0x2A, 0x22, state_full(0x0B, b6=0x03))
+    runs = store.runs("tr")
+    assert len(runs) == 1 and runs[0]["end_ts"] == 500.0
+
+
+def test_frame_with_zero_length_is_a_disturbance_not_a_message():
+    real = m.build_frame(0x22, 0x30, bytes.fromhex("12038aab0ac800002e01"))
+    frames, st = m.parse_burst(bytes.fromhex("c9202000") + real)       # C9 20 20 00 C9: XOR fits by chance
+    assert [(f.ds, f.cmd, f.crc_ok) for f in frames] == [(0x22, 0x3012, True)]
+    assert st.rest == 4
+
+
+def test_operating_hours_and_programme_counter():
+    v = spec.decode("macs", 0x2A, 0x2256, bytes.fromhex("03031e2500f9"))["values"]
+    assert v == {"layout": "end summary", "operating_hours": 771.7, "programme_count": 249}
+    assert spec.decode("macs", 0x2A, 0x2252, state_full(3, end=0x50)[1:])["values"]["end_type"] == "anti-crease ended early"

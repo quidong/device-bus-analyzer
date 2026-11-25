@@ -201,6 +201,12 @@ class Recorder {
           if (!force) break;
           c.rest += avail; emit_(p, avail); i += avail; break;
         }
+        if (p[3] == 0) {                // jede Nachricht hat ein Typ-Byte: LL = 0 ist eine Störung, deren 1-Byte-XOR zufällig
+          c.rest++;                     // passt (einmal gesehen: C9 20 20 00 C9 vor einem echten Frame); neu aufsetzen
+          emit_(p, 1);
+          i += 1;
+          continue;
+        }
         size_t total = (size_t) p[3] + 5;
         if (avail < total) {
           if (!force) break;

@@ -3,11 +3,11 @@
     "catalog.yaml": "c2ad12c4f3eb7b6bcc4a5c46715c3b7a71d046f86c997e4fc8e0d8431dc34e5b",
     "firmware/bshdbus-analysis.example.yaml": "985cf275cc9b9e808ec097c721f78bfdc89f6ec005c463e1fe26c9fa2b4507d9",
     "firmware/macs-analysis.example.yaml": "6bbec55af4dd19f79b2699ca0b36f0de79ad85fd1ac50ada9e3dafc4343b6a5b",
-    "firmware/macs_recorder.h": "50f59a4e4c7e75a6f57176b90606af4df53f6f524e4ee324d600130d2a91c0a3",
+    "firmware/macs_recorder.h": "89bb29cb338d9606906ff4a1cf210aee657a2154bf71f7c1e18d6ed748ad5a99",
     "spec/bshdbus.yaml": "e9272dadbc9a80dfca835344c290be5b9254c6baa554b9585d38e6d771d4082b",
-    "spec/macs.yaml": "99b40e95396266ccabf271391db82af1b97270ec6a22464ffedd1b6b97b3c74e"
+    "spec/macs.yaml": "12530f821c24a7b59238a06aaa5abe426c509185849a252c925f2d63a6b587ed"
   },
   "format": 1,
-  "revision": "7ef796e1e3c0a8e8",
-  "version": "2026-11-25.3"
+  "revision": "94f87eb1824640ab",
+  "version": "2026-11-25.2"
 }

@@ -63,6 +63,10 @@ def parse_burst(data: bytes) -> tuple[list[Frame], BurstStats]:
             i += 1
             continue
         length = data[i + 3]
+        if length == 0:                               # every message has a type byte: LL = 0 is a disturbance whose
+            st.rest += 1                              # one-byte XOR happened to fit (seen once: C9 20 20 00 C9)
+            i += 1
+            continue
         end = i + 5 + length
         if end > n:                                   # cut off at the end of the burst
             st.rest += 1

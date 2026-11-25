@@ -160,3 +160,11 @@ def test_without_buffer_lines_are_written_immediately(harness):
     f = with_ack(msg(0x2A, 0x22, "5f 03"))
     bursts, out, _ = run(harness, ["LIVE 0", f.hex(), "IDLE"])
     assert bursts == [f]
+
+
+def test_zero_length_disturbance_does_not_swallow_the_next_frame(harness):
+    real = with_ack(msg(0x22, 0x30, "12 03 8a ab 0a c8 00 00 2e 01"))
+    bursts, out, st = run(harness, ["c9202000" + real.hex(), "IDLE"])
+    frames = [f for b in bursts for f in m.parse_burst(b)[0] if f.crc_ok]
+    assert [(f.ds, f.cmd) for f in frames] == [(0x22, 0x3012)]
+    assert real in bursts                                   # the real frame is one burst, not split behind a fake one

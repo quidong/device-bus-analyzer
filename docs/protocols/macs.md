@@ -94,7 +94,9 @@ state `03`, byte 8 = `40` (no cooling, no anti-crease), followed by the same sel
 A run starts at the start command (`22/2a51` with byte 1 = `60`) and ends at the first device state `03`, `09` or `0b`
 after it, or at the last telegram before a 10-minute silence (the board is powered from the bus). The remaining time at
 the start and end comes from `2a/2256` layout `00`. When the start command was missed because the board was still booting
-(about 18 s after power-on), the first drum command with a speed set point outside every detected run starts the run
+(older firmware without buffer, connection lost), the first drum command with the drum enabled (`30/2212` byte 5 = `01`)
+outside every detected run starts the run (the idle command before and after a run has byte 5 = `80`/`81` and a non-zero
+set point, so the set point alone is no sign of a run)
 (`fallback_start`, `start_by = fallback`). All of this is *assumed*.
 
 ## Open points (need labelled recordings)
@@ -102,7 +104,17 @@ the start and end comes from `2a/2256` layout `00`. When the start command was m
 * alarm messages (`2a/2257` only ever carried zeros)
 * byte 5 of `2a/2256` layout `00` (a second minute counter), layouts `02`, `03`, `04`
 * units of motor current and moisture, whether `0x30` also drives the compressor
-* door open/closed (`2a/2252` byte 6 toggled 41/43, not yet tested with a single labelled action)
+* door open/closed (`2a/2252` byte 6 toggled 41/43, and went to 03 when the anti-crease phase ended early with end type
+  `50`; not yet tested with a single labelled action)
+
+## Counters
+`2a/2256` layout `03`, sent at power-on and at the start and end of the anti-crease phase, carries the operating hours in
+0.1 h (bytes 2-3) and the number of programmes run (bytes 4-5). Both grew exactly with the recorded runs.
+
+## Disturbances
+The one-byte XOR accepts a damaged frame now and then. A disturbance once produced `C9 20 20 00 C9` right before a real
+frame: a "message" with LL = 0 whose checksum happened to fit, which also swallowed the marker of the real frame. Every
+message carries a type byte, so the recorder and the decoder treat LL = 0 as noise and resynchronise on the next byte.
 
 ## Recording
 Use `src/device_bus_analyzer/firmware/macs-analysis.example.yaml` with `src/device_bus_analyzer/firmware/macs_recorder.h`. The recorder assembles frames by their length

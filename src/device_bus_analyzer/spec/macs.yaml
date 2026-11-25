@@ -56,13 +56,12 @@ runs:
     gap_ends_run: true      # a silent gap ends the run even if a marker follows much later (the board was off)
     status: assumed
     evidence: "fallback when no end state was recorded: the run ends with the last telegram before a silent gap (the dryer powers itself and the board off a few minutes after the end)"
-  fallback_start:           # Plan B when the start command was missed (the board boots for about 18 s after power-on)
+  fallback_start:           # Plan B when the start command was missed (older firmware without buffer, connection lost)
     key: "30/2212"
-    byte: 1
-    length: 2
-    nonzero: true           # drum speed set point not zero = a programme is running
+    byte: 5
+    value: 0x01             # drum enabled = a programme is running
     status: assumed
-    evidence: "start command not recorded; the run starts at the first drum command with a speed set point outside every detected run. The drum only turns while a programme runs (two complete runs: from the start until the end of the anti-crease phase, idle 00 00 otherwise). A recorded start within 300 s after it takes precedence"
+    evidence: "start command not recorded; the run starts at the first drum command with the drum enabled (byte 5 = 01) outside every detected run. The drum is only enabled while a programme runs (three complete runs: from the start until the end of the anti-crease phase; before the start and after the end the command is 00 00 e6 06 4a 80 00 or similar with byte 5 = 80/81, whose bytes 1-2 are not zero, so a non-zero set point is no sign of a run). A recorded start within 300 s after it takes precedence"
   context_seconds: 300      # telegrams shown before the start (programme selection, power on)
   program_key: "22/2a50"    # programme selection used to name the run
   remaining_key: "2a/2256"  # remaining time in minutes as shown on the display
@@ -95,6 +94,7 @@ enums:
   end_type:
     "0x00": "none"
     "0x40": "ended early (laundry already dry)"
+    "0x50": "anti-crease ended early"
     "0x70": "ended normally (after anti-crease)"
   time_layout:
     "0x00": "remaining time"
@@ -163,7 +163,7 @@ commands:
     name: device_state
     title: Device state (controller to panel)
     status: assumed
-    evidence: "sent only when something changes. Byte 1: 03 right after the board gets power (about 5 s, then 01) and again when a programme has ended, 01 ready, 02 after start, 04 after stop, 09 after a cancel in the ready state, 0b when switched off (22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it). Byte 2 during a run: 01 at the start, 02 when the temperature began to fall about 40 min before the drying end (cooling), 04 when the remaining time reached 0 and the drum started the anti-crease pattern; byte 5 was 05 in the cooling phase. Byte 8: 70 after a complete run with anti-crease, 40 after a run that stopped after 5 min with laundry that was already dry; one run each"
+    evidence: "sent only when something changes. Byte 1: 03 right after the board gets power (about 5 s, then 01) and again when a programme has ended, 01 ready, 02 after start, 04 after stop, 09 after a cancel in the ready state, 0b when switched off (22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it). Byte 2 during a run: 01 at the start, 02 when the temperature began to fall about 40 min before the drying end (cooling), 04 when the remaining time reached 0 and the drum started the anti-crease pattern; byte 5 was 05 in the cooling phase. Byte 8: 70 after a complete run with anti-crease (30 min), 40 after a run that stopped after 5 min with laundry that was already dry, 50 when the anti-crease phase ended after 5 of 30 min, together with byte 6 changing from 41 to 03 (door opened? not yet confirmed); one run each. At the next power-on state 03 still carries the end type of the previous run in byte 8 (40 seen), then 01 with byte 8 = 00"
     fields:
       - {byte: 1, kind: enum, enum: device_state, name: state, label: State, status: assumed}
       - {byte: 2, kind: enum, enum: run_phase, name: phase, label: Programme phase, status: assumed}
@@ -174,7 +174,7 @@ commands:
     name: time
     title: Time (controller to panel)
     status: assumed
-    evidence: "byte 1 selects the layout. Layout 00: byte 3 is the remaining time in minutes exactly as shown on the display (af = 2:55 for Eco and 86 = 2:14 for Cotton when selected; ad = 2:53 at the moment the display changed to 2:53 after the start); during a wet run it was re-estimated several times (up and down) and counted down to 0; byte 5 is a second minute counter, 30 above byte 3 at the start, updated 30 s after byte 3, meaning unknown. Layout 05 counts down once a minute from 1d (29) to 0 during the anti-crease phase. Layout 02 is sent while ready: bytes 2-3 fall by 6 per minute, only while the dryer is on. Layout 03 (1d f6 00 f7 and similar) appears once at the end of a run. Layout 04: byte 4 took 50 28 14 2d 1e 0a 32, possibly the programme default"
+    evidence: "byte 1 selects the layout. Layout 00: byte 3 is the remaining time in minutes exactly as shown on the display (af = 2:55 for Eco and 86 = 2:14 for Cotton when selected; ad = 2:53 at the moment the display changed to 2:53 after the start); during a wet run it was re-estimated several times (up and down) and counted down to 0; byte 5 is a second minute counter, 30 above byte 3 at the start, updated 30 s after byte 3, meaning unknown. Layout 05 counts down once a minute from 1d (29) to 0 during the anti-crease phase. Layout 02 is sent while ready: bytes 2-3 fall by 6 per minute, only while the dryer is on. Layout 03 is sent at power-on and at the start and end of the anti-crease phase: bytes 2-3 grew by exactly the hours of use in 0.1 h (1d f7 -> 1e 24 = +4.5 h during a run of 4 h 31 min, 1d f1 -> 1d f6 during 30 min of anti-crease, +1 during a 5-min run), bytes 4-5 grew by 1 per run (f7, f8, f9): an operating hours counter and a programme counter; three runs. Layout 04: byte 4 took 50 28 14 2d 1e 0a 32, possibly the programme default"
     fields:
       - {byte: 1, kind: enum, enum: time_layout, name: layout, label: Layout, status: assumed}
       - {byte: 3, kind: u8, name: remaining, label: Remaining time, unit: min, when: {byte: 1, value: 0x00}, status: confirmed}
@@ -182,6 +182,8 @@ commands:
       - {byte: 2, kind: u8, name: anti_crease_remaining, label: Anti-crease remaining, unit: min, when: {byte: 1, value: 0x05}, status: assumed}
       - {byte: 2, kind: u16, name: idle_counter, label: Counter while ready (falls by 6 per minute), when: {byte: 1, value: 0x02}, status: unknown}
       - {byte: 4, kind: u8, name: programme_default, label: Possibly the programme default, when: {byte: 1, value: 0x04}, status: unknown}
+      - {byte: 2, kind: u16, scale: 0.1, name: operating_hours, label: Operating hours, unit: h, when: {byte: 1, value: 0x03}, status: assumed}
+      - {byte: 4, kind: u16, name: programme_count, label: Programmes run, when: {byte: 1, value: 0x03}, status: assumed}
   - key: "2a/2257"
     name: alarm
     title: Alarm
