@@ -195,3 +195,16 @@ def test_purge_legacy_removes_only_frames_without_raw_data(store):
     assert store.purge_legacy("dw") == 0
     assert [(r["ds"], r["cmd"]) for r in store.command_stats("dw", include_damaged=True)] == [(0x25, 0x2008)]
     assert store.purge_legacy("unknown") == 0
+
+
+def test_purge_legacy_once_backs_up_and_runs_only_once(store, tmp_path):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, raw1(1, 1000, build_frame(0x25, 0x2008, bytes(8)) + b"\x2a"), 1_000_000.0)
+    store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+                     (sid, None, None, 1.0, 0x25, 0x2000, b"\x01", 1, None))
+    store.db.commit()
+    assert store.purge_legacy_once(tmp_path) == 1
+    assert (tmp_path / "backup-before-purge-legacy.sqlite").exists()
+    assert store.purge_legacy_once(tmp_path) is None

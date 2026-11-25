@@ -136,6 +136,10 @@ def main(argv: list[str] | None = None) -> int:
         import uvicorn
 
         from .web import create_app
+        from pathlib import Path as _P
+        _n = store.purge_legacy_once(_P(db).parent)      # TEMPORARY one-time cleanup, removed in the next commit
+        if _n is not None:
+            print(f"legacy frames without raw data deleted: {_n} (backup: backup-before-purge-legacy.sqlite)", flush=True)
         s = config.apply_saved(s, store.kv_get("config"))     # settings saved in the UI (HTTPS, time zone, ...)
         s = config.ensure_secrets(s)                       # first start: session secret and API token are created and kept in the data volume
         kw = {}
