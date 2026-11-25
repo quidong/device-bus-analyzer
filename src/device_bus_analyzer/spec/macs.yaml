@@ -94,7 +94,7 @@ enums:
   end_type:
     "0x00": "none"
     "0x40": "ended early (laundry already dry)"
-    "0x50": "anti-crease ended early"
+    "0x50": "anti-crease ended by opening the door"
     "0x70": "ended normally (after anti-crease)"
   time_layout:
     "0x00": "remaining time"
@@ -163,12 +163,13 @@ commands:
     name: device_state
     title: Device state (controller to panel)
     status: assumed
-    evidence: "sent only when something changes. Byte 1: 03 right after the board gets power (about 5 s, then 01) and again when a programme has ended, 01 ready, 02 after start, 04 after stop, 09 after a cancel in the ready state, 0b when switched off (22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it). Byte 2 during a run: 01 at the start, 02 when the temperature began to fall about 40 min before the drying end (cooling), 04 when the remaining time reached 0 and the drum started the anti-crease pattern; byte 5 was 05 in the cooling phase. Byte 8: 70 after a complete run with anti-crease (30 min), 40 after a run that stopped after 5 min with laundry that was already dry, 50 when the anti-crease phase ended after 5 of 30 min, together with byte 6 changing from 41 to 03 (door opened? not yet confirmed); one run each. At the next power-on state 03 still carries the end type of the previous run in byte 8 (40 seen), then 01 with byte 8 = 00"
+    evidence: "sent only when something changes. Byte 1: 03 right after the board gets power (about 5 s, then 01) and again when a programme has ended, 01 ready, 02 after start, 04 after stop, 09 after a cancel in the ready state, 0b when switched off (22/2a53 followed by state 0b, then the bus goes dead because the board is powered from it). Byte 2 during a run: 01 at the start, 02 when the temperature began to fall about 40 min before the drying end (cooling), 04 when the remaining time reached 0 and the drum started the anti-crease pattern; byte 5 was 05 in the cooling phase. Byte 8: 70 after a complete run with anti-crease (30 min), 40 after a run that stopped after 5 min with laundry that was already dry, 50 when the door was opened during the anti-crease phase (after 5 of 30 min; confirmed by the user), together with byte 6 bit 1 being set; one run each. Byte 6 bit 1 (0x02) is the door: 41 closed, 43 open (toggled 41/43 every 2.5 s while the door was opened and closed, and was set from the moment the door was opened until power-off); it is also set for about 1 s after power-on and while off, before the controller reports a real state. At the next power-on state 03 still carries the end type of the previous run in byte 8 (40 seen), then 01 with byte 8 = 00"
     fields:
       - {byte: 1, kind: enum, enum: device_state, name: state, label: State, status: assumed}
       - {byte: 2, kind: enum, enum: run_phase, name: phase, label: Programme phase, status: assumed}
       - {byte: 5, kind: u8, name: state_b5, label: 05 in the cooling phase, status: unknown}
-      - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 or 03 when off or starting; toggled 41/43 about every 2.5 s while the door was opened and closed (not yet verified with a single labelled action), status: unknown}
+      - {byte: 6, kind: u8, name: state_b6, label: 41 normally, 43 door open, 03 or 43 while off or starting, status: unknown}
+      - {byte: 6, bit: 1, name: door_open, label: Door open (not valid while off or starting), status: assumed}
       - {byte: 8, kind: enum, enum: end_type, name: end_type, label: How the programme ended, status: assumed}
   - key: "2a/2256"
     name: time

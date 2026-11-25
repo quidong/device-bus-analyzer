@@ -343,4 +343,6 @@ def test_frame_with_zero_length_is_a_disturbance_not_a_message():
 def test_operating_hours_and_programme_counter():
     v = spec.decode("macs", 0x2A, 0x2256, bytes.fromhex("03031e2500f9"))["values"]
     assert v == {"layout": "end summary", "operating_hours": 771.7, "programme_count": 249}
-    assert spec.decode("macs", 0x2A, 0x2252, state_full(3, end=0x50)[1:])["values"]["end_type"] == "anti-crease ended early"
+    v = spec.decode("macs", 0x2A, 0x2252, state_full(3, b6=0x43, end=0x50)[1:])["values"]
+    assert v["end_type"] == "anti-crease ended by opening the door" and v["door_open"] is True
+    assert spec.decode("macs", 0x2A, 0x2252, state_full(2, 1, b6=0x41)[1:])["values"]["door_open"] is False

@@ -64,7 +64,7 @@ C9 DD SS LL <payload, LL bytes> XX          DD destination, SS source, XX = XOR 
 | `2a/225f` | heartbeat `5f 03`, every 3 s, always acknowledged | confirmed |
 | `22/2a50` | programme selection; byte 13 = programme number 1…10 | confirmed (names not mapped) |
 | `22/2a51` | panel command: `60` start, `61` programme selected, `62` stop/pause | assumed |
-| `2a/2252` | device state (byte 1): `0b` off, `03` idle after power-on or after the programme ended, `01` ready, `02` running, `04` paused, `09` cancelled; byte 2 = phase (`01` drying, `02` cooling, `04` anti-crease); byte 8 = how it ended (`70` normally, `40` early, laundry already dry) | assumed |
+| `2a/2252` | device state (byte 1): `0b` off, `03` idle after power-on or after the programme ended, `01` ready, `02` running, `04` paused, `09` cancelled; byte 2 = phase (`01` drying, `02` cooling, `04` anti-crease); byte 6 bit 1 = door open; byte 8 = how it ended (`70` normally, `40` early, laundry already dry, `50` door opened in the anti-crease phase) | assumed |
 | `22/2a53` | on/off from the panel: `10` off (button and self power-off), `20` off after a cancel, `00` once at power-on | assumed |
 | `22/3011` | motor inverter board identification `M1IB1606` | confirmed |
 | `30/2210`, `00/3010`, `30/2214`, `22/3014` | wake-up and query handshake with the motor inverter board | assumed / unknown |
@@ -104,8 +104,8 @@ set point, so the set point alone is no sign of a run)
 * alarm messages (`2a/2257` only ever carried zeros)
 * byte 5 of `2a/2256` layout `00` (a second minute counter), layouts `02`, `03`, `04`
 * units of motor current and moisture, whether `0x30` also drives the compressor
-* door open/closed (`2a/2252` byte 6 toggled 41/43, and went to 03 when the anti-crease phase ended early with end type
-  `50`; not yet tested with a single labelled action)
+* door: `2a/2252` byte 6 bit 1 (`41` closed, `43` open) fits two recordings (opening and closing the door, opening it in
+  the anti-crease phase, end type `50`); a test with the door opened once while ready is still missing
 
 ## Counters
 `2a/2256` layout `03`, sent at power-on and at the start and end of the anti-crease phase, carries the operating hours in
