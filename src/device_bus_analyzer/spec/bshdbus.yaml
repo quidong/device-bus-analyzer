@@ -127,7 +127,7 @@ commands:
   - key: "25/2010"
     name: program_echo
     title: Program echo from the module
-    status: confirmed
+    status: assumed
     evidence: "byte 0 is a program id in the module; at power-on it is mostly 0x0e (Eco): 14 of 15 power-ons, also when the previous run used Auto, and once 0x0d (Auto after an Auto run), so 'program used last' does not explain it reliably; the panel then sets the selection with 17/1010 + 17/1011 (0x15 in a 1 h 65 C run, 0x0d for Auto), so the echo is not the current selection once the panel has changed it"
     fields:
       - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
@@ -147,6 +147,12 @@ commands:
     evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 exactly once at the end of every recorded run (six runs plus one earlier partial recording); 06 was seen in earlier runs, unclear, and is not in the current database"
     fields:
       - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: confirmed}
+  - key: "17/1001"
+    name: cmd_1001
+    title: "Panel message 1001 (single byte, always 00)"
+    status: unknown
+    evidence: "11 frames, always the single byte 00, seen at power-on; meaning unknown"
+    fields: []
   - key: "17/1007"
     name: power
     title: Power on (panel)
@@ -158,7 +164,7 @@ commands:
     name: delay_start
     title: Delayed start (7 data bytes)
     status: unknown
-    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing; layout with a non-zero delay not yet recorded"
+    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing; layout with a non-zero delay not yet recorded. Hint: the module echo 25/1012 has the same seven bytes and carries hours and minutes in bytes 4 and 5, not in bytes 1 and 2 as the upstream ESPHome example reads them, so check both positions when a delayed start is recorded"
     fields: []
   - key: "17/1013"
     name: start
@@ -195,8 +201,8 @@ commands:
   - key: "25/2009"
     name: heartbeat
     title: Periodic frame, always 00
-    status: unknown
-    evidence: "760 frames (about a fifth of all traffic), always the single byte 00 from the first to the last recording; probably a cyclic heartbeat of the module"
+    status: assumed
+    evidence: "1536 frames (a large share of all traffic), always the single byte 00 from the first to the last recording, one frame about every 10 s while the module is awake (for example at 581.4 s and 591.4 s); so a cyclic heartbeat of the module"
     fields: []
   - key: "25/2015"
     name: start_parameter
@@ -206,15 +212,23 @@ commands:
     fields: []
   - key: "25/1012"
     name: cmd_1012
-    title: Seven data bytes at power-on / start
-    status: unknown
-    evidence: "00 00 00 00 03 1e 00 seven times, once 00 00 00 00 02 2d 00 at the start of an Auto 45-65 C run; the last three bytes could be hours and minutes (3:30 and 2:45) but do not match the program, meaning unknown"
-    fields: []
+    title: Nominal run time of the stored program (seven data bytes at power-on)
+    status: assumed
+    evidence: "00 00 00 00 03 1e 00 in 15 power-ons, once 00 00 00 00 02 2d 00. Bytes 4 and 5 read as hours and minutes give 3:30 = 210 min (Eco) and 2:45 = 165 min (Auto), the announced times of the programs that 25/2010 names in the same moment (0e and once 0d, 5 ms apart). So it is the nominal run time of the program the module holds at power-on; bytes 0-3 and 6 are always 0"
+    fields:
+      - {byte: 4, kind: u8, name: nominal_h, label: Nominal hours, unit: h, status: assumed}
+      - {byte: 5, kind: u8, name: nominal_m, label: Nominal minutes, unit: min, status: assumed}
   - key: "22/7ff1"
-    name: node22_7ff1
-    title: Node 0x22 message 7ff1
+    name: wake_up
+    title: "Power-on call to the panel (repeated until acknowledged)"
+    status: assumed
+    evidence: "98 frames, always the single byte 10. At each power-on the module sends it several times in a row (four to five times in the first bursts, without ACK) until the panel acknowledges with 2A (ACK high nibble 2 = the panel); the panel's own 17/1007 = 01 arrives in the middle of the series. So sender = power module and receiver = panel are consistent with the ACK, the meaning (wake-up / hello) is a guess"
+    fields: []
+  - key: "25/1013"
+    name: cmd_1013
+    title: "Module message 1013 (single byte, always 00)"
     status: unknown
-    evidence: "single byte (10), seen right after power-on; meaning unknown"
+    evidence: "28 frames, always the single byte 00; possibly the module's counterpart of the panel start command 17/1013 (which carries 01 when a program starts), so 00 would be 'no start'. Meaning unproven"
     fields: []
   - key: "25/1017"
     name: cmd_1017

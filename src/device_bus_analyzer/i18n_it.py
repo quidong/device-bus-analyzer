@@ -41,6 +41,9 @@ ok | valido
 bad | punti danneggiati (CRC)
 not_repeated | di cui non ripetuti integri
 raw_data | con dati grezzi (RAW1)
+hidden_damaged | Nascoste: indirizzi visti solo in telegrammi danneggiati
+show_damaged | mostra
+hide_damaged | nascondi di nuovo
 legacy_data | registrazione precedente senza dati grezzi
 values | Valori
 confirmed | confermato

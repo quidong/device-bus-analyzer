@@ -168,3 +168,16 @@ def test_quality_is_split_into_raw_and_legacy_data(store):
     assert q["raw"]["crc_errors"] == 1 and q["raw"]["ok"] == 1 and q["raw"]["not_repeated"] == 0
     assert q["legacy"]["crc_errors"] == 3 and q["legacy"]["ok"] == 1
     assert q["frames"] == q["raw"]["frames"] + q["legacy"]["frames"] and q["crc_errors"] == 4
+
+
+def test_command_list_hides_entries_seen_only_as_damaged_candidates(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    good = build_frame(0x25, 0x2008, bytes(8))
+    bad = bytearray(build_frame(0x17, 0x1010, b"\x0d")); bad[-1] ^= 0xFF
+    store.ingest_line(sid, raw1(1, 1000, good + b"\x2a" + bytes(bad)), 1_000_000.0)
+    keys = lambda rows: {(r["ds"], r["cmd"]) for r in rows}
+    assert keys(store.command_stats("dw")) == {(0x25, 0x2008)}
+    assert keys(store.command_stats("dw", include_damaged=True)) == {(0x25, 0x2008), (0x17, 0x1010)}
+    assert store.damaged_only_commands("dw") == 1

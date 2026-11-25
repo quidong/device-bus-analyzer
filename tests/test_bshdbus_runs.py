@@ -100,14 +100,14 @@ def test_spec_names_the_end_marker():
     assert end["status"] == "assumed"                                     # the gap fallback stays a heuristic
 
 
-@pytest.mark.parametrize("cmd,name,data", [
-    (0x2009, "heartbeat", b"\x00"),
-    (0x2015, "start_parameter", bytes.fromhex("0fff")),
-    (0x1012, "cmd_1012", bytes.fromhex("00000000031e00")),
+@pytest.mark.parametrize("cmd,name,data,status", [
+    (0x2009, "heartbeat", b"\x00", "assumed"),
+    (0x2015, "start_parameter", bytes.fromhex("0fff"), "unknown"),
+    (0x1012, "cmd_1012", bytes.fromhex("00000000031e00"), "assumed"),
 ])
-def test_new_commands_are_known_but_unknown_in_meaning(cmd, name, data):
+def test_new_commands_are_known_with_honest_status(cmd, name, data, status):
     d = spec.decode("bshdbus", 0x25, cmd, data)
-    assert d["name"] == name and d["status"] == "unknown"
+    assert d["name"] == name and d["status"] == status
 
 
 def test_end_marker_command_is_not_called_an_end_marker_alone():
@@ -150,3 +150,18 @@ def test_spec_documents_adaptive_remaining_time_and_phase_pulses():
 def test_spec_records_program_echo_and_auto_run_lengths():
     cmds = {c["key"]: c["evidence"] for c in spec.load_spec("bshdbus")["commands"]}
     assert "14 of 15" in cmds["25/2010"] and "110 to 120" in cmds["25/2008"] and "36 min" in cmds["25/2005"]
+
+
+def test_audit_statuses_after_the_review():
+    cmds = {c["key"]: c for c in spec.load_spec("bshdbus")["commands"]}
+    assert cmds["25/2010"]["status"] == "assumed"                       # echo is mostly 0e, not reliably 'last used'
+    assert cmds["22/7ff1"]["status"] == "assumed" and "ACK" in cmds["22/7ff1"]["evidence"]
+    assert cmds["25/2009"]["status"] == "assumed" and "10 s" in cmds["25/2009"]["evidence"]
+    assert [f["name"] for f in cmds["25/1012"]["fields"]] == ["nominal_h", "nominal_m"]
+    d = spec.decode("bshdbus", 0x25, 0x1012, bytes([0, 0, 0, 0, 3, 30, 0]))["values"]
+    assert d["nominal_h"] == 3 and d["nominal_m"] == 30
+
+
+def test_previously_missing_commands_are_in_the_spec():
+    idx = spec.load_spec("bshdbus")["_index"]
+    assert idx["17/1001"]["status"] == "unknown" and idx["25/1013"]["status"] == "unknown"

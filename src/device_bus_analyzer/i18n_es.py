@@ -41,6 +41,9 @@ ok | válida
 bad | puntos dañados (CRC)
 not_repeated | de ellos no repetidos intactos
 raw_data | con datos brutos (RAW1)
+hidden_damaged | Ocultas: direcciones vistas solo en telegramas dañados
+show_damaged | mostrar
+hide_damaged | ocultar de nuevo
 legacy_data | grabación antigua sin datos brutos
 values | Valores
 confirmed | confirmado

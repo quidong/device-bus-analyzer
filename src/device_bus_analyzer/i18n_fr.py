@@ -41,6 +41,9 @@ ok | valide
 bad | points endommagés (CRC)
 not_repeated | dont non répétés intacts
 raw_data | avec données brutes (RAW1)
+hidden_damaged | Masquées : adresses vues uniquement dans des télégrammes endommagés
+show_damaged | afficher
+hide_damaged | masquer à nouveau
 legacy_data | ancien enregistrement sans données brutes
 values | Valeurs
 confirmed | confirmé

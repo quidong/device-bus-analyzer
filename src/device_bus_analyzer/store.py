@@ -594,15 +594,25 @@ class Store:
     def run(self, source: str, run_id: int) -> dict | None:
         return next((r for r in self.runs(source) if r["id"] == run_id), None)
 
-    def command_stats(self, source: str) -> list[dict]:
+    def command_stats(self, source: str, include_damaged: bool = False) -> list[dict]:
+        """Commands seen on the bus. Entries that only ever appeared as damaged candidates (garbage addresses produced by
+        resynchronising on a corrupted spot) are left out unless ``include_damaged`` is set."""
         src = self.source_by_name(source)
         if not src:
             return []
+        having = "" if include_damaged else " HAVING SUM(crc_ok) > 0"
         rows = self._q("SELECT ds, cmd, COUNT(*) n, COUNT(DISTINCT data) distinct_values, MIN(ts) first_ts, MAX(ts) last_ts, "
-                       "SUM(crc_ok) ok FROM frames WHERE source_id=? GROUP BY ds, cmd ORDER BY ds, cmd", (src["id"],))
+                       f"SUM(crc_ok) ok FROM frames WHERE source_id=? GROUP BY ds, cmd{having} ORDER BY ds, cmd", (src["id"],))
         for r in rows:
             r["decoded"] = decode(src["protocol"], r["ds"], r["cmd"], b"")
         return rows
+
+    def damaged_only_commands(self, source: str) -> int:
+        src = self.source_by_name(source)
+        if not src:
+            return 0
+        return self._q("SELECT COUNT(*) n FROM (SELECT 1 FROM frames WHERE source_id=? GROUP BY ds, cmd HAVING SUM(crc_ok) = 0)",
+                       (src["id"],))[0]["n"]
 
     def command_values(self, source: str, ds: int, cmd: int, limit: int = 50) -> list[dict]:
         src = self.source_by_name(source)

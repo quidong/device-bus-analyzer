@@ -264,9 +264,9 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return store.runs(source)
 
     @app.get("/api/{source}/commands", dependencies=[api])
-    def api_commands(source: str):
+    def api_commands(source: str, damaged: bool = False):
         source_or_404(source)
-        return store.command_stats(source)
+        return store.command_stats(source, include_damaged=damaged)
 
     @app.get("/api/{source}/commands/{ds}/{cmd}/values", dependencies=[api])
     def api_values(source: str, ds: str, cmd: str, limit: int = 50):
@@ -674,11 +674,12 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return page(request, "runs.html", src=src, runs=list(reversed(store.runs(source))))
 
     @app.get("/s/{source}/commands", response_class=HTMLResponse, dependencies=[api])
-    def html_commands(request: Request, source: str, ds: str = "", cmd: str = ""):
+    def html_commands(request: Request, source: str, ds: str = "", cmd: str = "", damaged: str = ""):
         src = source_or_404(source)
-        stats = store.command_stats(source)
+        stats = store.command_stats(source, include_damaged=bool(damaged))
         values = store.command_values(source, parse_hex(ds, 2) or 0, parse_hex(cmd, 4) or 0) if ds and cmd else []
-        return page(request, "commands.html", src=src, stats=stats, values=values, sel=(ds, cmd))
+        return page(request, "commands.html", src=src, stats=stats, values=values, sel=(ds, cmd), damaged=bool(damaged),
+                    hidden=0 if damaged else store.damaged_only_commands(source))
 
     @app.get("/s/{source}/bursts", response_class=HTMLResponse, dependencies=[api])
     def html_bursts(request: Request, source: str, since: str = "", until: str = "", limit: int = 100, offset: int = 0, run: str = ""):
