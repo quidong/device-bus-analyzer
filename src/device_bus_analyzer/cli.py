@@ -23,6 +23,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--tz", default="Europe/Berlin")
     p.add_argument("files", nargs="+")
     sub.add_parser("rebuild", help="re-derive frames from the raw bursts")
+    pl = sub.add_parser("purge-legacy", help="delete frames without raw data (old decoded-only recordings); irreversible, make a backup first")
+    pl.add_argument("--source", required=True)
+    pl.add_argument("--yes", action="store_true", help="really delete")
     p = sub.add_parser("validate-spec")
     p.add_argument("protocol")
     bk = sub.add_parser("build-knowledge", help="write knowledge-manifest.json (version and hashes of specs, catalogue, firmware)")
@@ -119,6 +122,11 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "import":
         for f in a.files:
             print(f, import_file(store, f, a.source, a.protocol, a.date, a.tz))
+    elif a.cmd == "purge-legacy":
+        if not a.yes:
+            print("dry run, nothing deleted; legacy frames:", store.quality(a.source)["legacy"]["frames"], "(add --yes to delete)")
+            return 1
+        print("frames deleted:", store.purge_legacy(a.source))
     elif a.cmd == "rebuild":
         print("bursts re-decoded:", store.rebuild_frames())
     elif a.cmd == "collect":

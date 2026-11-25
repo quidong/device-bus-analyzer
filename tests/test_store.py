@@ -181,3 +181,17 @@ def test_command_list_hides_entries_seen_only_as_damaged_candidates(store):
     assert keys(store.command_stats("dw")) == {(0x25, 0x2008)}
     assert keys(store.command_stats("dw", include_damaged=True)) == {(0x25, 0x2008), (0x17, 0x1010)}
     assert store.damaged_only_commands("dw") == 1
+
+
+def test_purge_legacy_removes_only_frames_without_raw_data(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, raw1(1, 1000, build_frame(0x25, 0x2008, bytes(8)) + b"\x2a"), 1_000_000.0)
+    store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+                     (sid, None, None, 1.0, 0x25, 0x2000, b"\x01", 1, None))
+    store.db.commit()
+    assert store.purge_legacy("dw") == 1
+    assert store.purge_legacy("dw") == 0
+    assert [(r["ds"], r["cmd"]) for r in store.command_stats("dw", include_damaged=True)] == [(0x25, 0x2008)]
+    assert store.purge_legacy("unknown") == 0

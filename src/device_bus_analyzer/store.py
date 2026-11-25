@@ -395,6 +395,17 @@ class Store:
             "INSERT INTO heartbeats(session_id, seq, t_us, epoch, bytes, bursts, ok, crc, noack, rest, recv_ts) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (sess["id"], e["seq"], e["t_us"], e["epoch"], e["bytes"], e["bursts"], e["ok"], e["crc"], e["noack"], e["rest"], recv_ts))
 
+    def purge_legacy(self, source: str) -> int:
+        """Delete frames that have no raw data behind them (old recordings with decoded lines only). Real bursts and the
+        frames derived from them are never touched. Returns the number of deleted frames."""
+        src = self.source_by_name(source)
+        if not src:
+            return 0
+        with self.lock:
+            cur = self.db.execute("DELETE FROM frames WHERE source_id=? AND burst_id IS NULL", (src["id"],))
+            self.db.commit()
+            return cur.rowcount
+
     def rebuild_frames(self, source_id: int | None = None) -> int:
         """Re-derive frames from raw bursts, for example after the decoder improved. Raw data is never touched."""
         n = 0
