@@ -406,16 +406,6 @@ class Store:
             self.db.commit()
             return cur.rowcount
 
-    def purge_legacy_once(self, backup_dir: str | Path) -> int | None:
-        """One-time cleanup at start: save a backup, then delete frames without raw data of all sources.
-        Returns the number of deleted frames, or None if it already ran. TEMPORARY, removed again after the run."""
-        if self.kv_get("purge_legacy_done"):
-            return None
-        self.backup_to(Path(backup_dir) / "backup-before-purge-legacy.sqlite")
-        n = sum(self.purge_legacy(r["name"]) for r in self._q("SELECT name FROM sources"))
-        self.kv_set("purge_legacy_done", "1")
-        return n
-
     def rebuild_frames(self, source_id: int | None = None) -> int:
         """Re-derive frames from raw bursts, for example after the decoder improved. Raw data is never touched."""
         n = 0
