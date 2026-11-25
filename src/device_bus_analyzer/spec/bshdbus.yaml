@@ -128,7 +128,7 @@ commands:
     name: program_echo
     title: Program echo from the module
     status: confirmed
-    evidence: "byte 0 is a program id in the module; at power-on it is mostly 0x0e (Eco): 14 of 15 power-ons, also when the previous run used Auto, and once 0x0d (Auto after an Auto run), so "program used last" does not explain it reliably; the panel then sets the selection with 17/1010 + 17/1011 (0x15 in a 1 h 65 C run, 0x0d for Auto), so the echo is not the current selection once the panel has changed it"
+    evidence: "byte 0 is a program id in the module; at power-on it is mostly 0x0e (Eco): 14 of 15 power-ons, also when the previous run used Auto, and once 0x0d (Auto after an Auto run), so 'program used last' does not explain it reliably; the panel then sets the selection with 17/1010 + 17/1011 (0x15 in a 1 h 65 C run, 0x0d for Auto), so the echo is not the current selection once the panel has changed it"
     fields:
       - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
   - key: "17/1000"
