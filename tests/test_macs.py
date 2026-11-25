@@ -346,3 +346,10 @@ def test_operating_hours_and_programme_counter():
     v = spec.decode("macs", 0x2A, 0x2252, state_full(3, b6=0x43, end=0x50)[1:])["values"]
     assert v["end_type"] == "anti-crease ended by opening the door" and v["door_open"] is True
     assert spec.decode("macs", 0x2A, 0x2252, state_full(2, 1, b6=0x41)[1:])["values"]["door_open"] is False
+
+
+def test_status_of_drum_messages_and_programme_echo():
+    assert spec.decode("macs", 0x30, 0x2212, bytes.fromhex("000ac8064a0100"))["status"] == "assumed"
+    assert spec.decode("macs", 0x22, 0x3012, bytes(18))["status"] == "assumed"
+    d = spec.decode("macs", 0x2A, 0x2250, bytes.fromhex("03020000000101004b000000000200000700"))
+    assert d["status"] == "assumed" and d["values"]["program"] == "Eco"

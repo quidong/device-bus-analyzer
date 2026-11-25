@@ -30,7 +30,7 @@ devices:
   "00":
     name: "broadcast"
     status: assumed
-    evidence: "the motor inverter board sends its wake-up message 10 00 23 to 0x00 when it starts; single recording"
+    evidence: "the motor inverter board sends its wake-up message 10 00 23 to 0x00 at every start (38 times); controller and panel send 00/2210 and 00/2a10 there once per power-on; none of these is acknowledged"
 acks:
   "9":
     node: "addressed node (receiver of the acknowledged message)"
@@ -108,7 +108,7 @@ enums:
     "0x20": "off after cancel"
   panel_action:
     "0x60": "start"
-    "0x61": "programme selected (after power-on)"
+    "0x61": "programme selector turned while idle"
     "0x62": "stop / pause"
 commands:
   - key: "2a/225f"
@@ -142,13 +142,13 @@ commands:
     name: program_data_controller
     title: Programme data echo (controller to panel)
     status: assumed
-    evidence: "17-byte payload sent once at the start, same layout family as the panel message; single recording"
+    evidence: "17-byte payload sent once per start right after the start command (six starts), same layout family as the panel message 22/2a55; values not interpreted"
     fields: []
   - key: "22/2a51"
     name: panel_command
     title: Panel command (start / stop)
     status: assumed
-    evidence: "60 = start, 62 = stop or pause, 61 = programme selected after power-on; matches the start and stop pressed during the recording and the controller states 02 and 04 that followed; second recording: start, pause 4 s later (62), 3 h of silence, resume (60, byte-identical to the start message), off. Pause and stop share the value 62"
+    evidence: "60 = start, 62 = stop or pause, 61 = programme selector turned while idle (after power-on, and once after a programme had ended); matches the start and stop pressed during the recording and the controller states 02 and 04 that followed; second recording: start, pause 4 s later (62), 3 h of silence, resume (60, byte-identical to the start message), off. Pause and stop share the value 62. Start (60) was pressed on request and timed by the user twice, both times followed by state 02"
     # note: start and resume cannot be told apart on the wire
     fields:
       - {byte: 1, kind: enum, enum: panel_action, name: action, label: Action, status: assumed}
@@ -226,7 +226,7 @@ commands:
   - key: "30/2212"
     name: inverter_command
     title: Drum command (controller to motor inverter board)
-    status: unknown
+    status: assumed
     evidence: "sent about every 2 s while the bus is powered and changed whenever the drum changes: bytes 1-2 are a signed speed set point (07 30 = +1840 at the start, 0a c8 = +2760 with wet laundry, f5 38 / f8 d0 = -2760 / -1840 for a short reversal every 40 min, 07 8c / f8 74 = +-1932 for 5 s every 33 s in the anti-crease phase, 00 00 = stop); the status 22/3012 reports the same value as actual speed. Bytes 3-4 are 06 4a while turning and 09 e2 when stopping (ramp or braking profile?); byte 5 is 01 while the drum is enabled. 00 00 e6 06 4a 80 00 is the idle command before the start and after the end; two complete runs"
     fields:
       - {byte: 1, kind: s16, name: speed_setpoint, label: Drum speed set point (sign = direction), status: assumed}
@@ -235,7 +235,7 @@ commands:
   - key: "22/3012"
     name: inverter_status
     title: Drum status (motor inverter board to controller)
-    status: unknown
+    status: assumed
     evidence: "19-byte payload every 2 s while the bus is powered. Bytes 1-2: actual drum speed in the low 15 bits (8a c9 = 2761 for set point 2760, 87 8b = 1931 for 1932, 80 00 = stopped), bit 15 set once the set point is reached (clear while ramping up: 00 8c = 140). Bytes 3-4: current ramp set point. Byte 7: rose from 29 to 55 during drying and fell from 52 to 36 in the cooling and anti-crease phases, a temperature in deg C. Bytes 8-9 about 735 peak while starting, 300-400 at speed, 2-10 at rest (motor current?); bytes 10-11 follow them with a delay (power or torque?). Bytes 14-15 and 16-17: fell from about 320 to 120 during a wet run of 4.5 h, were 62-66 from the first minute with laundry that was already dry (the dryer then ended after 5 min), are 0 while the drum stops or reverses and during the whole anti-crease phase: the laundry moisture measurement (two channels); two runs"
     fields:
       - {byte: 1, kind: u16, mask: 0x7fff, name: speed, label: Drum speed (actual), status: assumed}
@@ -288,3 +288,10 @@ commands:
     status: unknown
     evidence: "once per power-on, not acknowledged"
     fields: []
+  - key: "2a/2250"
+    name: program_select_echo
+    title: Programme selection echo (controller to panel)
+    status: assumed
+    evidence: "sent once right after power-on, before the panel's own 22/2a50; its payload was byte-identical to the 22/2a50 that followed (Eco), so the controller hands the stored programme to the panel; one recording (earlier power-ons were not recorded completely)"
+    fields:
+      - {byte: 13, kind: enum, enum: program, name: program, label: Programme number, status: assumed}
