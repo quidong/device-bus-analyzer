@@ -1,11 +1,9 @@
 """Noise per bit, the hands-off baseline, bit masks in what is learned, and the guided timers (hold / rest)."""
 import sqlite3
 
-import pytest
-from test_companion import MAIL, PW, T0, login, mk
+from test_companion import T0, mk
 
 from device_bus_analyzer import analysis, catalog, learned
-from device_bus_analyzer.config import Settings
 from device_bus_analyzer.store import Store
 
 RULES = {"door_open": {"pair": "door_close", "by_note": False}, "door_close": {"pair": "door_open", "by_note": False},
@@ -123,79 +121,6 @@ def test_validation_rejects_bad_timers(monkeypatch):
                                                                                     "steps": []}]}}}
     monkeypatch.setattr(catalog, "_base", lambda: bad)
     assert any("rest/hold" in p or "incomplete" in p for p in catalog.validate_catalog())
-
-
-def test_rest_marker_is_accepted_by_the_server(tmp_path):
-    from fastapi.testclient import TestClient
-
-    from device_bus_analyzer.web import create_app
-    store = Store(tmp_path / "t.sqlite")
-    store.source("dw", "bshdbus")
-    c = TestClient(create_app(Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32, api_token="t" * 20), store), follow_redirects=False)
-    csrf = login(c)
-    r = c.post("/s/dw/markers", data={"csrf": csrf, "kind": "rest", "step_group": "g1"})
-    assert r.status_code == 200 and r.json()["kind"] == "rest"
-    assert c.post("/s/dw/markers", data={"csrf": csrf, "kind": "nonsense"}).status_code == 422
-
-
-@pytest.mark.parametrize("fast", [True])
-def test_guided_timers_in_the_real_browser(tmp_path, fast):
-    import shutil
-    import socket
-    import threading
-    import time
-
-    import uvicorn
-    pw = pytest.importorskip("playwright.sync_api")
-    chrome = shutil.which("google-chrome") or shutil.which("chromium") or shutil.which("chromium-browser")
-    if not chrome:
-        pytest.skip("no Chrome/Chromium available")
-    from device_bus_analyzer.web import create_app
-    store = Store(tmp_path / "ui.sqlite")
-    store.source("dw", "bshdbus")
-    store.save_device("dw", "bshdbus", "dishwasher", "Neff", "S413K60S0E", None)
-    sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
-    srv = uvicorn.Server(uvicorn.Config(create_app(Settings(admin_email=MAIL, admin_password=PW, session_secret="s" * 32, api_token="tok-123456"), store),
-                                        host="127.0.0.1", port=port, log_level="warning"))
-    th = threading.Thread(target=srv.run, daemon=True); th.start()
-    for _ in range(100):
-        if srv.started:
-            break
-        time.sleep(0.05)
-    try:
-        with pw.sync_playwright() as p:
-            b = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"])
-            pg = b.new_page(viewport={"width": 390, "height": 800}); errors = []
-            pg.on("pageerror", lambda e: errors.append(str(e)))
-            base = f"http://127.0.0.1:{port}"
-            pg.goto(base + "/login?lang=en"); pg.fill("input[name=email]", MAIL); pg.fill("input[name=password]", PW); pg.click("button")
-            pg.goto(base + "/s/dw/companion?lang=en&fast=1")
-            pg.click("#cp-scripts button:has-text('Open and close the door')")
-            assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-text")                                # first screen: only "Go"
-            pg.wait_for_selector("#cp-hint:has-text('sending nothing')")                                    # appliance off: Go waits
-            assert pg.is_disabled("#cp-go")
-            sid = store.source_by_name("dw")["id"]
-            store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, time.time(), 0x17, 0x1010, b"\x00\x01")); store.db.commit()
-            pg.wait_for_selector("#cp-go:enabled", timeout=8000)                                            # the bus is alive: Go is free
-            pg.click("#cp-go")
-            pg.wait_for_selector("#cp-text:has-text('Hands off')")                                          # rest phase with a countdown, no Done button
-            assert not pg.is_visible("#cp-done") and pg.is_visible("#cp-wait")
-            assert "Guided check" in pg.inner_text("#cp-check") and "Open and close the door" in pg.inner_text("#cp-check")
-            pg.wait_for_selector("#cp-progress:has-text('Step 1 of 6')")                                    # rest is over: the action comes first, no timer
-            assert pg.is_visible("#cp-done") and not pg.is_visible("#cp-wait") and "Open the door" in pg.inner_text("#cp-text")
-            assert "Nothing unusual" in pg.inner_text("#cp-hint")                                           # hint says "nothing so far" at once
-            pg.click("#cp-done")
-            pg.wait_for_selector("#cp-text:has-text('Wait')")                                               # after the action: labelled waiting + progress bar
-            assert pg.is_visible("#cp-wait") and pg.is_visible("#cp-timer .bar") and not pg.is_visible("#cp-done")
-            pg.wait_for_selector("#cp-progress:has-text('Step 2 of 6')")
-            assert pg.is_visible("#cp-done") and not pg.is_visible("#cp-wait")
-            kinds = [(m["kind"], bool(m["ts_end"])) for m in store.markers("dw")]
-            assert kinds[0] == ("rest", True) and kinds[1] == ("door_open", True) and kinds[2] == ("door_close", False)
-            n = len(store.markers("dw")); pg.click("#cp-abort")                                              # abort leaves no open step behind
-            pg.wait_for_selector("#cp-main:visible")
-            assert len(store.markers("dw")) == n - 1 and errors == []
-    finally:
-        srv.should_exit = True; th.join(5); store.close()
 
 
 def test_actions_without_any_bus_traffic_are_not_counted_as_evidence():

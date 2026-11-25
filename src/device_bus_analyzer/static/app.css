@@ -49,7 +49,7 @@ form.inline{display:inline}label.field{display:flex;flex-direction:column;gap:6p
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
 .dev,.card{display:flex;flex-direction:column;gap:16px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
 .dev .head{display:flex;align-items:center;gap:14px}.dev .tile{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:var(--acc-soft);color:var(--acc)}
-.dev .name{font-family:ui-monospace,monospace;font-weight:600;font-size:16px;overflow-wrap:anywhere}.dev .sub{color:var(--mut);font-size:14px}.dev .head>div:nth-child(2){flex:1;min-width:0}
+.dev .name{font-family:ui-monospace,monospace;font-weight:600;font-size:16px;overflow-wrap:anywhere}.dev .sub{color:var(--mut);font-size:14px}
 .dev dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}.dev dt{font-size:12px;color:var(--mut)}.dev dd{margin:0;font-size:14px}
 .dev .actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:14px;border-top:1px solid var(--line)}
 .dev.add{align-items:center;justify-content:center;min-height:220px;border:2px dashed var(--line2);background:transparent;color:var(--mut);cursor:pointer}.dev.add strong{color:var(--fg)}
@@ -117,15 +117,8 @@ form.wizard .steps{display:grid}form.wizard fieldset[hidden]{display:none}.only-
 [hidden]{display:none!important}
 label.chk,label.field.chk{display:flex;flex-direction:row!important;align-items:center;gap:10px;font-weight:400}label.chk input{width:20px;flex:none}
 
-/* companion + learn */
-.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
-button.ev{min-height:64px;padding:10px 12px;font-weight:600;border-radius:14px;border:1px solid var(--line2);background:var(--surface);color:var(--fg);cursor:pointer;text-align:center}
-button.ev:active,button.ev:hover{border-color:var(--acc);background:var(--acc-soft)}
-button.big{min-height:64px;font-size:18px;flex:1}
-.step h2{font-size:22px;margin:0}.cp-block{margin:22px 0;display:flex;flex-direction:column;gap:10px}.cp-block h2{margin:0;font-size:18px}
-.mklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.mklist li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+/* learn */
 button.icon{min-height:36px;min-width:36px;padding:0;font-size:20px;line-height:1}
-details.custom summary{cursor:pointer;font-weight:600;padding:8px 0}.stackf{display:flex;flex-direction:column;gap:10px;margin-top:8px}
 .actions{display:flex;flex-wrap:wrap;gap:10px}
 tr.mk td{background:var(--acc-soft);color:var(--acc-ink)}.mkdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--acc);margin-right:8px}
 table.stack tr.mk td{display:block;padding:10px 14px}
@@ -149,12 +142,8 @@ dl .now{grid-column:1/-1}
 .menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 12px;font-size:14px}
 select.langsel{min-height:36px;padding:0 8px}
 .top>.right{margin-left:auto}
-details.more{position:relative;display:inline-block}details.more>summary{list-style:none;cursor:pointer}details.more>summary::-webkit-details-marker{display:none}
-details.more .pop{position:absolute;right:0;bottom:48px;z-index:15;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
 .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .actions .btn,.actions button{min-height:44px}
-.menu a.danger-item{color:var(--bad)}
-.bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden;max-width:420px}.bar span{display:block;height:100%;width:0;background:var(--acc);transition:width .3s linear}
 
 .menu .grp{padding:4px 0;border-top:1px solid var(--line)}.menu .who+.grp,.menu .who+.grp.mobile-only{border-top:0}
 .menu .gh{padding:6px 12px 2px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
@@ -163,3 +152,23 @@ details.more .pop{position:absolute;right:0;bottom:48px;z-index:15;min-width:200
 .menu-row select{max-width:150px}
 .crumb{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 12px 0 8px;color:var(--acc-ink);text-decoration:none;font-weight:600;border-radius:10px}.crumb:hover{background:var(--acc-soft)}
 .brand{margin-right:4px}
+
+/* device card: icon and name open the device, uniform icon buttons, analysed share */
+.onboarding{margin-bottom:24px}
+.devlink{display:flex;align-items:center;gap:14px;flex:1;min-width:0;color:inherit;text-decoration:none;border-radius:12px}
+.devlink .who{display:flex;flex-direction:column;min-width:0}.devlink:hover .name,.devlink:focus-visible .name{color:var(--acc);text-decoration:underline}
+.devlink:hover .tile{background:var(--acc);color:var(--on-acc)}
+.iconbar{gap:8px}.iconbar form.inline{display:contents}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;width:44px;min-width:44px;min-height:44px;height:44px;padding:0;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--fg);cursor:pointer;text-decoration:none}
+.ibtn:hover,.ibtn:focus-visible{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-ink)}
+.ibtn.danger{margin-left:auto}.ibtn.danger:hover,.ibtn.danger:focus-visible{border-color:var(--bad);background:transparent;color:var(--bad)}
+.analysed dd{display:flex;align-items:center;gap:8px}
+.analysed progress{flex:1;min-width:40px;max-width:120px;height:6px;border:0;border-radius:3px;background:var(--line);overflow:hidden;appearance:none;-webkit-appearance:none}
+.analysed progress::-webkit-progress-bar{background:var(--line);border-radius:3px}.analysed progress::-webkit-progress-value{background:var(--acc);border-radius:3px}
+.analysed progress::-moz-progress-bar{background:var(--acc);border-radius:3px}
+/* prompts on the AI connection page */
+.prompts{display:grid;gap:14px}.prompts pre.code{white-space:pre-wrap;word-break:break-word}
+.chips.devpick{margin:6px 0 14px}
+a.chip{color:var(--fg);text-decoration:none}a.chip.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
+.onboarding h2,.onboarding>p{margin:0}
+main>section.card+section.card{margin-top:16px}

@@ -5,7 +5,7 @@
 <div class="tbl"><table class="stack"><tr><th>{{ t.meaning }}</th><th>{{ t.ha_now }}</th></tr>
 {% for f in fields %}<tr><td data-label="{{ t.meaning }}">{{ f.label }}</td><td data-label="{{ t.ha_now }}">{% if f.kind == 'value' %}{{ f.value if f.value is not none else '–' }}{% if f.unit %} {{ f.unit }}{% endif %}{% else %}{{ f.text or ('raw ' ~ f.raw if f.raw is not none else '–') }}{% endif %}</td></tr>{% endfor %}</table></div>
 <ol class="steps-list"><li>{{ t.ha_step1 }}</li><li>{{ t.ha_step2 }}</li></ol>
-<section class="fw"><header><strong>configuration.yaml</strong><button type="button" class="copy" data-target="ha-yaml" data-ok="{{ t.copied }}">{{ t.copy }}</button></header>
+<section class="fw"><header><strong>configuration.yaml</strong><button type="button" class="copy" data-target="ha-yaml" data-ok="{{ t.copied }}">{{ t['copy'] }}</button></header>
 <pre class="code" id="ha-yaml" tabindex="0"><code>{{ yaml_text }}</code></pre></section>
 <script src="/static/firmware.js"></script>{% endif %}
 {% endblock %}

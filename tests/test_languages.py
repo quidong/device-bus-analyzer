@@ -43,4 +43,4 @@ def test_pages_render_in_the_new_languages_and_the_switcher_lists_all(client, la
         assert f">{name}</option>" in html
     assert f'<option value="{lang}" selected>' in html
     assert word in client.get("/s/dw/frames", params={"lang": lang}).text
-    assert i18n.STR[lang]["cp_title"] in client.get("/s/dw/companion", params={"lang": lang}).text
+    assert i18n.STR[lang]["mcp_prompts_title"].replace("'", "&#39;") in client.get("/mcp", params={"lang": lang}).text

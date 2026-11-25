@@ -4,5 +4,5 @@
 <ol class="steps-list">{% for i in range(1, 8) %}<li>{{ t['help_step' ~ i] }}</li>{% endfor %}</ol>
 <h2>{{ t.help_why_title }}</h2><p>{{ t.help_why }}</p>
 <h2>{{ t.help_share_title }}</h2><p>{{ t.help_share }}</p>
-<p><a class="btn primary" href="/devices">{{ t.devices }}</a></p>
+<p class="actions"><a class="btn primary" href="/mcp#prompts">{{ t.mcp_prompts_title }}</a><a class="btn" href="/devices">{{ t.devices }}</a></p>
 {% endblock %}

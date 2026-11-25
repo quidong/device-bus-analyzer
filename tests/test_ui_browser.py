@@ -1,4 +1,4 @@
-"""Real-browser check of the companion and the responsive layout (skipped when Playwright or Chrome is not installed)."""
+"""Real-browser check of the device overview, the device dialog and the responsive layout (skipped when Playwright or Chrome is not installed)."""
 import shutil
 import socket
 import threading
@@ -37,52 +37,41 @@ def server(tmp_path):
 
 
 @pytest.mark.parametrize("width", [1100, 390])
-def test_guided_run_and_pages_without_overflow(server, width):
+def test_overview_layout_and_pages_without_overflow(server, width):
     base, store = server
+    sid = store.source_by_name("dw")["id"]
+    for i, cmd in enumerate([0x1010, 0x1010, 0x1010, 0x7777]):        # 0x7777 is not in the spec: 3 of 4 telegrams are analysed at most
+        store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, time.time() - 10 + i, 0x17, cmd, b"\x00\x01"))
+    store.db.commit()
     with pw.sync_playwright() as p:
         b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
         pg = b.new_page(viewport={"width": width, "height": 800}); errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.goto(base + "/login?lang=en"); pg.fill("input[name=email]", MAIL); pg.fill("input[name=password]", PW); pg.click("button")
-        for path in ("/", "/devices", "/s/dw/companion", "/s/dw/learn", "/s/dw/timeline", "/firmware/bshdbus", "/help", "/backup", "/mcp", "/s/dw/homeassistant"):
+        for path in ("/", "/devices", "/s/dw/runs", "/s/dw/learn", "/s/dw/timeline", "/firmware/bshdbus", "/help", "/backup", "/mcp", "/s/dw/homeassistant"):
             for lang in ("en", "fr"):               # fr: the longest strings
                 pg.goto(base + path + "?lang=" + lang)
                 assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0, (path, width, lang)
-        pg.goto(base + "/s/dw/companion?lang=en&fast=1")                   # fast=1: every timer runs at a quarter of the time
-        pg.fill("#cp-menu", "Main menu")
-        pg.click("button.ev:has-text('Start pressed')")
-        pg.wait_for_selector("#cp-list li:has-text('Start pressed')")
-        pg.click("button.ev:has-text('Program selected')")
-        assert pg.is_visible("#cp-ask"); pg.fill("#cp-ask-note", "Eco 50"); pg.click("#cp-ask-ok")
-        pg.wait_for_selector("#cp-list li:has-text('Eco 50')")
-        kinds = [m["kind"] for m in store.markers("dw")]
-        assert kinds == ["start", "program"] and store.markers("dw")[0]["menu"] == "Main menu"
-        # guided door check: 3 rounds x (open, close)
-        import time as _t
-        sid = store.source_by_name("dw")["id"]
-        store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, _t.time(), 0x17, 0x1010, b"\x00\x01")); store.db.commit()   # the appliance is alive
-        pg.click("#cp-scripts button:has-text('Open and close the door')")
-        pg.wait_for_selector("#cp-go:enabled")
-        assert pg.is_visible("#cp-go") and not pg.is_visible("#cp-done") and not pg.is_visible("#cp-text")      # first screen: only "Go", no instruction
-        assert not pg.is_visible("#cp-lead")
-        pg.click("#cp-go")
-        pg.wait_for_selector("#cp-text:has-text('Hands off')")        # 90 s hands-off phase first (measures the noise), then the steps
-        for i in range(6):                                          # "Go" once; every step then shows its instruction and "Done"
-            pg.wait_for_selector("#cp-done:visible")
-            assert pg.is_visible("#cp-text") and not pg.is_visible("#cp-go")
-            assert ("Open the door" if i % 2 == 0 else "Close the door") in pg.inner_text("#cp-text")
-            pg.click("#cp-done")
-            if i < 5:
-                pg.wait_for_selector("#cp-progress:has-text('Step %d of')" % (i + 2))
-        pg.wait_for_selector("#cp-end:visible")
-        done = store.markers("dw")[3:]
-        assert store.markers("dw")[2]["kind"] == "rest" and store.markers("dw")[2]["ts_end"]
-        assert [m["kind"] for m in done] == ["door_open", "door_close"] * 3 and all(m["ts_end"] and m["step_group"] for m in done)
-        assert pg.is_visible("#cp-end a[href$='/learn']")
-        # a started step that is aborted leaves nothing behind
-        pg.click("#cp-again"); pg.click("#cp-scripts button:has-text('Open and close the door')"); pg.click("#cp-go"); pg.wait_for_selector("#cp-done:visible", timeout=15000)
-        n = len(store.markers("dw")); pg.click("#cp-abort"); pg.wait_for_function("document.getElementById('cp-step').hidden")
-        assert len(store.markers("dw")) == n - 1
+        pg.goto(base + "/devices?lang=en")
+        # getting started and the device cards do not touch
+        onb, cards = pg.locator("section.onboarding").bounding_box(), pg.locator("div.cards").bounding_box()
+        assert cards["y"] - (onb["y"] + onb["height"]) >= 16
+        # every action is an icon button of the same size, with a tooltip and no text
+        boxes = [pg.locator("article.dev .ibtn").nth(i).bounding_box() for i in range(pg.locator("article.dev .ibtn").count())]
+        assert len(boxes) >= 4 and len({(round(x["width"]), round(x["height"])) for x in boxes}) == 1
+        assert all(pg.locator("article.dev .ibtn").nth(i).inner_text().strip() == "" for i in range(len(boxes)))
+        assert pg.locator("article.dev details").count() == 0
+        # analysed share instead of the telegram count
+        txt = pg.inner_text("article.dev .analysed dd")
+        assert "%" in txt and int(txt.split("%")[0].strip()) <= 75 and pg.locator("article.dev .analysed progress").count() == 1
+        # icon and name open the device
+        pg.click("article.dev a.devlink .name"); pg.wait_for_url("**/s/dw/runs")
+        pg.goto(base + "/devices?lang=en"); pg.click("article.dev a.devlink .tile"); pg.wait_for_url("**/s/dw/runs")
+        assert pg.locator("a[href$='/companion']").count() == 0
+        # prompts on the AI connection page: device name filled in, copy works
+        pg.goto(base + "/mcp?lang=en")
+        assert pg.locator(".prompts pre").count() == 6 and '"dw"' in pg.inner_text("#mcp-p2")
+        pg.click(".prompts button.copy >> nth=0"); pg.wait_for_selector(".prompts button.copy:has-text('Copied')")
         assert errors == []
         b.close()
 
@@ -111,6 +100,8 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         pg.goto(base + "/devices?lang=en"); pg.click("#new-device"); pg.wait_for_selector("#device-dialog", state="visible")
         pg.click("#device-dialog label:has-text('Dryer')"); _wizard_next(pg)
         pg.click("#device-dialog label:has-text('AEG')"); _wizard_next(pg)
+        if pg.is_visible("#wz-next"):                    # phone: the model is required before the next step
+            pg.click("#wz-next"); assert pg.is_visible("#f-model") and not pg.is_visible("#f-name")
         pg.fill("#f-model", "T8DEE"); _wizard_next(pg)
         pg.fill("#f-name", "dry1"); pg.fill("#f-host", "dry1.lan"); pg.fill("#f-key", key)
         assert pg.is_visible("#save"); pg.click("#save")
@@ -126,7 +117,7 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         assert dl.value.suggested_filename == "macs_recorder.h"
         assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
         # --- edit: protocol stays fixed, model changes
-        pg.goto(base + "/devices?lang=en"); pg.click(".edit-device >> nth=0"); pg.wait_for_selector("#device-dialog", state="visible")
+        pg.goto(base + "/devices?lang=en"); pg.click("article.dev:has(a[href='/devices/dry1/delete']) .ibtn.edit-device"); pg.wait_for_selector("#device-dialog", state="visible")
         assert pg.input_value("#f-name") == "dry1" and pg.input_value("#f-model") == "T8DEE"
         while not pg.is_visible("#f-model"):          # phone: walk to the model step
             pg.click("#wz-next")
@@ -137,7 +128,7 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         assert store.device("dry1")["model"] == "T8DEE-2"
         assert store.db.execute("SELECT d.key FROM devices d JOIN sources s ON s.id=d.source_id WHERE s.name='dry1'").fetchone()[0] == key           # an empty key field keeps the key
         # --- pause keeps the device, resume
-        pg.goto(base + "/devices?lang=en"); pg.click("article.dev:has(a[href='/devices/dry1/delete']) details.more summary"); pg.click("form[action='/devices/dry1/enabled'] button")
+        pg.goto(base + "/devices?lang=en"); pg.click("form[action='/devices/dry1/enabled'] button.ibtn")
         pg.wait_for_url("**/devices**"); assert store.device("dry1")["enabled"] is False
         # --- learn: companion data on the other device, accept a finding
         put_frames(store, "dw", series(door))
@@ -149,7 +140,7 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
         pg.wait_for_url("**/learn#learned")
         assert [f["meaning"] for f in store.learned("dw")] == ["Door state"]
         # --- delete: typed name required
-        pg.goto(base + "/devices?lang=en"); pg.click("article.dev:has(a[href='/devices/dry1/delete']) details.more summary"); pg.click("a[href='/devices/dry1/delete']")
+        pg.goto(base + "/devices?lang=en"); pg.click("a.ibtn[href='/devices/dry1/delete']")
         pg.fill("input[name=confirm]", "wrong"); pg.click("button.danger")
         assert store.device("dry1") is not None
         pg.fill("input[name=confirm]", "dry1"); pg.click("button.danger"); pg.wait_for_url("**/devices")

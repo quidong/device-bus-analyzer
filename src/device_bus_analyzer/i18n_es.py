@@ -158,41 +158,11 @@ more | Más
 choose | Elige una opción.
 model_hint | Sugerencias del catálogo. Tus propios valores se ofrecerán de nuevo la próxima vez.
 brand_other_note | Otros fabricantes requieren elegir un decodificador.
-companion | Acompañante
-cp_title | Acompañante
-cp_intro | Colócate junto al aparato e indica a la app lo que haces. Cada acción se mide en el servidor y se compara con el tráfico del bus. No se envía nada al aparato.
-cp_tip | Consejo: deja el aparato en reposo unos dos minutos antes de empezar, para que el análisis sepa qué valores cambian solos.
-cp_guided | Comprobaciones guiadas
-cp_guided_hint | Cada paso se cronometra de «Ya» a «Hecho», así que tu tiempo de reacción no importa.
-cp_free | Marcar una acción
-cp_menu_label | Menú / pantalla (opcional)
-cp_menu_hint | ¿En qué parte del menú estás? Se guarda con cada acción.
-cp_go | Ya
-cp_done | Hecho
-cp_abort | Parar
-cp_step | Paso {} de {}
-cp_round | Ronda {}
-cp_doing | Hazlo ahora y pulsa Hecho.
-cp_note_label | ¿Qué muestra la pantalla / qué opción?
-cp_note_needed | Introdúcelo primero.
-cp_hint_none | Aún no se ve nada inusual en el bus.
-cp_hint_some | Se ven {} cambio(s) inusual(es) en el bus.
-cp_hint_nobase | Aún hay pocos datos en reposo para juzgar.
-cp_finished | Todos los pasos hechos.
-cp_results | Ver resultados
-cp_recent | Marcado recientemente
-cp_custom | Otra acción
-cp_custom_label | ¿Qué has hecho?
-cp_add | Marcar
-cp_empty | Aún no hay nada marcado.
-cp_remove | Quitar
-cp_error | No ha funcionado. ¿Inicias sesión de nuevo?
-cp_tap_note | Introduce el detalle y pulsa Marcar.
 cp_duration | {} s
 learn | Aprendido
 learn_title | Lo que dice el bus
 learn_intro | Para cada acción se comparan los bytes de antes y después. Un byte cuenta cuando cambia una y otra vez con la misma acción y no cambia por sí solo. Las acciones opuestas (abierta / cerrada) deben devolver el mismo byte a su valor.
-learn_none | Aún no hay acciones marcadas. Abre el acompañante y marca lo que haces.
+learn_none | No hay acciones registradas para este aparato.
 learn_few_base | Hay muy poco tiempo en reposo en la grabación para distinguir ruido de efecto. Deja el aparato en reposo un par de minutos y repite.
 learn_stats | {} acciones, {} telegramas, {} ventanas en reposo
 hits | Aciertos
@@ -208,18 +178,15 @@ export_note | La exportación contiene solo lo que aceptaste: direcciones, posic
 no_candidates | Ningún byte cambió de forma fiable con esta acción.
 events_title | Telegramas vistos solo con esta acción
 actions | Acciones
-open_companion | Abrir el acompañante
 not_accepted | Aún no hay suficiente evidencia
 times | veces
 of_n | de
-cp_what | Acción
 state_now | Ahora
 values_title | Valores de la pantalla
 values_intro | Estos bytes siguen los números que lees en la pantalla (tiempo restante, temperatura). Acepta uno para ver el valor en las listas de telegramas y en el dispositivo.
 encoding | Formato
 unit | Unidad
 display_value | Valor de la pantalla
-need_readings | Lee la pantalla al menos cuatro veces con valores distintos (comprobación guiada «Leer la pantalla»).
 spec_suggestion | Propuesta de especificación (YAML)
 ha_title | Home Assistant
 ha_intro | Todo lo que enseñaste a la app, como valores actuales para Home Assistant. Home Assistant los lee de este servidor con el token de API; nunca se contacta con el aparato.
@@ -229,19 +196,19 @@ ha_step1 | Pon el token de API en secrets.yaml como dba_bearer (valor: Bearer y 
 ha_step2 | Añade el YAML de abajo a configuration.yaml y reinicia o recarga Home Assistant.
 help_link | Ayuda
 backup_link | Copia de seguridad
-help_title | Cómo grabar un buen ciclo
-help_intro | Unos minutos de cuidado junto al aparato hacen fiables los hallazgos.
-help_step1 | Crea el dispositivo (tipo, fabricante, modelo) y flashea el firmware recomendado. Espera a que la tarjeta del dispositivo muestre datos.
-help_step2 | Abre el acompañante e inicia una comprobación guiada, por ejemplo puerta abierta y cerrada. Haz cada acción en el aparato justo cuando la app lo pida.
-help_step3 | Repite cada acción al menos tres veces, con unos segundos de pausa entre ellas. Las repeticiones convierten una suposición en un hallazgo confirmado.
-help_step4 | Para ciclos de programa: inicia el marcador, pulsa el botón del aparato y pulsa Hecho en cuanto reaccione. Un marcador por pulsación.
-help_step5 | Para valores de pantalla: lee la pantalla e introdúcela cinco veces mientras cambia (tiempo restante, temperatura).
-help_step6 | Abre Aprendido, revisa las propuestas y acepta las que coincidan con lo que viste. Las propuestas erróneas se pueden borrar de nuevo.
-help_step7 | Exporta los hallazgos: no contienen telegramas, horas, direcciones ni claves y se pueden enviar al proyecto.
+help_title | De la grabación al hallazgo
+help_intro | La aplicación solo graba y decodifica lo que ya conoce. El análisis lo hace Claude a través de la conexión IA (MCP).
+help_step1 | Crea el aparato. Tipo, fabricante y modelo son obligatorios, porque deciden qué es general y qué es específico del modelo. Graba el firmware recomendado y espera a que la tarjeta muestre datos.
+help_step2 | Graba ciclos completos: elige un programa, inícialo y deja que termine. Apunta lo que haces en el aparato y cuándo (p. ej. «20:14 puerta abierta»).
+help_step3 | Repite las acciones interesantes varias veces con unos segundos de pausa. Las repeticiones convierten una suposición en un hallazgo confirmado.
+help_step4 | Conecta Claude: menú de cuenta → Conexión IA. Instala la extensión e introduce la dirección y el token de API.
+help_step5 | Deja que Claude analice el ciclo. Hay prompts de ejemplo en la página Conexión IA; añade tus notas con la hora.
+help_step6 | «Analizado» en la tarjeta del aparato muestra cuántas tramas explica ya la especificación o un hallazgo aceptado.
+help_step7 | Comparte lo que hayas averiguado con el proyecto (ver abajo), para que los siguientes empiecen con más conocimiento.
 help_why_title | ¿Por qué tanto cuidado?
-help_why | La app solo escucha. Compara los bytes de antes y después de tu acción con el ruido normal del bus; una buena sincronización y las repeticiones hacen fiable esa comparación.
-help_share_title | Compartir
-help_share | Usa la exportación de la página Aprendido, o la propuesta de especificación, y añade el archivo en contributions/ del repositorio del proyecto.
+help_why | La aplicación solo escucha y nunca envía nada al aparato. Claude compara las tramas con tus notas y la especificación existente; horas exactas y repeticiones hacen fiable la comparación.
+help_share_title | Compartir con el proyecto
+help_share | Hay dos caminos. O bien aportar ciclos completos: Claude exporta un ciclo con tiempos relativos al inicio y sin nombres de host, direcciones ni claves, y lo adjuntas a un issue. O bien compartir hallazgos analizados: Claude escribe un archivo de contribución para contributions/ (tipo, fabricante, modelo, posiciones de bytes con estado; sin tramas, horas, direcciones ni claves). La CI comprueba cada archivo.
 backup_title | Copia de seguridad
 backup_download | Descargar una copia de seguridad
 backup_download_intro | Una copia consistente de todos los dispositivos, telegramas, marcadores y hallazgos en un solo archivo.
@@ -261,8 +228,6 @@ backup_err_too_big | El archivo es demasiado grande.
 onb_title | Primeros pasos
 onb_device | Crear un dispositivo
 onb_data | Recibir los primeros telegramas
-onb_marker | Grabar una acción en el acompañante
-onb_learned | Aceptar un hallazgo en la página Aprendido
 mcp_link | Conexión con IA
 mcp_title | Conexión con IA (MCP)
 mcp_intro | Para que Claude pueda leer y analizar tus grabaciones necesita la extensión y dos datos: la dirección de esta instalación y el token de API. La extensión solo lee y nunca envía nada a un dispositivo.
@@ -321,16 +286,9 @@ mcp_ca | Si el analizador usa HTTPS con su propia CA, selecciona también el cer
 kn_sig | Firma
 kn_sig_on | Las actualizaciones deben estar firmadas con la clave del proyecto (Ed25519)
 kn_sig_off | no exigida: solo sumas de verificación por HTTPS
-cp_rest | No toques nada: se mide el ruido propio del aparato.
-cp_wait | Faltan {} s
 account | Cuenta y ajustes
 language | Idioma
 live_note | Se actualiza automáticamente
-cp_check | Comprobación guiada: {}
-cp_waiting | Espera: no toques nada
-cp_phase_rest | Midiendo el reposo
-cp_manual | Marcar manualmente
-cp_manual_hint | Para observaciones libres en el aparato. Consejo: deja el aparato en reposo unos dos minutos antes, para que el análisis sepa qué valores cambian solos.
 cfg_link | Ajustes
 cfg_title | Ajustes
 cfg_intro | Cambia aquí los valores de la instalación sin editar el stack. Lo guardado aquí prevalece sobre las variables del stack.
@@ -367,6 +325,26 @@ menu_account | Cuenta
 menu_connect | Conexiones
 menu_system | Sistema
 learn_silent | Sin reacción del aparato (no contadas, ¿estaba encendido?): {}
-cp_off | El aparato no envía nada: ¿está apagado? Enciéndelo (pantalla «listo»). Entonces se activa «Inicio».
-cp_off_run | Atención: el aparato dejó de enviar: ¿se apagó? Si no, esta acción no cuenta.
+need_class | Indica tipo, fabricante y modelo: deciden qué es general y qué es específico del modelo.
+analysed | Analizado
+analysed_of | {} de {} tramas están explicadas por la especificación o un hallazgo aceptado ({} confirmadas).
+open_device | Abrir aparato
+onb_run | Grabar un ciclo completo (iniciar un programa y dejar que termine)
+onb_mcp | Conectar Claude (conexión IA) y dejar que analice el ciclo
+mcp_prompts_title | Prompts para el análisis
+mcp_prompts_intro | Copia un prompt en Claude y sustituye las partes entre corchetes angulares. Cuanto más exactas tus horas, más fiable la respuesta.
+mcp_prompt_device | Aparato en los ejemplos
+mcp_device_ph | <aparato>
+mcp_p1_title | Visión general
+mcp_p1 | Usa el Device Bus Analyzer para darme una visión general del aparato «{}»: ¿qué ciclos hay, qué comandos aparecen y cuáles siguen siendo desconocidos según la especificación?
+mcp_p2_title | Analizar un ciclo con mis acciones
+mcp_p2 | Analiza el último ciclo completo de «{}». Durante él hice lo siguiente (hora – acción, una por línea): <...>. ¿Qué bytes cambian de acuerdo con mis acciones y con qué seguridad (repeticiones, ruido del bus)?
+mcp_p3_title | Encontrar valores de pantalla
+mcp_p3 | Busca en los ciclos de «{}» valores que coincidan con el tiempo restante o la temperatura de la pantalla. Leí estos valores (hora – valor): <...>. Indica comando, posición de byte, codificación y factor.
+mcp_p4_title | Interpretar comandos desconocidos
+mcp_p4 | ¿Qué comandos de «{}» son desconocidos pero aparecen a menudo? Propón un significado para los tres más frecuentes y justifícalo con sus valores a lo largo de los ciclos.
+mcp_p5_title | Compartir hallazgos (archivo de contribución)
+mcp_p5 | Resume los hallazgos fiables sobre «{}» como archivo de contribución con el formato de la carpeta contributions/ del proyecto (tipo, fabricante, modelo, hallazgos con posición de byte y estado). Sin tramas, marcas de tiempo, direcciones ni claves.
+mcp_p6_title | Compartir un ciclo completo
+mcp_p6 | Exporta el ciclo <n.º> de «{}» como CSV: tiempo en segundos desde el inicio del ciclo, destino, comando y datos (hex), además de programa y tipo, fabricante y modelo. Sin nombres de host, direcciones IP ni claves.
 """

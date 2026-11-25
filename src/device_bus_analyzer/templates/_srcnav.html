@@ -1,7 +1,5 @@
 {% set path = request.url.path %}
 {% set links = [
- ('/s/' ~ src.name ~ '/companion', t.companion, 'companion', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="6" y="2.5" width="10" height="17" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M9 6h4M9 10h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="11" cy="15.5" r="1.2" fill="currentColor"/></svg>'),
- ('/s/' ~ src.name ~ '/learn', t.learn, 'learn', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M4 17V9m5 8V5m5 12v-6m5 6V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'),
  ('/s/' ~ src.name ~ '/runs', t.runs, 'runs', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M4 11h4l2-6 3 12 2-6h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
  ('/s/' ~ src.name ~ '/frames', t.frames, 'frames', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="3" y="4" width="16" height="4" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="10" width="16" height="4" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="16" width="16" height="3" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>'),
  ('/s/' ~ src.name ~ '/timeline', t.timeline, 'timeline', '<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 17l5-6 4 3 7-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'),
@@ -9,6 +7,8 @@
  ('/s/' ~ src.name ~ '/bursts', t.bursts, 'bursts', ''),
  ('/s/' ~ src.name ~ '/quality', t.quality, 'quality', ''),
  ('/s/' ~ src.name ~ '/spec', t.findings, 'spec', '') ] %}
+{# "Learned" only for devices that still hold actions or findings from the former companion #}
+{% if src.has_learn %}{% set links = links + [('/s/' ~ src.name ~ '/learn', t.learn, 'learn', '')] %}{% endif %}
 <nav class="subnav" aria-label="{{ src.name }}"><span class="src-name">{{ src.name }}</span>
 {% for href, label, key, icon in links %}<a href="{{ href }}" {% if path.endswith('/' ~ key) %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
 <nav class="bottom" aria-label="{{ src.name }}">

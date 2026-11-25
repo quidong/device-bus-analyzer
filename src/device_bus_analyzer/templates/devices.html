@@ -8,28 +8,34 @@
 <div class="pagehead"><h1>{{ t.devices_title }}</h1><button type="button" id="new-device" class="primary">+ {{ t.new_device }}</button></div>
 <p class="lead">{{ t.dev_note }}</p>
 {% if error %}<p class="err" role="alert">{{ t[error] }}</p>{% endif %}
-{% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks" data-live="onboarding">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {{ t['onb_' ~ key] }}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}
+{% macro ico(name) %}<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+{% if name == 'frames' %}<rect x="3" y="3.5" width="14" height="3.5" rx="1.2"/><rect x="3" y="8.5" width="14" height="3.5" rx="1.2"/><rect x="3" y="13.5" width="14" height="3" rx="1.2"/>
+{% elif name == 'ha' %}<path d="M3 9.5L10 3.5l7 6"/><path d="M5 8v8.5h10V8"/><path d="M8.5 16.5v-4h3v4"/>
+{% elif name == 'firmware' %}<rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M8 2.5v3M12 2.5v3M8 14.5v3M12 14.5v3M2.5 8h3M2.5 12h3M14.5 8h3M14.5 12h3"/>
+{% elif name == 'pause' %}<path d="M7.5 4.5v11M12.5 4.5v11"/>
+{% elif name == 'resume' %}<path d="M6.5 4.5l9 5.5-9 5.5z"/>
+{% elif name == 'edit' %}<path d="M13.5 3.5l3 3L7 16H4v-3z"/><path d="M11.5 5.5l3 3"/>
+{% elif name == 'delete' %}<path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.8 11h7.4l.8-11M8.5 8.5v5M11.5 8.5v5"/>{% endif %}</svg>{% endmacro %}
+{% if onboarding %}<section class="card onboarding"><h2>{{ t.onb_title }}</h2><ol class="checks" data-live="onboarding">{% for key, ok in onboarding %}<li class="{{ 'done' if ok else 'todo' }}"><span aria-hidden="true">{{ '✓' if ok else '○' }}</span> {% if key == 'mcp' and not ok %}<a href="/mcp">{{ t['onb_' ~ key] }}</a>{% else %}{{ t['onb_' ~ key] }}{% endif %}</li>{% endfor %}</ol><p><a href="/help">{{ t.help_link }}</a></p></section>{% endif %}
 <div class="cards" data-live-keys="{{ devices|map(attribute='name')|join(',') }}">
 {% for d in devices %}<article class="dev">
-<div class="head"><div class="tile">{{ tile(d.type) }}</div>
-<div><div class="name">{{ d.name }}</div>
-<div class="sub">{% if d.type or d.manufacturer %}{% if d.type %}{{ catalog.types[d.type][lang] if d.type in catalog.types else d.type }}{% endif %}{% if d.manufacturer or d.model %} · {{ d.manufacturer or '' }} {{ d.model or '' }}{% endif %}{% else %}{{ t.unclassified }}{% endif %}</div></div>
+<div class="head"><a class="devlink" href="/s/{{ d.name }}" title="{{ t.open_device }}"><span class="tile">{{ tile(d.type) }}</span>
+<span class="who"><span class="name">{{ d.name }}</span>
+<span class="sub">{% if d.type or d.manufacturer %}{% if d.type %}{{ catalog.types[d.type][lang] if d.type in catalog.types else d.type }}{% endif %}{% if d.manufacturer or d.model %} · {{ d.manufacturer or '' }} {{ d.model or '' }}{% endif %}{% else %}{{ t.unclassified }}{% endif %}</span></span></a>
 <span data-live="state-{{ d.name }}"><span class="badge b-{{ d.state }}">{{ t['st_' ~ d.state] }}</span></span></div>
-{% if not d.type or not d.manufacturer %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
+{% if not d.type or not d.manufacturer or not d.model %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
 <dl data-live="values-{{ d.name }}"><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
 <div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
-<div><dt>{{ t.frames }}</dt><dd><b>{{ d.frames }}</b></dd></div>
+<div class="analysed"><dt>{{ t.analysed }}</dt><dd title="{{ t.analysed_of.format(d.analysed.known, d.analysed.total, d.analysed.confirmed) }}">{% if d.analysed.pct is none %}–{% else %}<b>{{ d.analysed.pct }} %</b> <progress max="100" value="{{ d.analysed.pct }}" aria-label="{{ t.analysed }}">{{ d.analysed.pct }} %</progress>{% endif %}</dd></div>
 <div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div>
 {% if d.now %}<div class="now"><dt>{{ t.state_now }}</dt><dd>{% for x in d.now %}<span class="tag learned">{{ x }}</span> {% endfor %}</dd></div>{% endif %}</dl>
-<div class="actions">
-<a class="btn primary" href="/s/{{ d.name }}/companion">{{ t.companion }}</a>
-<a class="btn" href="/s/{{ d.name }}/frames">{{ t.frames }}</a>
-{% if d.now %}<a class="btn" href="/s/{{ d.name }}/homeassistant">{{ t.ha_title }}</a>{% endif %}
-<button type="button" class="edit-device" {{ editdata(d) }}>{{ t.edit }}</button>
-<details class="more"><summary class="btn" aria-label="{{ t.more }}" title="{{ t.more }}">&#8943;</summary><div class="pop menu">
-<a href="/firmware/{{ d.protocol }}?device={{ d.name }}">{{ t.firmware }}</a>
-{% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button class="menu-item">{{ t.pause if d.enabled else t.resume }}</button></form>{% endif %}
-<a class="danger-item" href="/devices/{{ d.name }}/delete">{{ t.delete }}</a></div></details>
+<div class="actions iconbar">
+<a class="ibtn" href="/s/{{ d.name }}/frames" title="{{ t.frames }}" aria-label="{{ t.frames }}">{{ ico('frames') }}</a>
+{% if d.now %}<a class="ibtn" href="/s/{{ d.name }}/homeassistant" title="{{ t.ha_title }}" aria-label="{{ t.ha_title }}">{{ ico('ha') }}</a>{% endif %}
+<a class="ibtn" href="/firmware/{{ d.protocol }}?device={{ d.name }}" title="{{ t.firmware }}" aria-label="{{ t.firmware }}">{{ ico('firmware') }}</a>
+{% if d.host %}<form class="inline" method="post" action="/devices/{{ d.name }}/enabled"><input type="hidden" name="csrf" value="{{ logout_csrf }}"><input type="hidden" name="enabled" value="{{ '' if d.enabled else '1' }}"><button class="ibtn" title="{{ t.pause if d.enabled else t.resume }}" aria-label="{{ t.pause if d.enabled else t.resume }}">{{ ico('pause' if d.enabled else 'resume') }}</button></form>{% endif %}
+<button type="button" class="ibtn edit-device" title="{{ t.edit }}" aria-label="{{ t.edit }}" {{ editdata(d) }}>{{ ico('edit') }}</button>
+<a class="ibtn danger" href="/devices/{{ d.name }}/delete" title="{{ t.delete }}" aria-label="{{ t.delete }}">{{ ico('delete') }}</a>
 </div>
 </article>{% endfor %}
 <button type="button" class="dev add" id="add-tile"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 5v18M5 14h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><strong>{{ t.new_device }}</strong><span class="fld">{{ t.device_type }}, {{ t.manufacturer }}, {{ t.model }}, {{ t.connection }}</span></button>
@@ -54,7 +60,7 @@
 <div class="info"><span><b>{{ t.decoder }}:</b> <span class="mono" id="decoder-name">–</span> · {{ t.decoder_note }} <a id="fw-link" href="#" target="_blank" rel="noopener" hidden>{{ t.firmware_link }}</a></span></div></fieldset>
 
 <fieldset data-step="3"><legend class="not-wizard">3 · {{ t.model }}</legend><h3 class="step-title">{{ t.which_model }}</h3>
-<label class="field">{{ t.model }}<input name="model" id="f-model" list="dl-models" maxlength="60" autocomplete="off"></label>
+<label class="field">{{ t.model }}<input name="model" id="f-model" required list="dl-models" maxlength="60" autocomplete="off"></label>
 <datalist id="dl-models"></datalist><div class="chips" id="model-chips"></div><span class="fld">{{ t.model_hint }}</span></fieldset>
 
 <fieldset data-step="4"><legend class="not-wizard">4 · {{ t.connection }}</legend><h3 class="step-title">{{ t.which_conn }}</h3>

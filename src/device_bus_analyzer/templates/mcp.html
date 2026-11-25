@@ -4,16 +4,19 @@
 <ol class="steps-list"><li>{{ t.mcp_step1 }}</li><li>{{ t.mcp_step2 }}</li></ol>
 <p><a class="btn primary" href="{{ mcpb_url }}">{{ t.mcp_download }}</a></p>
 <section class="card"><h2>{{ t.mcp_url }}</h2>
-<section class="fw"><header><strong>URL</strong><button type="button" class="copy" data-target="mcp-url" data-ok="{{ t.copied }}">{{ t.copy }}</button></header><pre class="code" id="mcp-url" tabindex="0"><code>{{ base_url }}</code></pre></section>
+<section class="fw"><header><strong>URL</strong><button type="button" class="copy" data-target="mcp-url" data-ok="{{ t.copied }}">{{ t['copy'] }}</button></header><pre class="code" id="mcp-url" tabindex="0"><code>{{ base_url }}</code></pre></section>
 <p class="muted">{{ t.mcp_url_note }}</p>
 <p class="muted">{{ t.mcp_ca }} <a href="/tls">HTTPS</a> · <a href="/tls/ca.crt">CA</a></p>
 <h2>{{ t.mcp_token }}</h2>
 {% if token %}<details><summary>{{ t.mcp_token_show }}</summary>
-<section class="fw"><header><strong>Token</strong><button type="button" class="copy" data-target="mcp-token" data-ok="{{ t.copied }}">{{ t.copy }}</button></header><pre class="code" id="mcp-token" tabindex="0"><code>{{ token }}</code></pre></section>
+<section class="fw"><header><strong>Token</strong><button type="button" class="copy" data-target="mcp-token" data-ok="{{ t.copied }}">{{ t['copy'] }}</button></header><pre class="code" id="mcp-token" tabindex="0"><code>{{ token }}</code></pre></section>
 <p class="info warn"><span>{{ t.mcp_token_warn }}</span></p></details>
 {% else %}<p class="info warn"><span>{{ t.mcp_token_none }}</span></p>{% endif %}</section>
 <section class="card"><h2>{{ t.mcp_other }}</h2><p>{{ t.mcp_other_note }}</p>
 <section class="fw"><header><strong>shell</strong><button type="button" class="copy" data-target="mcp-cmd" data-ok="{{ t.copied }}">{{ t.copy_cmd }}</button></header><pre class="code" id="mcp-cmd" tabindex="0"><code>claude mcp add device-bus-analyzer -e DBA_URL={{ base_url }} -e DBA_TOKEN=&lt;token&gt; -- node /path/to/device-bus-analyzer/extension/server/index.js</code></pre></section></section>
+<section class="card" id="prompts"><h2>{{ t.mcp_prompts_title }}</h2><p>{{ t.mcp_prompts_intro }}</p>
+{% if device_names|length > 1 %}<p class="fld">{{ t.mcp_prompt_device }}</p><div class="chips devpick">{% for n in device_names %}<a class="chip{{ ' on' if n == picked else '' }}" href="/mcp?device={{ n }}#prompts" {% if n == picked %}aria-current="true"{% endif %}>{{ n }}</a>{% endfor %}</div>{% endif %}
+<div class="prompts">{% for i in range(1, 7) %}<section class="fw"><header><strong>{{ t['mcp_p' ~ i ~ '_title'] }}</strong><button type="button" class="copy" data-target="mcp-p{{ i }}" data-ok="{{ t.copied }}">{{ t['copy'] }}</button></header><pre class="code" id="mcp-p{{ i }}" tabindex="0"><code>{{ t['mcp_p' ~ i].format(prompt_device) }}</code></pre></section>{% endfor %}</div></section>
 <section class="card"><h2>{{ t.mcp_local_title }}</h2><p>{{ t.mcp_local }}</p></section>
 <script src="/static/firmware.js"></script>
 {% endblock %}

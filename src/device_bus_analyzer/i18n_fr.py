@@ -158,41 +158,11 @@ more | Plus
 choose | Veuillez choisir.
 model_hint | Suggestions du catalogue. Vos propres valeurs seront proposées à nouveau la prochaine fois.
 brand_other_note | Les autres fabricants nécessitent le choix d'un décodeur.
-companion | Assistant
-cp_title | Assistant
-cp_intro | Placez-vous devant l'appareil et dites à l'appli ce que vous faites. Chaque action est chronométrée sur le serveur et comparée au trafic du bus. Rien n'est envoyé à l'appareil.
-cp_tip | Astuce : laissez l'appareil au repos environ deux minutes avant de commencer, pour que l'analyse sache quelles valeurs changent d'elles-mêmes.
-cp_guided | Vérifications guidées
-cp_guided_hint | Chaque étape est chronométrée de « Go » à « Terminé » : votre temps de réaction n'a donc pas d'importance.
-cp_free | Marquer une action
-cp_menu_label | Menu / affichage (facultatif)
-cp_menu_hint | Où êtes-vous dans le menu ? Cela est enregistré avec chaque action.
-cp_go | Go
-cp_done | Terminé
-cp_abort | Arrêter
-cp_step | Étape {} sur {}
-cp_round | Tour {}
-cp_doing | Faites-le maintenant, puis touchez Terminé.
-cp_note_label | Que montre l'affichage / quelle option ?
-cp_note_needed | Saisissez-le d'abord.
-cp_hint_none | Rien d'inhabituel vu sur le bus pour l'instant.
-cp_hint_some | {} changement(s) inhabituel(s) vu(s) sur le bus.
-cp_hint_nobase | Trop peu de données au repos pour juger.
-cp_finished | Toutes les étapes sont terminées.
-cp_results | Voir les résultats
-cp_recent | Marqué récemment
-cp_custom | Autre action
-cp_custom_label | Qu'avez-vous fait ?
-cp_add | Marquer
-cp_empty | Rien de marqué pour l'instant.
-cp_remove | Retirer
-cp_error | Cela n'a pas fonctionné. Se reconnecter ?
-cp_tap_note | Saisissez le détail, puis touchez Marquer.
 cp_duration | {} s
 learn | Appris
 learn_title | Ce que dit le bus
 learn_intro | Pour chaque action, les octets avant et après sont comparés. Un octet compte lorsqu'il change à chaque fois pour la même action et ne change pas tout seul. Les actions opposées (ouvert / fermé) doivent remettre le même octet dans son état initial.
-learn_none | Aucune action marquée pour l'instant. Ouvrez l'assistant et marquez ce que vous faites.
+learn_none | Aucune action enregistrée pour cet appareil.
 learn_few_base | L'enregistrement contient trop peu de temps au repos pour distinguer le bruit de l'effet. Laissez l'appareil au repos quelques minutes, puis recommencez.
 learn_stats | {} actions, {} télégrammes, {} fenêtres au repos
 hits | Succès
@@ -208,18 +178,15 @@ export_note | L'export ne contient que ce que vous avez accepté : adresses, pos
 no_candidates | Aucun octet n'a changé de façon fiable pour cette action.
 events_title | Télégrammes vus uniquement avec cette action
 actions | Actions
-open_companion | Ouvrir l'assistant
 not_accepted | Pas encore assez de preuves
 times | fois
 of_n | sur
-cp_what | Action
 state_now | Maintenant
 values_title | Valeurs de l'affichage
 values_intro | Ces octets suivent les nombres que vous lisez sur l'affichage (temps restant, température). Acceptez-en un pour voir la valeur dans les listes de télégrammes et sur l'appareil.
 encoding | Format
 unit | Unité
 display_value | Valeur affichée
-need_readings | Lisez l'affichage au moins quatre fois avec des valeurs différentes (vérification guidée « Lire l'affichage »).
 spec_suggestion | Proposition de spécification (YAML)
 ha_title | Home Assistant
 ha_intro | Tout ce que vous avez appris à l'appli, sous forme de valeurs actuelles pour Home Assistant. Home Assistant les lit sur ce serveur avec le jeton d'API ; l'appareil n'est jamais contacté.
@@ -229,19 +196,19 @@ ha_step1 | Placez le jeton d'API dans secrets.yaml sous dba_bearer (valeur : Bea
 ha_step2 | Ajoutez le YAML ci-dessous à configuration.yaml, puis redémarrez ou rechargez Home Assistant.
 help_link | Aide
 backup_link | Sauvegarde
-help_title | Comment enregistrer un bon cycle
-help_intro | Quelques minutes de soin devant l'appareil rendent les résultats fiables.
-help_step1 | Créez l'appareil (type, fabricant, modèle) et flashez le firmware recommandé. Attendez que la carte de l'appareil affiche des données.
-help_step2 | Ouvrez l'assistant et lancez une vérification guidée, par exemple porte ouverte et fermée. Effectuez chaque action sur l'appareil exactement quand l'appli le demande.
-help_step3 | Répétez chaque action au moins trois fois, avec quelques secondes de pause entre chaque. Les répétitions transforment une hypothèse en résultat confirmé.
-help_step4 | Pour les cycles de programme : démarrez le marqueur, appuyez sur le bouton de l'appareil, touchez Terminé dès qu'il réagit. Un marqueur par appui.
-help_step5 | Pour les valeurs de l'affichage : lisez l'affichage et saisissez-le cinq fois pendant qu'il change (temps restant, température).
-help_step6 | Ouvrez Appris, vérifiez les propositions et acceptez celles qui correspondent à ce que vous avez vu. Les propositions erronées peuvent être supprimées.
-help_step7 | Exportez les résultats : ils ne contiennent ni télégrammes, ni heures, ni adresses, ni clés et peuvent être envoyés au projet.
+help_title | De l'enregistrement au résultat
+help_intro | L'application ne fait qu'enregistrer et décoder ce qu'elle connaît déjà. L'analyse est faite par Claude via la connexion IA (MCP).
+help_step1 | Créez l'appareil. Le type, le fabricant et le modèle sont obligatoires, car ils décident de ce qui est général et de ce qui est propre au modèle. Flashez le firmware recommandé et attendez que la carte affiche des données.
+help_step2 | Enregistrez des cycles complets : choisissez un programme, lancez-le et laissez-le se terminer. Notez ce que vous faites sur l'appareil et quand (p. ex. « 20:14 porte ouverte »).
+help_step3 | Répétez plusieurs fois les actions intéressantes avec quelques secondes de pause. Les répétitions transforment une supposition en résultat confirmé.
+help_step4 | Connectez Claude : menu du compte → Connexion IA. Installez l'extension et saisissez l'adresse et le jeton d'API.
+help_step5 | Laissez Claude analyser le cycle. Des prompts d'exemple se trouvent sur la page Connexion IA ; ajoutez vos notes avec l'heure.
+help_step6 | « Analysé » sur la carte de l'appareil indique combien de trames la spécification ou un résultat accepté explique déjà.
+help_step7 | Partagez ce que vous avez trouvé avec le projet (voir ci-dessous), pour que les suivants partent avec plus de connaissances.
 help_why_title | Pourquoi tant de soin ?
-help_why | L'appli ne fait qu'écouter. Elle compare les octets avant et après votre action avec le bruit normal du bus ; un bon chronométrage et des répétitions rendent cette comparaison fiable.
-help_share_title | Partage
-help_share | Utilisez l'export de la page Appris, ou la proposition de spécification, et ajoutez le fichier sous contributions/ dans le dépôt du projet.
+help_why | L'application ne fait qu'écouter et n'envoie jamais rien à l'appareil. Claude compare les trames à vos notes et à la spécification existante ; des heures exactes et des répétitions rendent la comparaison fiable.
+help_share_title | Partager avec le projet
+help_share | Il y a deux façons. Soit fournir des cycles complets : Claude exporte un cycle avec des temps relatifs à son début et sans noms d'hôte, adresses ni clés, et vous le joignez à une issue. Soit partager des résultats analysés : Claude rédige un fichier de contribution pour contributions/ (type, fabricant, modèle, positions d'octets avec statut ; ni trames, ni heures, ni adresses, ni clés). La CI vérifie chaque fichier.
 backup_title | Sauvegarde
 backup_download | Télécharger une sauvegarde
 backup_download_intro | Une copie cohérente de tous les appareils, télégrammes, marqueurs et résultats dans un seul fichier.
@@ -261,8 +228,6 @@ backup_err_too_big | Le fichier est trop volumineux.
 onb_title | Premiers pas
 onb_device | Créer un appareil
 onb_data | Recevoir les premiers télégrammes
-onb_marker | Enregistrer une action dans l'assistant
-onb_learned | Accepter un résultat sur la page Appris
 mcp_link | Connexion IA
 mcp_title | Connexion IA (MCP)
 mcp_intro | Pour que Claude puisse lire et analyser vos enregistrements, il faut l'extension et deux valeurs : l'adresse de cette installation et le jeton d'API. L'extension ne fait que lire et n'envoie jamais rien à un appareil.
@@ -321,16 +286,9 @@ mcp_ca | Si l'analyseur utilise HTTPS avec sa propre CA, choisissez aussi le cer
 kn_sig | Signature
 kn_sig_on | Les mises à jour doivent être signées avec la clé du projet (Ed25519)
 kn_sig_off | non imposée : seulement des sommes de contrôle via HTTPS
-cp_rest | Ne touchez à rien : le bruit propre de l'appareil est mesuré.
-cp_wait | Encore {} s
 account | Compte et réglages
 language | Langue
 live_note | Se met à jour automatiquement
-cp_check | Vérification guidée : {}
-cp_waiting | Attendez : ne touchez à rien
-cp_phase_rest | Mesure du repos
-cp_manual | Marquer manuellement
-cp_manual_hint | Pour des observations libres sur l'appareil. Astuce : laissez l'appareil au repos environ deux minutes avant, pour que l'analyse sache quelles valeurs changent d'elles-mêmes.
 cfg_link | Réglages
 cfg_title | Réglages
 cfg_intro | Modifiez ici les valeurs de l'installation sans toucher au stack. Ce qui est enregistré ici prime sur les variables du stack.
@@ -367,6 +325,26 @@ menu_account | Compte
 menu_connect | Connexions
 menu_system | Système
 learn_silent | Sans réaction de l'appareil (non comptées – était-il allumé ?) : {}
-cp_off | L'appareil n'envoie rien – est-il éteint ? Allumez-le (affichage « prêt »). « Départ » sera alors actif.
-cp_off_run | Attention : l'appareil n'envoie plus rien – a-t-il été éteint ? Sinon cette action ne comptera pas.
+need_class | Indiquez le type, le fabricant et le modèle : ils décident de ce qui est général et de ce qui est propre au modèle.
+analysed | Analysé
+analysed_of | {} trames sur {} sont expliquées par la spécification ou un résultat accepté ({} confirmées).
+open_device | Ouvrir l'appareil
+onb_run | Enregistrer un cycle complet (lancer un programme et le laisser se terminer)
+onb_mcp | Connecter Claude (connexion IA) et lui faire analyser le cycle
+mcp_prompts_title | Prompts pour l'analyse
+mcp_prompts_intro | Copiez un prompt dans Claude et remplacez les parties entre chevrons. Plus vos heures sont exactes, plus la réponse est fiable.
+mcp_prompt_device | Appareil dans les exemples
+mcp_device_ph | <appareil>
+mcp_p1_title | Vue d'ensemble
+mcp_p1 | Utilise le Device Bus Analyzer pour me donner une vue d'ensemble de l'appareil « {} » : quels cycles existent, quelles commandes apparaissent et lesquelles sont encore inconnues selon la spécification ?
+mcp_p2_title | Analyser un cycle avec mes actions
+mcp_p2 | Analyse le dernier cycle complet de « {} ». Pendant celui-ci j'ai fait ceci (heure – action, une par ligne) : <...>. Quels octets changent en accord avec mes actions, et avec quelle certitude (répétitions, bruit du bus) ?
+mcp_p3_title | Trouver les valeurs affichées
+mcp_p3 | Cherche dans les cycles de « {} » des valeurs qui correspondent au temps restant ou à la température affichés. J'ai relevé (heure – valeur) : <...>. Indique la commande, la position d'octet, l'encodage et le facteur.
+mcp_p4_title | Interpréter les commandes inconnues
+mcp_p4 | Quelles commandes de « {} » sont inconnues mais fréquentes ? Propose une signification pour les trois plus fréquentes et justifie-la par leurs valeurs au fil des cycles.
+mcp_p5_title | Partager les résultats (fichier de contribution)
+mcp_p5 | Résume les résultats fiables sur « {} » dans un fichier de contribution au format du dossier contributions/ du projet (type, fabricant, modèle, résultats avec position d'octet et statut). Ni trames, ni horodatages, ni adresses, ni clés.
+mcp_p6_title | Partager un cycle complet
+mcp_p6 | Exporte le cycle <n°> de « {} » en CSV : temps en secondes depuis le début du cycle, destination, commande et données (hex), plus le programme et le type, le fabricant et le modèle. Ni noms d'hôte, ni adresses IP, ni clés.
 """

@@ -40,7 +40,7 @@ Hardware: the MACS board (schematic, KiCad, Gerber, enclosure) is in [`hardware/
 | `API_TOKEN` | optional: created on the first start (shown on the *AI connection* page); a value set here wins and is adopted |
 | `DBA_TZ` | display timezone, default `Europe/Berlin` |
 
-3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type, manufacturer and model (suggestions from
+3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type, manufacturer and model (all three are required; suggestions from
    `src/device_bus_analyzer/catalog.yaml`, free text is allowed; the manufacturer selects the decoder protocol), enter host, port and the
    ESPHome API key. Collection starts immediately and changes apply without a restart. Expose it in your LAN only; there is no password reset and no e-mail sending.
    If you must put it behind a reverse proxy, set `COOKIE_SECURE=1` and terminate TLS there.
@@ -58,33 +58,34 @@ to a model"); decoding is unchanged. New catalogue entries are welcome as pull r
 Devices that are only online sometimes (a dryer that connects when switched on) are fine: the collector reconnects forever
 with back-off and the data model records board restarts and gaps explicitly.
 
-## Companion: learn the buttons and menus of your appliance
-Open **Companion** on a device (made for the phone, while you stand at the appliance). Switch the appliance on first. Then either run a **guided check** (tap *Go* once: a 90 s hands-off phase measures the appliance's own noise in exactly that state, then every step shows its instruction, waits where the appliance only reports every few seconds, and ends with *Done*) (open and close the door three times, step through the programs, switch an option on and
-off; each step is timed, so your reaction time does not matter; the analysis judges noise per bit, so a flapping bit next to the door bit does not hide it) or **mark actions freely** (door opened, program
-selected, start pressed, display shows ..., or your own text, optionally with the menu level you are in). Every action is timed on the
-server and shown between the telegrams in the timeline.
+## Analysis with Claude (MCP)
+The app records and decodes what the spec already knows; the analysis of the unknown parts is done by **Claude** through the AI
+connection (MCP). Record **complete runs** (choose a program, start it, let it finish) and note down what you did at the appliance and
+when ("20:14 door opened"). Repeat interesting actions a few times. Then connect Claude (account menu → *AI connection*) and use one
+of the example prompts on that page (overview, analyse a run with your actions, find display values, explain unknown commands,
+write a contribution file, export a complete run). The device card shows how much of a recording is already **analysed**: the share
+of telegrams whose command the spec describes (confirmed or assumed) or for which a finding was accepted.
 
-**Learned** compares the bytes before and after each action. A byte only counts when it changes again for the same action and does
-not change on its own (a noise model is measured on the quiet time of the recording). Repeats give *assumed*; if the opposite action
-(door closed) flips the same byte back, the finding is *confirmed*. You accept findings with a meaning of your own; **Export
-findings** writes only those (addresses, byte positions, values, device model) as JSON for a pull request or issue. Telegrams, times,
-host names and keys are never part of it. The companion sends nothing to the appliance. Actions and accepted findings are deleted
-together with the device.
+There are two ways to give knowledge back to the project: **complete runs** (let Claude export a run with times relative to its
+start and without host names, addresses or keys, and attach it to an issue) or **analysed findings** (let Claude write a contribution
+file for `contributions/`; see *Contributing findings*).
+
+The former companion (guided checks and manual marking) has been removed. Actions and findings recorded with it stay in the
+database: devices that have them still show the **Learned** page (accept findings, export, spec suggestion), and the MCP tools
+`list_markers` and `learn_analysis` still return them.
 
 ### Display values, Home Assistant, sharing
-The guided check **Read the display** (enter the shown time or number five times while it changes) lets **Learned** find the bytes
-that carry it (minutes, hours and minutes, or a number; 8 or 16 bit, factor 1 or 0.1). Accepted findings and values are shown next to
-the telegrams in the timeline and frames, and as **Now** on the device card.
+Accepted findings and values are shown next to the telegrams in the timeline and frames, and as **Now** on the device card.
 
 **Home Assistant** (device card or Learned page): the page shows the current values and a ready `rest:` configuration that reads
 `/api/{device}/state` with your API token. Decoding happens on the server; the ESPHome firmware only streams raw telegrams.
 
-**Share** with *Export findings* (JSON) or *Spec suggestion* (YAML for the protocol spec, always status *assumed*). Put the JSON
+**Share** a contribution file written by Claude, or from the Learned page *Export findings* (JSON) or *Spec suggestion* (YAML for the protocol spec, always status *assumed*). Put the JSON
 under `contributions/<protocol>/`; CI checks the file (`dba validate-contribution`, no telegrams, times, addresses or keys allowed).
 `dba suggest-spec FILE` prints the YAML for a contribution.
 
 **Backup** (header): download a consistent snapshot of the database, or restore one (type RESTORE; the file contains the ESPHome
-keys, keep it private). **Help** explains how to record a good run. The MCP extension also offers `list_markers`, `learn_analysis`
+keys, keep it private). **Help** explains the way from recording to finding. The MCP extension also offers `list_markers`, `learn_analysis`
 and `device_state`.
 
 The web interface is available in German, English, Spanish, French and Italian (switcher in the header; the browser language is detected, the choice is remembered).
@@ -138,7 +139,7 @@ pytest -q
 Tests use synthetic telegrams only. Add real-device evidence to the spec as `evidence` text, never as log files.
 
 ## Contributing findings
-Attach the JSON from **Export findings** to an issue, or open a pull request that changes `spec/<protocol>.yaml` (status + evidence) and, if useful, adds a synthetic test.
+Attach a contribution file written by Claude (or the JSON from **Export findings** on the Learned page) or an exported complete run to an issue, or open a pull request that changes `spec/<protocol>.yaml` (status + evidence) and, if useful, adds a synthetic test.
 Please do not commit logs, MAC/IP addresses, SSIDs or serial numbers.
 
 ## Licenses
@@ -149,5 +150,4 @@ Code: MIT (`LICENSE`). Protocol documentation and spec files: CC BY 4.0 (`LICENS
 - **Everything that can change is live.** Regions marked `data-live="…"` are refreshed from the server every few seconds (paused while the tab is hidden or a field in the region has focus); a changed list of devices reloads the page. New pages must mark their changing parts the same way (`static/ui.js`).
 - **Settings page** (account menu → Settings): time zone, sign-in duration, knowledge update address, HTTPS (restart needed), renew the API token, change the password. Values saved there win over the stack variables, which only provide the defaults.
 - **One account menu** (avatar, top right) holds language (a select), help, AI connection, knowledge, HTTPS, backup and logout.
-- **A switched-off appliance sends nothing.** "Go" of a guided check waits until the bus is alive (and warns if it falls silent during a step); actions without any bus traffic around them are not counted as evidence and are listed separately on the results page.
-- **Guided checks** run in phases: rest (countdown + progress bar) → action (instruction, "Done") → waiting (countdown + progress bar). The page splits guided checks from manual marking.
+- **Device cards:** icon and name open the device (its runs); all actions are uniform icon buttons with a tooltip (telegrams, Home Assistant, firmware, pause/resume, edit = pencil, delete = bin); the card shows the analysed share instead of the telegram count.

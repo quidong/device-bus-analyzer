@@ -157,6 +157,10 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         if header and not auth.valid_session(request.cookies.get(COOKIE)):
             if not auth.token_attempt(client_ip(request), auth.valid_token(header)):
                 raise HTTPException(429, "too many failed attempts, try again later")
+        if header and auth.valid_token(header):
+            now = time.time()
+            if now - float(store.kv_get("mcp_last", "0") or 0) > 60:      # onboarding: "Claude is connected"
+                store.kv_set("mcp_last", str(now))
         if not authed(request):
             if request.url.path.startswith("/api/"):
                 raise HTTPException(401, "authentication required", headers={"WWW-Authenticate": "Bearer"})
@@ -166,6 +170,8 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         s = store.source_by_name(name)
         if not s:
             raise HTTPException(404, "unknown source")
+        # "Learned" only appears for devices that still hold actions or findings from the former companion
+        s["has_learn"] = bool(store.markers(name, limit=1) or store.learned(name) or store.learned_values(name))
         return s
 
     def window(source: str, run: int | None, since: float | None, until: float | None) -> tuple[float | None, float | None]:
@@ -323,15 +329,27 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
                     out.append(text)
         return out
 
+    def analysed_share(source: str) -> dict:
+        """How much of the recording is understood: telegrams whose command the spec describes (confirmed or assumed)
+        or for which a finding was accepted, against all telegrams. {'pct', 'known', 'total', 'confirmed'}"""
+        stats = store.command_stats(source)
+        taught = set(learned.overlay(store.learned(source), store.learned_values(source)))
+        total = sum(r["n"] for r in stats)
+        known = sum(r["n"] for r in stats if r["decoded"]["status"] in ("confirmed", "assumed") or (r["ds"], r["cmd"]) in taught)
+        confirmed = sum(r["n"] for r in stats if r["decoded"]["status"] == "confirmed")
+        pct = int(known * 100 / total) if total else None                    # floor: 100 % only when everything is known
+        return {"pct": pct, "known": known, "total": total, "confirmed": confirmed}
+
     def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):
         lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
         rows = store.devices()
         for d in rows:
             d["state"], d["ago"] = device_state(d), ago(d["last_seen"], lang)
             d["now"] = device_state_now(d["name"])
+            d["analysed"] = analysed_share(d["name"])
         steps = [("device", bool(rows)), ("data", any(d["frames"] for d in rows)),
-                 ("marker", any(store.markers(d["name"], limit=1) for d in rows)),
-                 ("learned", any(d["now"] for d in rows))]
+                 ("run", any(not r.get("open") for d in rows if d["frames"] for r in store.runs(d["name"]))),
+                 ("mcp", bool(store.kv_get("mcp_last")))]
         onboarding = None if all(ok for _, ok in steps) else steps
         resp = page(request, "devices.html", onboarding=onboarding, devices=rows, catalog=catalog.build(store.used_classifications()),
                     error=error, form=form)
@@ -364,6 +382,8 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
                 if existing and existing["configured"]:
                     raise ValueError("exists")
                 protocol = form["protocol"]
+                if not (form["type"] and form["manufacturer"] and form["model"]):
+                    raise ValueError("need_class")         # type, manufacturer and model decide what is general and what model-specific
             else:
                 if not existing:
                     raise HTTPException(404, "unknown device")
@@ -577,10 +597,14 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return RedirectResponse("/settings?msg=password", status_code=303)
 
     @app.get("/mcp", response_class=HTMLResponse, dependencies=[cfg])
-    def mcp_page(request: Request):
-        """How to connect Claude: extension download, this installation's address and the API token (session only)."""
+    def mcp_page(request: Request, device: str = ""):
+        """How to connect Claude (extension, address, API token; session only) and which prompts to use for the analysis."""
+        names = [d["name"] for d in store.devices()]
+        pick = device if device in names else (names[0] if names else "")
+        prompt_device = pick or i18n.STR[lang_of(request)]["mcp_device_ph"]
         return page(request, "mcp.html", base_url=str(request.base_url).rstrip("/"), token=settings.api_token,
-                    mcpb_url="https://github.com/quidong/device-bus-analyzer/raw/main/device-bus-analyzer.mcpb")
+                    mcpb_url="https://github.com/quidong/device-bus-analyzer/raw/main/device-bus-analyzer.mcpb",
+                    device_names=names, picked=pick, prompt_device=prompt_device)
 
     @app.get("/help", response_class=HTMLResponse, dependencies=[api])
     def help_page(request: Request):
@@ -613,6 +637,12 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         if auth.valid_session(request.cookies.get(COOKIE)):
             return devices_page(request)
         return page(request, "index.html", sources=store.sources())
+
+    @app.get("/s/{source}", dependencies=[api])
+    def html_source(source: str):
+        """A device's own page: its runs (linked from the icon and the name on the device card)."""
+        source_or_404(source)
+        return RedirectResponse(f"/s/{source}/runs", status_code=303)
 
     @app.get("/s/{source}/frames", response_class=HTMLResponse, dependencies=[api])
     def html_frames(request: Request, source: str, ds: str = "", cmd: str = "", since: str = "", until: str = "",
@@ -680,68 +710,13 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             raise HTTPException(404, "unknown protocol") from None
         return page(request, "findings.html", spec=spec, protocol=src["protocol"], src=src)
 
-    # --- companion: mark what is done at the appliance, learn from it ------------------------------------
+    # --- learned: findings from earlier recorded actions (markers); kept for existing data and the export --------------
     def rules_for(source: str) -> dict:
         d = store.device(source)
         return catalog.event_rules(d["type"] if d else None)
 
     def lang_of(request: Request) -> str:
         return i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))
-
-    @app.get("/s/{source}/companion", response_class=HTMLResponse, dependencies=[cfg])
-    def html_companion(request: Request, source: str):
-        src = source_or_404(source)
-        d = store.device(source)
-        return page(request, "companion.html", src=src, device=d, controls=catalog.controls(d["type"] if d else None, lang_of(request)),
-                    markers=store.markers(source, limit=15, newest_first=True))
-
-    @app.post("/s/{source}/markers")
-    async def marker_create(request: Request, source: str, csrf: str = Form(...), kind: str = Form(...), label: str = Form(""),
-                            menu: str = Form(""), note: str = Form(""), step_group: str = Form("")):
-        need_session_csrf(request, csrf)
-        source_or_404(source)
-        d = store.device(source)
-        events = {e["id"]: e for e in catalog.controls(d["type"] if d else None, lang_of(request))["events"]}
-        if kind in events:
-            label = events[kind]["label"]                                     # the server owns the wording of presets
-        elif kind == "rest":
-            label = "Rest"                                                    # the hands-off phase that measures the noise
-        elif kind == "custom":
-            if not label.strip():
-                raise HTTPException(422, "label required")
-        else:
-            raise HTTPException(422, "unknown kind")
-        # Instant action; a guided step with a duration is closed later through /end (the time span is what is analysed).
-        return JSONResponse(store.add_marker(source, kind, label, menu or None, note or None, step_group=step_group or None))
-
-    @app.post("/s/{source}/markers/{marker_id}/end")
-    async def marker_end(request: Request, source: str, marker_id: int, csrf: str = Form(...), note: str = Form("")):
-        need_session_csrf(request, csrf)
-        m = store.marker(source, marker_id)
-        if not m:
-            raise HTTPException(404, "unknown marker")
-        label = m["label"].split(":")[0] + (": " + note.strip() if note.strip() else "")
-        return JSONResponse(store.end_marker(source, marker_id, note=note, label=label if note.strip() else None))
-
-    @app.post("/s/{source}/markers/{marker_id}/delete")
-    async def marker_delete(request: Request, source: str, marker_id: int, csrf: str = Form(...)):
-        need_session_csrf(request, csrf)
-        if not store.delete_marker(source, marker_id):
-            raise HTTPException(404, "unknown marker")
-        return JSONResponse({"ok": True})
-
-    activity_cache: dict[tuple, dict] = {}
-
-    @app.get("/s/{source}/activity", dependencies=[cfg])
-    def marker_activity(source: str, since: float):
-        source_or_404(source)
-        now = time.time()
-        key = (source, int(since), int(now / 2))
-        if key not in activity_cache:
-            if len(activity_cache) > 50:
-                activity_cache.clear()
-            activity_cache[key] = analysis.activity(store, source, since, now, rules_for(source))
-        return JSONResponse(activity_cache[key])
 
     def learn_context(request: Request, source: str) -> dict:
         src = source_or_404(source)

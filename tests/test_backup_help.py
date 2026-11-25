@@ -54,7 +54,7 @@ def test_help_page_and_header_links(tmp_path):
     assert c.get("/help").status_code in (303, 401)
     login(c)
     h = c.get("/help?lang=en").text
-    assert "How to record a good run" in h and "step" not in h.split("<h1>")[0]
+    assert "From recording to finding" in h and "/mcp#prompts" in h and "step" not in h.split("<h1>")[0]
     assert 'href="/help"' in c.get("/devices").text and 'href="/backup"' in c.get("/devices").text
 
 
@@ -63,5 +63,9 @@ def test_start_checklist_tracks_progress(tmp_path):
     login(c)
     html = c.get("/devices?lang=en").text
     assert "Getting started" in html and html.count('class="done"') == 1       # only the device exists
-    store.add_marker("dw", "instant", "x", ts=1.0)
-    assert html != c.get("/devices?lang=en").text
+    assert "Record an action in Companion" not in html and 'href="/mcp"' in html.split('class="cards"')[0]
+    sid = store.source_by_name("dw")["id"]
+    store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, 1.0, 0x17, 0x1010, b"\x00")); store.db.commit()
+    assert c.get("/devices?lang=en").text.count('class="done"') == 2           # first telegrams
+    assert c.get("/api/sources", headers={"Authorization": "Bearer tok-123456"}).status_code == 200   # Claude reads with the token
+    assert store.kv_get("mcp_last") and c.get("/devices?lang=en").text.count('class="done"') == 3

@@ -1,6 +1,6 @@
-"""Companion mode: markers, analysis (noise, repeats, pairs) and the pages around them."""
+"""Recorded actions (markers) and the Learned page: analysis (noise, repeats, pairs). The companion UI that recorded them is gone;
+the data and the Learned page stay for existing installations."""
 import base64
-import json
 import re
 
 import pytest
@@ -189,11 +189,13 @@ def test_controls_are_valid_and_localised():
     assert catalog.event_rules("dishwasher")["door_open"]["pair"] == "door_close" and catalog.event_rules("dishwasher")["option_on"]["by_note"]
 
 
-def test_new_i18n_keys_exist_in_both_languages():
-    assert set(i18n.STR["de"]) == set(i18n.STR["en"])
-    root = open(str(__import__("importlib.resources", fromlist=["files"]).files("device_bus_analyzer").joinpath("templates/companion.html")), encoding="utf-8").read()
-    for k in set(re.findall(r"\bt\.(\w+)", root)):
-        assert k in i18n.STR["de"], k
+def test_every_key_used_by_the_device_and_mcp_pages_exists_in_all_languages():
+    files = __import__("importlib.resources", fromlist=["files"]).files("device_bus_analyzer")
+    for name in ("devices.html", "mcp.html", "help.html", "_srcnav.html", "learn.html"):
+        root = open(str(files.joinpath("templates/" + name)), encoding="utf-8").read()
+        for k in set(re.findall(r"\bt\.(\w+)", root)) - {"format"}:
+            for lang in i18n.LANGS:
+                assert k in i18n.STR[lang], (name, k, lang)
 
 
 # --- web ---------------------------------------------------------------------------------------------
@@ -212,60 +214,22 @@ def login(c):
     return re.search(r'action="/logout".*?value="([^"]+)"', c.get("/").text, re.S).group(1)
 
 
-def test_companion_page_and_assets(client):
-    assert client.get("/s/dw/companion").status_code == 303                                    # login first
+def test_companion_is_gone(client):
     login(client)
-    html = client.get("/s/dw/companion?lang=de").text
-    import html as htmllib
-    assert 'id="cp"' in html and "Begleiter" in html and "/static/companion.js" in html and "<script>" not in html
-    ctl = json.loads(htmllib.unescape(re.search(r'data-controls="([^"]*)"', html).group(1)))
-    assert "Tür geöffnet" in [e["label"] for e in ctl["events"]] and ctl["guided"]
-    assert client.get("/s/nope/companion").status_code == 404
-    js = client.get("/static/companion.js")
-    assert js.status_code == 200 and "/markers" in js.text and "innerHTML" not in js.text      # texts are set with textContent only
-    assert 'href="/s/dw/companion"' in client.get("/s/dw/runs").text
+    assert client.get("/s/dw/companion").status_code == 404
+    assert client.get("/static/companion.js").status_code == 404
+    html = client.get("/s/dw/runs").text
+    assert "/companion" not in html and "companion.js" not in html
 
 
-def test_creating_markers_needs_session_and_csrf_and_uses_server_wording(client, store):
+def test_markers_can_no_longer_be_written_but_stay_readable(client, store):
+    token = login(client)
     n = len(store.markers("dw"))
-    h = {"Authorization": "Bearer tok-123456"}
-    assert client.post("/s/dw/markers", data={"csrf": "x", "kind": "start"}, headers=h).status_code == 303   # the API token cannot write
-    token = login(client)
-    assert client.post("/s/dw/markers", data={"csrf": "forged", "kind": "start"}).status_code == 403
-    r = client.post("/s/dw/markers", data={"csrf": token, "kind": "door_open", "label": "HACKED", "menu": "Main menu", "step_group": "g1"})
-    m = r.json()
-    assert r.status_code == 200 and m["label"] != "HACKED" and m["menu"] == "Main menu" and m["step_group"] == "g1" and abs(m["ts"] - __import__("time").time()) < 5
-    assert client.post("/s/dw/markers", data={"csrf": token, "kind": "nonsense"}).status_code == 422
-    assert client.post("/s/dw/markers", data={"csrf": token, "kind": "custom", "label": ""}).status_code == 422
-    assert client.post("/s/dw/markers", data={"csrf": token, "kind": "custom", "label": "Pressed the left knob"}).json()["label"] == "Pressed the left knob"
-    assert client.post("/s/nope/markers", data={"csrf": token, "kind": "start"}).status_code == 404
-    assert len(store.markers("dw")) == n + 2
-
-
-def test_end_and_delete_marker(client, store):
-    token = login(client)
-    store.save_device("dw", "bshdbus", "dishwasher", "Neff", None, None)                      # a dishwasher knows the option buttons
-    m = client.post("/s/dw/markers", data={"csrf": token, "kind": "option_on"}).json()
-    e = client.post(f"/s/dw/markers/{m['id']}/end", data={"csrf": token, "note": "Eco"}).json()
-    assert e["ts_end"] >= e["ts"] and e["note"] == "Eco" and e["label"].endswith(": Eco")
-    assert client.post(f"/s/dw/markers/{m['id']}/end", data={"csrf": "bad"}).status_code == 403
-    assert client.post("/s/dw/markers/99999/end", data={"csrf": token}).status_code == 404
-    assert client.post(f"/s/dw/markers/{m['id']}/delete", data={"csrf": token}).json() == {"ok": True}
-    assert client.post(f"/s/dw/markers/{m['id']}/delete", data={"csrf": token}).status_code == 404
-
-
-def test_activity_hint_is_for_signed_in_users(client, store):
-    import time
-    now = time.time()
-    store.source("live", "bshdbus")
-    ts = [now - 200 + t for t in range(200)]
-    put_frames(store, "live", {(0x17, 0x1010): (ts, [bytes([t % 256, 7, 1 if t >= 140 else 0, 0]) for t in range(200)])})   # the door byte flips 60 s ago
-    assert client.get(f"/s/live/activity?since={now - 70}").status_code == 303
-    login(client)
-    r = client.get(f"/s/live/activity?since={now - 70}").json()
-    assert set(r) == {"changes", "baseline", "best", "silent_s"} and r["silent_s"] < 5 and r["baseline"] >= 5 and r["changes"] >= 1 and r["best"]["pos"] == 2
-    assert client.get(f"/s/live/activity?since={now - 20}").json()["changes"] == 0                  # nothing happened in the last 20 s
-    assert client.get("/s/nope/activity?since=1").status_code == 404
+    assert client.post("/s/dw/markers", data={"csrf": token, "kind": "door_open"}).status_code in (404, 405)
+    assert client.post("/s/dw/markers/1/end", data={"csrf": token}).status_code in (404, 405)
+    assert client.post("/s/dw/markers/1/delete", data={"csrf": token}).status_code in (404, 405)
+    assert client.get("/s/dw/activity?since=1").status_code == 404
+    assert len(store.markers("dw")) == n == 6                                                   # nothing was lost
 
 
 def test_learn_page_shows_the_finding_and_accepting_stores_it(client, store):
@@ -323,11 +287,20 @@ def test_api_exposes_markers_and_analysis_read_only(client):
     assert client.get("/api/nope/learn", headers=h).status_code == 404
 
 
-def test_device_card_links_to_the_companion(client, store):
-    token = login(client)
-    store.save_device("dw", "bshdbus", "dishwasher", "Neff", None, "h.lan", 6053, base64.b64encode(bytes(32)).decode())
-    assert 'href="/s/dw/companion"' in client.get("/devices").text
-    assert "<b>6</b>" in client.get("/devices/dw/delete").text or "6" in client.get("/devices/dw/delete").text
+def test_device_card_opens_the_device_and_uses_icon_buttons(client, store):
+    login(client)
+    store.save_device("dw", "bshdbus", "dishwasher", "Neff", "S413K60S0E", "h.lan", 6053, base64.b64encode(bytes(32)).decode())
+    html = client.get("/devices?lang=de").text
+    card = html[html.index('<article class="dev">'):html.index("</article>")]
+    assert 'class="devlink" href="/s/dw"' in card and 'class="tile"' in card.split("</a>")[0] and ">dw<" in card.split("</a>")[0]
+    assert "/companion" not in card and "details" not in card and "&#8943;" not in card                   # no "..." menu any more
+    bar = card[card.index('class="actions iconbar"'):]
+    buttons = re.findall(r'<(?:a|button)\b[^>]*class="ibtn[^"]*"[^>]*>', bar)
+    assert len(buttons) == 5 and all('aria-label="' in b and 'title="' in b for b in buttons)          # frames, firmware, pause, edit, delete
+    assert 'title="Bearbeiten"' in bar and 'title="Löschen"' in bar and 'title="Pausieren"' in bar
+    assert "<svg" in bar and ">Bearbeiten<" not in bar                                                   # symbols, not words
+    assert client.get("/s/dw").headers["location"] == "/s/dw/runs"
+    assert client.get("/s/nope").status_code == 404
 
 
 def test_unfinished_guided_steps_are_ignored(store):
@@ -339,9 +312,23 @@ def test_unfinished_guided_steps_are_ignored(store):
     assert {g["kind"]: g["n"] for g in res["groups"]} == {"door_open": 3, "door_close": 3} and res["markers"] == 6
 
 
-def test_protocol_knowledge_keeps_the_device_navigation(client):
+def test_protocol_knowledge_keeps_the_device_navigation(client, store):
     login(client)
     html = client.get("/s/dw/spec?lang=en").text
-    assert 'href="/s/dw/companion"' in html and 'href="/s/dw/learn"' in html and "dw · bshdbus" in html       # still inside the device
+    assert 'href="/s/dw/learn"' in html and "/companion" not in html and "dw · bshdbus" in html       # still inside the device
     assert 'href="/s/dw/spec"' in client.get("/s/dw/learn").text and "/findings/" not in client.get("/s/dw/learn").text
     assert client.get("/s/nope/spec").status_code == 404
+    store.source("fresh", "bshdbus")                                                              # nothing recorded with the companion
+    assert 'href="/s/fresh/learn"' not in client.get("/s/fresh/runs").text
+
+def test_no_page_shows_a_python_method_instead_of_a_text(client, store):
+    """t.copy / t.values would be the dict methods in Jinja; texts with such names must be looked up as t['copy']."""
+    login(client)
+    store.save_device("dw", "bshdbus", "dishwasher", "Neff", "S413K60S0E", "h.lan", 6053, None)
+    for path in ("/devices", "/mcp", "/help", "/firmware/bshdbus", "/s/dw/homeassistant", "/s/dw/commands?ds=17&cmd=1010", "/s/dw/learn"):
+        html = client.get(path, params={"lang": "de"}).text
+        assert "built-in method" not in html and "<bound method" not in html, path
+    files = __import__("importlib.resources", fromlist=["files"]).files("device_bus_analyzer").joinpath("templates")
+    for f in files.iterdir():
+        if f.name.endswith(".html"):
+            assert not re.search(r"\bt\.(copy|values|items|keys|get|pop|update|clear)\b", f.read_text(encoding="utf-8")), f.name

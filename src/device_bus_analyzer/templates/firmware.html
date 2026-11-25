@@ -5,7 +5,7 @@
 <p class="info" style="max-width:80ch">{{ prof.note }}</p>
 <ol class="steps-list"><li>{{ t.fw_step1 }}</li><li>{{ t.fw_step2 }}</li><li>{{ t.fw_step3 }}</li></ol>
 {% for f in prof.files %}<section class="fw">
-<header><strong>{{ f.name }}</strong><button type="button" class="copy" data-target="fw-{{ loop.index }}" data-ok="{{ t.copied }}">{{ t.copy }}</button>
+<header><strong>{{ f.name }}</strong><button type="button" class="copy" data-target="fw-{{ loop.index }}" data-ok="{{ t.copied }}">{{ t['copy'] }}</button>
 <a class="btn" href="/firmware/{{ protocol }}/{{ f.name }}" download>{{ t.download }}</a></header>
 <pre class="code" id="fw-{{ loop.index }}" tabindex="0"><code>{{ f.text }}</code></pre></section>{% endfor %}
 <script src="/static/firmware.js"></script>

@@ -13,10 +13,6 @@
     document.addEventListener("click", function (e) { if (menu.open && !menu.contains(e.target)) { menu.open = false; } });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && menu.open) { menu.open = false; menu.querySelector("summary").focus(); } });
   }
-  // every "..." menu next to a card closes the same way
-  document.addEventListener("click", function (e) {
-    document.querySelectorAll("details.more[open]").forEach(function (d) { if (!d.contains(e.target)) { d.open = false; } });
-  });
 
   // Live updates: a region marked data-live="id" is refreshed from the server every few seconds (data-live-every="10" = slower).
   // The page is fetched again and only the marked regions are swapped; a region that holds the focus is left alone.

@@ -256,6 +256,6 @@ def test_menu_is_grouped_and_every_subpage_leads_back_to_the_devices(tmp_path):
     for group in ("menu_account", "menu_connect", "menu_system"):
         assert f'<div class="gh">{__import__("device_bus_analyzer.i18n", fromlist=["STR"]).STR["en"][group]}</div>' in menu
     assert 'class="crumb' not in menu                                                       # the start page itself needs no way back
-    for path in ("/settings", "/help", "/mcp", "/knowledge", "/tls", "/backup", "/s/dw/frames", "/s/dw/companion"):
+    for path in ("/settings", "/help", "/mcp", "/knowledge", "/tls", "/backup", "/s/dw/frames", "/s/dw/runs"):
         head = c.get(path, params={"lang": "en"}).text.split("</header>")[0]
         assert 'class="crumb' in head and 'href="/"' in head, path
