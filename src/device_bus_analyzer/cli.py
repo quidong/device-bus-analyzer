@@ -23,8 +23,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--tz", default="Europe/Berlin")
     p.add_argument("files", nargs="+")
     sub.add_parser("rebuild", help="re-derive frames from the raw bursts")
-    rr = sub.add_parser("reconstruct-raw", help="recompute raw bytes of intact legacy frames (derived data, kept apart from real bursts)")
-    rr.add_argument("--source", required=True)
     p = sub.add_parser("validate-spec")
     p.add_argument("protocol")
     bk = sub.add_parser("build-knowledge", help="write knowledge-manifest.json (version and hashes of specs, catalogue, firmware)")
@@ -121,8 +119,6 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "import":
         for f in a.files:
             print(f, import_file(store, f, a.source, a.protocol, a.date, a.tz))
-    elif a.cmd == "reconstruct-raw":
-        print("raw rows computed:", store.reconstruct_raw(a.source))
     elif a.cmd == "rebuild":
         print("bursts re-decoded:", store.rebuild_frames())
     elif a.cmd == "collect":
