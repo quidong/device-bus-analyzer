@@ -1,6 +1,7 @@
 """SQLite storage. Raw bursts are append-only; frames are derived and can be rebuilt at any time."""
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 import threading
@@ -241,7 +242,24 @@ class Store:
         return next((d for d in self.devices() if d["name"] == name), None)
 
     def used_classifications(self) -> list[dict]:
-        return self._q("SELECT d.type, d.manufacturer, d.model, s.protocol FROM devices d JOIN sources s ON s.id=d.source_id")
+        """Type, manufacturer, model and bus of every stored device, plus those remembered from earlier saves."""
+        rows = self._q("SELECT d.type, d.manufacturer, d.model, s.protocol FROM devices d JOIN sources s ON s.id=d.source_id")
+        return rows + self.own_classifications()
+
+    def own_classifications(self) -> list[dict]:
+        try:
+            return [x for x in json.loads(self.kv_get("own_catalog", "[]") or "[]") if isinstance(x, dict)]
+        except ValueError:
+            return []
+
+    def remember_classification(self, type: str | None, manufacturer: str | None, model: str | None, protocol: str) -> None:
+        """Keep a manufacturer/model entered in the dialog as a suggestion, even after its device is deleted."""
+        if not manufacturer:
+            return
+        entry = {"type": type or None, "manufacturer": manufacturer, "model": model or None, "protocol": protocol}
+        own = self.own_classifications()
+        if entry not in own:
+            self.kv_set("own_catalog", json.dumps((own + [entry])[-500:]))
 
     def save_device(self, name: str, protocol: str, type: str | None, manufacturer: str | None, model: str | None,
                     host: str | None, port: int = 6053, key: str | None = None, clear_key: bool = False,

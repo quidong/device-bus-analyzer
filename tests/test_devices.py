@@ -374,3 +374,47 @@ def test_ui_has_no_misleading_read_only_claims_and_is_responsive(client):
     for needle in ("Neues Gerät", 'data-step="1"', 'data-step="4"', "Bosch", "Siemens", "Neff", "Electrolux", "AEG", "Firmware", "Löschen"):
         assert needle in devices, needle
     assert 'class="bottom"' in client.get("/s/dw/frames").text and 'data-label=' in client.get("/s/dw/frames").text
+
+
+def test_washer_is_a_fixed_type_and_every_brand_and_bus_is_offered_for_every_type(client):
+    login(client)
+    c = catalog.build([])
+    assert c["types"]["washer"]["de"] == "Waschmaschine" and c["types"]["washer"]["en"] == "Washing machine"
+    html = client.get("/devices?lang=de").text
+    dialog = html[html.index('id="device-dialog"'):]
+    assert 'value="washer"' in dialog and "Waschmaschine" in dialog
+    assert "data-types=" not in dialog                                             # no type filter on the manufacturers
+    for brand in ("Bosch", "Siemens", "Neff", "Electrolux", "AEG"):
+        assert f'value="{brand}"' in dialog
+    sel = dialog[dialog.index('id="proto-wrap"'):dialog.index("</select>")]
+    assert 'id="proto-wrap" hidden' not in dialog and "Bussystem" in sel
+    assert 'value="bshdbus"' in sel and 'value="macs"' in sel and "Electrolux, AEG" in sel and "Bosch" in sel
+
+
+def test_any_bus_can_be_chosen_for_a_known_brand(client, store):
+    token = login(client)
+    r = client.post("/devices", data={"csrf": token, "name": "wm", "type": "washer", "manufacturer": "AEG", "model": "L8FE",
+                                      "protocol": "bshdbus", "host": "wm.lan", "port": "6053", "enabled": "1"})
+    assert r.status_code == 303 and r.headers["location"].startswith("/firmware/bshdbus")
+    assert (store.device("wm")["protocol"], store.device("wm")["type"]) == ("bshdbus", "washer")
+
+
+def test_own_models_stay_suggested_after_the_device_is_deleted(client, store):
+    token = login(client)
+    data = {"csrf": token, "name": "wm2", "type": "washer", "manufacturer": "Miele", "model": "WWD 120", "protocol": "macs",
+            "host": "wm2.lan", "port": "6053", "enabled": "1"}
+    assert client.post("/devices", data=data).status_code == 303
+    assert client.post("/devices", data={**data, "name": "wm3"}).status_code == 303
+    assert store.own_classifications().count({"type": "washer", "manufacturer": "Miele", "model": "WWD 120", "protocol": "macs"}) == 1
+    store.delete_device("wm2"); store.delete_device("wm3")
+    mans = {m["name"]: m for m in catalog.build(store.used_classifications())["manufacturers"]}
+    assert mans["Miele"]["models"] == ["WWD 120"] and mans["Miele"]["model_types"]["WWD 120"] == ["washer"]
+    assert "WWD 120" in client.get("/devices").text
+
+
+def test_model_suggestions_know_their_type():
+    c = catalog.build([{"type": "dryer", "manufacturer": "Neff", "model": "D1", "protocol": "bshdbus"},
+                       {"type": None, "manufacturer": "Neff", "model": "Any 1", "protocol": "bshdbus"}])
+    neff = {m["name"]: m for m in c["manufacturers"]}["Neff"]
+    assert neff["model_types"]["S413K60S0E"] == ["dishwasher"]          # shipped: the brand makes only dishwashers in the catalogue
+    assert neff["model_types"]["D1"] == ["dryer"] and neff["model_types"]["Any 1"] == []

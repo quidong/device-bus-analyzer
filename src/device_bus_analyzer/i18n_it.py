@@ -132,7 +132,7 @@ other | Altro …
 other_maker | Nome del produttore
 other_type | Tipo
 decoder | Decodificatore
-decoder_note | Il decodificatore dipende dal produttore ed è fisso dopo la creazione del dispositivo.
+decoder_note | Il decodificatore segue il sistema bus ed è fisso una volta creato l'apparecchio.
 key_never | Solo salvata, mai più mostrata.
 needs_class | Tipo e modello non ancora assegnati.
 assign | Assegna
@@ -159,8 +159,7 @@ d | g
 menu | Navigazione
 more | Altro
 choose | Scegli un'opzione.
-model_hint | Suggerimenti dal catalogo. I tuoi valori verranno riproposti la prossima volta.
-brand_other_note | Gli altri produttori richiedono la scelta di un decodificatore.
+model_hint | Modelli noti di questo produttore. Non c'è? Scrivilo: viene salvato e riproposto la prossima volta, anche se l'apparecchio viene eliminato.
 cp_duration | {} s
 learn | Appreso
 learn_title | Cosa dice il bus
@@ -350,4 +349,6 @@ mcp_p5_title | Condividere i risultati (file di contributo)
 mcp_p5 | Riassumi i risultati affidabili su «{}» in un file di contributo nel formato della cartella contributions/ del progetto (tipo, produttore, modello, risultati con posizione del byte e stato). Niente frame, timestamp, indirizzi o chiavi.
 mcp_p6_title | Condividere un ciclo completo
 mcp_p6 | Esporta il ciclo <n.> di «{}» come CSV: tempo in secondi dall'inizio del ciclo, destinazione, comando e dati (hex), più programma e tipo, produttore e modello. Niente nomi host, indirizzi IP o chiavi.
+bus_system | Sistema bus
+bus_note | Preimpostato in base al produttore. Cambialo se il tuo apparecchio usa un altro bus; è fisso una volta creato l'apparecchio.
 """

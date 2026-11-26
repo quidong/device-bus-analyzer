@@ -6,12 +6,13 @@
 types:
   dishwasher: {de: "Geschirrspüler", en: "Dishwasher", es: "Lavavajillas", fr: "Lave-vaisselle", it: "Lavastoviglie"}
   dryer: {de: "Trockner", en: "Tumble dryer", es: "Secadora", fr: "Sèche-linge", it: "Asciugatrice"}
+  washer: {de: "Waschmaschine", en: "Washing machine", es: "Lavadora", fr: "Lave-linge", it: "Lavatrice"}
 manufacturers:
-  bosch:     {name: "Bosch",     protocol: bshdbus, types: [dishwasher], models: []}
-  siemens:   {name: "Siemens",   protocol: bshdbus, types: [dishwasher], models: []}
+  bosch:     {name: "Bosch",     protocol: bshdbus, types: [dishwasher, washer, dryer], models: []}
+  siemens:   {name: "Siemens",   protocol: bshdbus, types: [dishwasher, washer, dryer], models: []}
   neff:      {name: "Neff",      protocol: bshdbus, types: [dishwasher], models: ["S413K60S0E"]}
-  electrolux: {name: "Electrolux", protocol: macs,   types: [dryer],      models: []}
-  aeg:       {name: "AEG",       protocol: macs,    types: [dryer],      models: []}
+  electrolux: {name: "Electrolux", protocol: macs,   types: [dryer, washer, dishwasher], models: []}
+  aeg:       {name: "AEG",       protocol: macs,    types: [dryer, washer, dishwasher], models: []}
 firmware:
   bshdbus:
     files: [bshdbus-analysis.example.yaml]

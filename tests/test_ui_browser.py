@@ -151,3 +151,35 @@ def test_device_lifecycle_firmware_and_learning_on_desktop_and_phone(server, wid
 
 def sync_playwright_ctx():
     return pw.sync_playwright()
+
+
+@pytest.mark.parametrize("width", [1100, 390])
+def test_dialog_offers_every_brand_and_bus_and_remembers_own_models(server, width):
+    base, store = server
+    store.save_device("old", "bshdbus", "washer", "Miele", "WWD 120", "old.lan")
+    store.remember_classification("washer", "Miele", "WWD 120", "bshdbus")
+    store.delete_device("old")                                         # an own model outlives its device
+    with sync_playwright_ctx() as p:
+        b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+        pg = b.new_page(viewport={"width": width, "height": 900}); errors = []
+        pg.on("pageerror", lambda e: errors.append(str(e)))
+        _login(pg, base)
+        pg.goto(base + "/devices?lang=de"); pg.click("#new-device"); pg.wait_for_selector("#device-dialog", state="visible")
+        pg.click("#device-dialog label:has-text('Waschmaschine')"); _wizard_next(pg)
+        for brand in ("Bosch", "Siemens", "Neff", "Electrolux", "AEG", "Miele"):          # every brand for every type
+            assert pg.is_visible(f"#device-dialog label.opt:has-text('{brand}')"), brand
+        assert pg.is_visible("#f-proto")
+        pg.click("#device-dialog label.opt:has-text('AEG')"); assert pg.input_value("#f-proto") == "macs"
+        pg.click("#device-dialog label.opt:has-text('Bosch')"); assert pg.input_value("#f-proto") == "bshdbus"
+        pg.select_option("#f-proto", "macs")                               # own choice of bus is kept
+        assert pg.input_value("#f-proto") == "macs" and pg.inner_text("#decoder-name") == "macs"
+        pg.click("#device-dialog label.opt:has-text('Miele')"); assert pg.input_value("#f-proto") == "bshdbus"
+        _wizard_next(pg)
+        assert pg.is_visible("#model-chips button:has-text('WWD 120')")
+        pg.click("#model-chips button:has-text('WWD 120')"); assert pg.input_value("#f-model") == "WWD 120"
+        _wizard_next(pg)
+        pg.fill("#f-name", "wm"); pg.fill("#f-host", "wm.lan"); pg.click("#save"); pg.wait_for_url("**/firmware/bshdbus**")
+        d = store.device("wm")
+        assert (d["type"], d["manufacturer"], d["model"], d["protocol"]) == ("washer", "Miele", "WWD 120", "bshdbus")
+        assert errors == []
+        b.close()

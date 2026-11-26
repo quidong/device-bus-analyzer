@@ -1,9 +1,10 @@
-// Device dialog: side sheet on wide screens (all fields), step-by-step wizard on phones. type -> manufacturer -> model from the catalogue.
+// Device dialog: side sheet on wide screens (all fields), step-by-step wizard on phones. type -> manufacturer + bus -> model.
+// Every manufacturer and every bus is offered for every type; the manufacturer presets its usual bus.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var dlg = $("device-dialog"), form = $("device-form");
   var cat = JSON.parse($("catalog").dataset.catalog), T = JSON.parse($("catalog").dataset.t);
-  var mq = window.matchMedia("(max-width: 700px)"), step = 1, editing = false, lockedProto = "";
+  var mq = window.matchMedia("(max-width: 700px)"), step = 1, editing = false, lockedProto = "", lastMaker = null;
   var sets = [].slice.call(form.querySelectorAll("fieldset[data-step]"));
   var radios = function (n) { return [].slice.call(form.querySelectorAll('input[name="' + n + '"]')); };
   var checked = function (n) { return radios(n).filter(function (r) { return r.checked; })[0] || null; };
@@ -22,18 +23,16 @@
     var t = typeValue(), ct = checked("type_sel"), cm = checked("man_sel");
     $("type-other-wrap").hidden = !(ct && ct.value === "__other"); $("type-other").required = !$("type-other-wrap").hidden;
     $("man-other-wrap").hidden = !(cm && cm.value === "__other"); $("man-other").required = !$("man-other-wrap").hidden;
-    radios("man_sel").forEach(function (r) {                                  // only brands that make this kind of device
-      if (r.value === "__other") { return; }
-      var types = (r.dataset.types || "").split(",").filter(Boolean), ok = !t || !types.length || types.indexOf(t) >= 0;
-      r.nextElementSibling.hidden = !ok; if (!ok && r.checked) { r.checked = false; }
-      r.disabled = editing && !!lockedProto && r.dataset.protocol !== lockedProto;  // the decoder cannot change once the device exists
-    });
-    var m = maker(), proto = $("f-proto"), other = !!(cm && cm.value === "__other");
-    if (m && m.protocol && !proto.disabled) { proto.value = m.protocol; }
-    $("proto-wrap").hidden = !(other && !editing);
-    $("decoder-name").textContent = editing ? lockedProto : (m && m.protocol) || (other ? proto.value : "–");
+    var m = maker(), proto = $("f-proto"), mk = m ? m.name : (cm && cm.value === "__other" ? "__other" : "");
+    if (!editing && mk !== lastMaker) {                                       // a new manufacturer presets its usual bus once;
+      lastMaker = mk; if (m && m.protocol) { proto.value = m.protocol; }      // the user may still pick another one afterwards
+    }
+    $("proto-wrap").hidden = editing;                                         // the bus cannot change once the device exists
+    $("decoder-name").textContent = editing ? lockedProto : proto.value || "–";
     var fw = $("fw-link"), p = $("decoder-name").textContent; fw.hidden = !p || p === "–"; fw.href = "/firmware/" + encodeURIComponent(p);
-    var models = m ? m.models : [], dl = $("dl-models"), chips = $("model-chips");
+    var mt = (m && m.model_types) || {}, models = (m ? m.models : []).filter(function (x) {   // models known for this type (or any)
+      var ts = mt[x] || []; return !t || !ts.length || ts.indexOf(t) >= 0;
+    }), dl = $("dl-models"), chips = $("model-chips");
     dl.replaceChildren(); chips.replaceChildren();
     models.forEach(function (x) {
       var o = document.createElement("option"); o.value = x; dl.appendChild(o);
@@ -60,14 +59,17 @@
 
   function open(mode, d) {
     editing = mode === "edit"; d = d || {}; lockedProto = d.protocol || "";
-    form.reset();
+    form.reset(); lastMaker = null;
     form.action = editing ? "/devices/" + encodeURIComponent(d.name) : "/devices";
     $("dialog-title").textContent = editing ? T.edit : T["new"];
     $("f-name").value = d.name || ""; $("f-name").readOnly = editing;
     setRadio("type_sel", d.type || "", "type-other"); setRadio("man_sel", d.manufacturer || "", "man-other");
     $("f-model").value = d.model || ""; $("f-host").value = d.host || ""; $("f-port").value = d.port || 6053; $("f-key").value = "";
     $("f-enabled").checked = editing ? d.enabled === "1" : true;
-    $("f-proto").disabled = editing; if (editing) { $("f-proto").value = d.protocol; }
+    $("f-proto").disabled = editing; if (d.protocol) { $("f-proto").value = d.protocol; }
+    if (!editing && d.protocol) {                                    // re-opened after an error: keep the chosen bus
+      var cm = checked("man_sel"); lastMaker = maker() ? maker().name : (cm && cm.value === "__other" ? "__other" : "");
+    }
     $("key-note").hidden = !(editing && d.haskey); $("clear-key-row").hidden = !(editing && d.haskey);
     var del = $("delete-link"); del.hidden = !editing; if (editing) { del.href = "/devices/" + encodeURIComponent(d.name) + "/delete"; }
     form.classList.toggle("wizard", mq.matches); refresh(); go(1);

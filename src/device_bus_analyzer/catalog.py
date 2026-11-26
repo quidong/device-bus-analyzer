@@ -90,25 +90,33 @@ def event_rules(dev_type: str | None) -> dict[str, dict[str, Any]]:
 
 
 def build(used: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    """Catalogue as the dialog needs it: the shipped suggestions plus every value already used by a stored device,
-    so that a manufacturer or model typed once is offered again. Result is JSON-serialisable."""
+    """Catalogue as the dialog needs it: the shipped suggestions plus every value already used by a stored device or
+    remembered from an earlier save, so that a manufacturer or model typed once is offered again (also after the device
+    is deleted). Every manufacturer is offered for every type; ``model_types`` says for which types a model is known
+    (empty: any). Result is JSON-serialisable."""
     cat = _base()
     types = {k: dict(v) for k, v in cat.get("types", {}).items()}
     mans: dict[str, dict[str, Any]] = {}
     for m in cat.get("manufacturers", {}).values():
-        mans[m["name"]] = {"name": m["name"], "protocol": m["protocol"], "types": list(m.get("types", [])),
-                           "models": list(m.get("models", [])), "known": True}
+        mtypes = list(m.get("types", []))
+        mans[m["name"]] = {"name": m["name"], "protocol": m["protocol"], "types": mtypes, "models": list(m.get("models", [])),
+                           # a shipped model belongs to the manufacturer's type when it makes only one kind of device
+                           "model_types": {x: (mtypes[:1] if len(mtypes) == 1 else []) for x in m.get("models", [])}, "known": True}
     for u in used or []:
         t, man, mod, proto = u.get("type"), u.get("manufacturer"), u.get("model"), u.get("protocol")
         if t and t not in types:
             types[t] = {x: t for x in i18n.LANGS}
         if not man:
             continue
-        e = mans.setdefault(man, {"name": man, "protocol": proto, "types": [], "models": [], "known": False})
+        e = mans.setdefault(man, {"name": man, "protocol": proto, "types": [], "models": [], "model_types": {}, "known": False})
         if t and t not in e["types"]:
             e["types"].append(t)
         if mod and mod not in e["models"]:
             e["models"].append(mod)
+        if mod:
+            mt = e["model_types"].setdefault(mod, [])
+            if t and t not in mt:
+                mt.append(t)
     return {"types": types, "manufacturers": list(mans.values()), "protocols": sorted(protocols.PROTOCOLS)}
 
 

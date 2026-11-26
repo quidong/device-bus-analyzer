@@ -394,6 +394,7 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
             port, key = validate_device_input(name, form["host"], form["port"], protocol, form["key"], protocols.PROTOCOLS)
             store.save_device(name, protocol, form["type"] or None, form["manufacturer"] or None, form["model"] or None,
                               form["host"], port, key, clear_key=form["clear_key"], enabled=form["enabled"])
+            store.remember_classification(form["type"], form["manufacturer"], form["model"], protocol)
         except ValueError as exc:
             msg = str(exc)
             code = msg if msg in i18n.STR["en"] else "bad_input"

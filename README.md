@@ -40,8 +40,10 @@ Hardware: the MACS board (schematic, KiCad, Gerber, enclosure) is in [`hardware/
 | `API_TOKEN` | optional: created on the first start (shown on the *AI connection* page); a value set here wins and is adopted |
 | `DBA_TZ` | display timezone, default `Europe/Berlin` |
 
-3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type, manufacturer and model (all three are required; suggestions from
-   `src/device_bus_analyzer/catalog.yaml`, free text is allowed; the manufacturer selects the decoder protocol), enter host, port and the
+3. Open `http://<host>:8080` (optional HTTPS: set `DBA_TLS=1` and `DBA_TLS_HOSTS`, then install the local CA once from `/tls/ca.crt`), sign in, then **Devices > New device**: choose type (dishwasher, washing machine, tumble dryer or your own), manufacturer, bus system and model (type, manufacturer and model
+   are required). Every manufacturer and every bus is offered for every type; the manufacturer presets its usual bus, which you can
+   change. Known models come from `src/device_bus_analyzer/catalog.yaml`; a model or manufacturer you type in is remembered and
+   suggested again, even after its device is deleted. Then enter host, port and the
    ESPHome API key. Collection starts immediately and changes apply without a restart. Expose it in your LAN only; there is no password reset and no e-mail sending.
    If you must put it behind a reverse proxy, set `COOKIE_SECURE=1` and terminate TLS there.
 

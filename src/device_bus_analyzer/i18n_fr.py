@@ -132,7 +132,7 @@ other | Autre …
 other_maker | Nom du fabricant
 other_type | Type
 decoder | Décodeur
-decoder_note | Le décodeur dépend du fabricant et est fixé une fois l'appareil créé.
+decoder_note | Le décodeur suit le système de bus et est figé une fois l'appareil créé.
 key_never | Enregistrée uniquement, jamais réaffichée.
 needs_class | Type et modèle pas encore attribués.
 assign | Attribuer
@@ -159,8 +159,7 @@ d | j
 menu | Navigation
 more | Plus
 choose | Veuillez choisir.
-model_hint | Suggestions du catalogue. Vos propres valeurs seront proposées à nouveau la prochaine fois.
-brand_other_note | Les autres fabricants nécessitent le choix d'un décodeur.
+model_hint | Modèles connus de ce fabricant. Absent de la liste ? Saisissez-le : il est conservé et proposé à nouveau la prochaine fois, même si l'appareil est supprimé.
 cp_duration | {} s
 learn | Appris
 learn_title | Ce que dit le bus
@@ -350,4 +349,6 @@ mcp_p5_title | Partager les résultats (fichier de contribution)
 mcp_p5 | Résume les résultats fiables sur « {} » dans un fichier de contribution au format du dossier contributions/ du projet (type, fabricant, modèle, résultats avec position d'octet et statut). Ni trames, ni horodatages, ni adresses, ni clés.
 mcp_p6_title | Partager un cycle complet
 mcp_p6 | Exporte le cycle <n°> de « {} » en CSV : temps en secondes depuis le début du cycle, destination, commande et données (hex), plus le programme et le type, le fabricant et le modèle. Ni noms d'hôte, ni adresses IP, ni clés.
+bus_system | Système de bus
+bus_note | Présélectionné selon le fabricant. Changez-le si votre appareil utilise un autre bus ; il est figé une fois l'appareil créé.
 """
