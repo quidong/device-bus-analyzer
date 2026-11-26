@@ -17,8 +17,9 @@ URL = "https://example.test/repo/knowledge-manifest.json"
 
 
 @pytest.fixture(autouse=True)
-def isolated(tmp_path):
+def isolated(tmp_path, monkeypatch):
     knowledge.configure(tmp_path / "knowledge")
+    monkeypatch.setattr(knowledge, "pubkey", lambda: None)      # update mechanics with unsigned fakes; signing has its own tests
     knowledge.MIN_INTERVAL = 0                 # the rate limit has its own test
     yield
     knowledge.MIN_INTERVAL = 60

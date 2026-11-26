@@ -96,8 +96,9 @@ def test_restore_refuses_files_with_triggers_views_or_virtual_tables(tmp_path):
 
 # --- knowledge updates -----------------------------------------------------------------------------------------------------
 @pytest.fixture
-def kn(tmp_path):
+def kn(tmp_path, monkeypatch):
     knowledge.configure(tmp_path / "knowledge")
+    monkeypatch.setattr(knowledge, "pubkey", lambda: None)      # these checks run behind the signature; it has its own tests
     knowledge.MIN_INTERVAL = 0
     yield
     knowledge.MIN_INTERVAL = 60
