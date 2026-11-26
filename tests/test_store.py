@@ -195,3 +195,28 @@ def test_purge_legacy_removes_only_frames_without_raw_data(store):
     assert store.purge_legacy("dw") == 0
     assert [(r["ds"], r["cmd"]) for r in store.command_stats("dw", include_damaged=True)] == [(0x25, 0x2008)]
     assert store.purge_legacy("unknown") == 0
+
+
+def test_damaged_frames_are_not_interpreted(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    bad = bytearray(build_frame(0x25, 0x2008, bytes([0xD2, 0x30, 0x30, 0, 0x1E, 0, 3, 0x1E]))); bad[-1] ^= 0xFF
+    store.ingest_line(sid, raw1(1, 1000, bytes(bad)), 1_000_000.0)
+    rows = store.frames("dw")
+    assert rows and not rows[0]["crc_ok"]
+    d = rows[0]["decoded"]
+    assert d["name"] is None and d["values"] == {} and d["sender"]["value"] is None and d["status"] == "unknown"
+
+
+def test_frames_are_rederived_once_when_the_parser_version_changes(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, raw1(1, 1000, build_frame(0x25, 0x2008, bytes(8)) + b"\x2a"), 1_000_000.0)
+    store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) "
+                     "SELECT source_id, session_id, burst_id, ts, 1, 2, x'00', 0, NULL FROM frames LIMIT 1")   # stale candidate
+    store.db.commit()
+    assert store.ensure_frames_current() == 1
+    assert [(r["ds"], r["crc_ok"]) for r in store.frames("dw")] == [(0x25, 1)]
+    assert store.ensure_frames_current() is None

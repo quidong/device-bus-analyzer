@@ -136,6 +136,9 @@ def main(argv: list[str] | None = None) -> int:
         import uvicorn
 
         from .web import create_app
+        _r = store.ensure_frames_current()
+        if _r is not None:
+            print(f"frames re-derived from raw bursts: {_r}", flush=True)
         s = config.apply_saved(s, store.kv_get("config"))     # settings saved in the UI (HTTPS, time zone, ...)
         s = config.ensure_secrets(s)                       # first start: session secret and API token are created and kept in the data volume
         kw = {}

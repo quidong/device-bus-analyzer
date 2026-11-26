@@ -60,6 +60,17 @@ CREATE TABLE IF NOT EXISTS learned_values(        -- numbers that follow what th
 """
 
 
+FRAMES_VERSION = "2"      # raise when the burst parser changes: frames are then re-derived from the raw bursts at start
+
+
+def _damaged(d: dict) -> dict:
+    """A telegram that failed its checksum is only a candidate: its address bytes may be garbage, so nothing about it
+    (name, values, sender, status) is claimed."""
+    unknown = {"value": None, "status": "unknown", "evidence": "damaged telegram (checksum failed), not interpreted"}
+    return {**d, "name": None, "title": None, "status": "unknown", "values": {}, "fields": [], "acked_by": None,
+            "sender": unknown, "receiver": dict(unknown), "notes": ["damaged telegram: not decoded"]}
+
+
 class Store:
     def __init__(self, path: str | Path):
         self.path = str(path)
@@ -424,6 +435,14 @@ class Store:
             self.db.commit()
             return cur.rowcount
 
+    def ensure_frames_current(self) -> int | None:
+        """Re-derive the frames from the raw bursts once whenever FRAMES_VERSION changed. Returns bursts re-decoded or None."""
+        if self.kv_get("frames_version") == FRAMES_VERSION:
+            return None
+        n = self.rebuild_frames()
+        self.kv_set("frames_version", FRAMES_VERSION)
+        return n
+
     def rebuild_frames(self, source_id: int | None = None) -> int:
         """Re-derive frames from raw bursts, for example after the decoder improved. Raw data is never touched."""
         n = 0
@@ -590,7 +609,7 @@ class Store:
                        f"ORDER BY ts, id LIMIT ? OFFSET ?", [*a, min(limit, 5000), offset])
         proto = src["protocol"]
         for r in rows:
-            r["decoded"] = decode(proto, r["ds"], r["cmd"], r["data"], r["ack"])
+            r["decoded"] = decode(proto, r["ds"], r["cmd"], r["data"], r["ack"]) if r["crc_ok"] else _damaged(decode(proto, r["ds"], r["cmd"], b""))
         return rows
 
     def timeline(self, source: str, since: float | None = None, until: float | None = None, limit: int = 2000) -> list[dict]:
