@@ -59,6 +59,8 @@ runs:
     evidence: "fallback when the end marker frame was lost (CRC error): the end is the last telegram before a silent gap"
   context_seconds: 300      # telegrams shown before the start (program selection, power on)
   program_key: "17/1011"    # program selection used to name the run
+  program_fallback_key: "25/2010"   # no selection before the start (default program): use the echo from power-on
+  program_fallback_seconds: 43200
   remaining_key: "25/2008"  # remaining time, byte 0 in minutes
 enums:
   program:
@@ -88,7 +90,7 @@ commands:
     name: remaining_time
     title: Remaining time
     status: confirmed
-    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time"
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time Eco 50 C run from the default program (no selection, started 43 min after power-on): 210 min announced, byte 0 fell by one per minute from 210 to 20 over 188 min with no large re-estimate; the minute tick only shifted by seconds at the phase pulses (28 s early at +113 min, 4 s late at +131 min, one minute skipped at +149 min), and the second hour byte pair stayed 3030. So the large jumps of the Auto runs come from the program, not from the counter itself"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
       - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: confirmed}
@@ -97,7 +99,7 @@ commands:
     name: progress
     title: Program progress
     status: confirmed
-    evidence: "rises in uneven steps to 0x64 (100) when the remaining time hits 0; Eco 50 C showed 0x5F (95) with 11 of 210 min left. In an Auto 45-65 C run it jumped from 28 to 47 percent within a second when the remaining time was re-estimated (118 to 88 min), so it is derived from the current estimate and not from elapsed time alone"
+    evidence: "rises in uneven steps to 0x64 (100) when the remaining time hits 0; Eco 50 C showed 0x5F (95) with 11 of 210 min left. In an Auto 45-65 C run it jumped from 28 to 47 percent within a second when the remaining time was re-estimated (118 to 88 min), so it is derived from the current estimate and not from elapsed time alone In the Eco 50 C run it rose by one percent about every 2.1 minutes (210 min / 100), reached 0x5A (90) after 188 min, so with an unchanged estimate it simply follows elapsed time / announced time"
     fields:
       - {byte: 0, kind: u8, name: progress_percent, label: Progress, unit: "%", status: confirmed}
   - key: "25/2012"
@@ -128,7 +130,7 @@ commands:
     name: program_echo
     title: Program echo from the module
     status: assumed
-    evidence: "byte 0 is a program id in the module; at power-on it is mostly 0x0e (Eco): 14 of 15 power-ons, also when the previous run used Auto, and once 0x0d (Auto after an Auto run), so 'program used last' does not explain it reliably; the panel then sets the selection with 17/1010 + 17/1011 (0x15 in a 1 h 65 C run, 0x0d for Auto), so the echo is not the current selection once the panel has changed it"
+    evidence: "byte 0 is a program id in the module; at power-on it is mostly 0x0e (Eco): 14 of 15 power-ons, also when the previous run used Auto, and once 0x0d (Auto after an Auto run), so 'program used last' does not explain it reliably; the panel then sets the selection with 17/1010 + 17/1011 (0x15 in a 1 h 65 C run, 0x0d for Auto), so the echo is not the current selection once the panel has changed it The Eco 50 C run that started without a selection ran the program of this echo (0x0e), so the echo is the program the module holds at power-on; selections made later with 17/1010 + 17/1011 do not change it"
     fields:
       - {byte: 0, kind: enum, enum: program, name: program, label: Program, status: confirmed}
   - key: "17/1000"
@@ -177,7 +179,7 @@ commands:
     name: phase
     title: Program phase
     status: unknown
-    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Auto 45-65 C run (7216 s), minutes after start: 21 (start), 22 (+19), then 12 for 5 s followed by 22 at +47, +57, +58 and +69, 24 (+70), 28 (+84), 18 for 5 s followed by 28 twice at +86. In a second Auto run (110 min) the same sequence came at +19, +42/+51/+61 (pulses), 4 at +61, 8 at +75, so step 2 always starts at +19 min and step 8 lasted 36 min in both Auto runs (35.5 and 36) while the middle steps vary with the run length. Hypothesis: low nibble 1/2/4/8 = step in the order 1, 2, 4, 8 (the last step 8 lasts the final 19 to 35 percent of the run, probably drying), bit 0x10 = short pulse. In the Auto run each pulse in step 2 coincides with a drop of the remaining time (see 25/2008), so the pulses mark moments where the module re-estimates the run time (probably sensor measurements); not verified"
+    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Auto 45-65 C run (7216 s), minutes after start: 21 (start), 22 (+19), then 12 for 5 s followed by 22 at +47, +57, +58 and +69, 24 (+70), 28 (+84), 18 for 5 s followed by 28 twice at +86. In a second Auto run (110 min) the same sequence came at +19, +42/+51/+61 (pulses), 4 at +61, 8 at +75, so step 2 always starts at +19 min and step 8 lasted 36 min in both Auto runs (35.5 and 36) while the middle steps vary with the run length. Hypothesis: low nibble 1/2/4/8 = step in the order 1, 2, 4, 8 (the last step 8 lasts the final 19 to 35 percent of the run, probably drying), bit 0x10 = short pulse. In the Auto run each pulse in step 2 coincides with a drop of the remaining time (see 25/2008), so the pulses mark moments where the module re-estimates the run time (probably sensor measurements); not verified Eco 50 C run (210 min, default program): 20 at power-on, 21 at the start, 22 at +15.5 min, 12 for 3 s at +113 min, 24 at +129 min, 14 for 1 s at +131 min, 28 at +147.5 min and 18 for 1 s (twice) at +149 min, so the last step 8 began 62 min before the announced end, 30 percent of the run (Auto runs 19 to 35 percent), which fits drying. Each pulse comes within seconds of a small shift of the remaining-time tick (see 25/2008): the pulse marks a re-evaluation of the remaining time. The first step 2 came at +15.5 min here, at +19 min in the Auto runs"
     fields:
       - {byte: 0, kind: u8, name: phase, label: Phase, status: unknown}
   - key: "25/2004"
@@ -213,8 +215,8 @@ commands:
   - key: "25/1012"
     name: cmd_1012
     title: Nominal run time of the stored program (seven data bytes at power-on)
-    status: assumed
-    evidence: "00 00 00 00 03 1e 00 in 15 power-ons, once 00 00 00 00 02 2d 00. Bytes 4 and 5 read as hours and minutes give 3:30 = 210 min (Eco) and 2:45 = 165 min (Auto), the announced times of the programs that 25/2010 names in the same moment (0e and once 0d, 5 ms apart). So it is the nominal run time of the program the module holds at power-on; bytes 0-3 and 6 are always 0"
+    status: confirmed
+    evidence: "00 00 00 00 03 1e 00 in 15 power-ons, once 00 00 00 00 02 2d 00. Bytes 4 and 5 read as hours and minutes give 3:30 = 210 min (Eco) and 2:45 = 165 min (Auto), the announced times of the programs that 25/2010 names in the same moment (0e and once 0d, 5 ms apart). So it is the nominal run time of the program the module holds at power-on; bytes 0-3 and 6 are always 0 Confirmed by the Eco 50 C run that started without any program selection: the run announced 210 min, exactly bytes 4 and 5 (3:30) of this frame, and the Auto runs announced 165 min (2:45)"
     fields:
       - {byte: 4, kind: u8, name: nominal_h, label: Nominal hours, unit: h, status: assumed}
       - {byte: 5, kind: u8, name: nominal_m, label: Nominal minutes, unit: min, status: assumed}

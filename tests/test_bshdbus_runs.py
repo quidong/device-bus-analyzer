@@ -103,7 +103,7 @@ def test_spec_names_the_end_marker():
 @pytest.mark.parametrize("cmd,name,data,status", [
     (0x2009, "heartbeat", b"\x00", "assumed"),
     (0x2015, "start_parameter", bytes.fromhex("0fff"), "unknown"),
-    (0x1012, "cmd_1012", bytes.fromhex("00000000031e00"), "assumed"),
+    (0x1012, "cmd_1012", bytes.fromhex("00000000031e00"), "confirmed"),
 ])
 def test_new_commands_are_known_with_honest_status(cmd, name, data, status):
     d = spec.decode("bshdbus", 0x25, cmd, data)
@@ -165,3 +165,29 @@ def test_audit_statuses_after_the_review():
 def test_previously_missing_commands_are_in_the_spec():
     idx = spec.load_spec("bshdbus")["_index"]
     assert idx["17/1001"]["status"] == "unknown" and idx["25/1013"]["status"] == "unknown"
+
+
+def test_run_without_program_selection_uses_the_power_on_echo(store):
+    """Started without choosing a program: the machine runs the one it announced at power-on (hours earlier)."""
+    sid = store.source("dw4", "bshdbus")
+    echo = bytes.fromhex("0e0002000500400000a341e1096a20802100e40000")
+    _put(store, sid, 1, T0, 0x25, 0x2010, echo)
+    _put(store, sid, 2, T0 + 2600, 0x17, 0x1013, b"\x01")
+    _put(store, sid, 3, T0 + 2610, 0x25, 0x2008, bytes([210, 0x30, 0x30, 3, 30, 0, 3, 30]))
+    (r,) = store.runs("dw4")
+    assert r["program"] == "Eco 50 C"
+    # an explicit selection before the start still wins
+    sid2 = store.source("dw5", "bshdbus")
+    _put(store, sid2, 1, T0, 0x25, 0x2010, echo)
+    _put(store, sid2, 2, T0 + 2590, 0x17, 0x1011, b"\x15")
+    _put(store, sid2, 3, T0 + 2600, 0x17, 0x1013, b"\x01")
+    (r2,) = store.runs("dw5")
+    assert r2["program"] == "1 h 65 C"
+
+
+def test_spec_records_the_eco_run_findings():
+    idx = spec.load_spec("bshdbus")["_index"]
+    assert "Eco 50 C run from the default program" in idx["25/2008"]["evidence"]
+    assert "62 min before the announced end" in idx["25/2005"]["evidence"]
+    assert idx["25/1012"]["status"] == "confirmed"
+    assert "default program" in idx["25/2008"]["evidence"] or "without a selection" in idx["25/2010"]["evidence"]

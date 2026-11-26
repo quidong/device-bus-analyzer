@@ -148,6 +148,14 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                 if p:
                     d = decode(protocol, p["ds"], p["cmd"], p["data"])
                     program = d["values"].get("program")
+            if program is None and rules.get("program_fallback_key"):
+                # no program was chosen before this start: the machine runs the one it announced at power-on
+                fb_ds, fb_cmd = _split_key(rules["program_fallback_key"])
+                p = db.execute("SELECT ds, cmd, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND ts<=? AND ts>=? "
+                               "AND crc_ok=1 ORDER BY ts DESC LIMIT 1",
+                               (source_id, fb_ds, fb_cmd, s["last_ts"], s["ts"] - float(rules.get("program_fallback_seconds", 43200)))).fetchone()
+                if p:
+                    program = decode(protocol, p["ds"], p["cmd"], p["data"])["values"].get("program")
             rem_start = rem_end = None
             if rem_cmd is not None:
                 rows = [r["data"] for r in db.execute(
