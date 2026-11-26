@@ -53,7 +53,7 @@ runs:
       byte: 0
       value: 3
       status: confirmed
-      evidence: "27/2007 = 03 (finished) is sent exactly once at the end of each of the six recorded runs (1 h 65 C, Auto 45-65 C, Eco 50 C) and of one earlier partial recording; the module then sends 25/2012 = 00 about 120 s later"
+      evidence: "27/2007 = 03 (finished) is sent exactly once at the end of each of the seven recorded runs (1 h 65 C, Auto 45-65 C, Eco 50 C) and of one earlier partial recording; the module then sends 25/2012 = 00 about 120 s later"
     gap_minutes: 20         # fallback: no telegram for this long ends the run, or the next start begins a new one
     status: assumed
     evidence: "fallback when the end marker frame was lost (CRC error): the end is the last telegram before a silent gap"
@@ -90,7 +90,7 @@ commands:
     name: remaining_time
     title: Remaining time
     status: confirmed
-    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time Eco 50 C run from the default program (no selection, started 43 min after power-on): 210 min announced, byte 0 fell by one per minute from 210 to 20 over 188 min with no large re-estimate; the minute tick only shifted by seconds at the phase pulses (28 s early at +113 min, 4 s late at +131 min, one minute skipped at +149 min), and the second hour byte pair stayed 3030. So the large jumps of the Auto runs come from the program, not from the counter itself"
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time Eco 50 C run from the default program (no selection, started 43 min after power-on): 210 min announced, byte 0 fell by one per minute from 210 to 20 over 188 min with no large re-estimate; the minute tick only shifted by seconds at the phase pulses (28 s early at +113 min, 4 s late at +131 min, one minute skipped at +149 min), and the second hour byte pair stayed 3030. So the large jumps of the Auto runs come from the program, not from the counter itself The Eco 50 C run ended after 207.3 min, not 210: the counter skipped one minute at +149 min and the last step went from 2 straight to 0 within 45 s, where the end marker 27/2007 = 03 came; so Eco also ends a little early, by under three minutes"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
       - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: confirmed}
@@ -106,12 +106,12 @@ commands:
     name: after_end
     title: Run flag (01 at the start, 00 two minutes after the end)
     status: unknown
-    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; also seen as 00 less than a second after the door was opened while the machine was idle after power-on"
+    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; also seen as 00 less than a second after the door was opened while the machine was idle after power-on In the Eco 50 C run the 00 followed the end marker after 119.7 s, as in the Auto runs"
   - key: "25/2013"
     name: end_marker
     title: Marker ff00 (at the start and at the end of a run)
     status: unknown
-    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of every run (25/2005 = 0x28 in the same burst), but also about 1 s after power-on at the start of a run; so it is not an end marker on its own: use 27/2007 = 03"
+    evidence: "value ff00 sent together with 27/2007 = 03 and 25/1013 = 00 at the end of every run (25/2005 = 0x28 in the same burst), but also about 1 s after power-on at the start of a run; so it is not an end marker on its own: use 27/2007 = 03 Also sent with the end marker of the Eco 50 C run, in the same instant as 27/2007 = 03, 25/2008 = 0, 25/2000 = 0x64, 25/2004 = 200000, 24/2006 and 25/1013 = 00"
   - key: "17/1010"
     name: program_select_early
     title: Program selection (panel, early)
@@ -230,7 +230,7 @@ commands:
     name: cmd_1013
     title: "Module message 1013 (single byte, always 00)"
     status: unknown
-    evidence: "28 frames, always the single byte 00; possibly the module's counterpart of the panel start command 17/1013 (which carries 01 when a program starts), so 00 would be 'no start'. Meaning unproven"
+    evidence: "28 frames, always the single byte 00; possibly the module's counterpart of the panel start command 17/1013 (which carries 01 when a program starts), so 00 would be 'no start'. Meaning unproven Seen again at the end of the Eco 50 C run in the same instant as 27/2007 = 03 and 25/2013 = ff00, so it belongs to the end of a run as well as to power-on"
     fields: []
   - key: "25/1017"
     name: cmd_1017

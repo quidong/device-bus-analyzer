@@ -191,3 +191,10 @@ def test_spec_records_the_eco_run_findings():
     assert "62 min before the announced end" in idx["25/2005"]["evidence"]
     assert idx["25/1012"]["status"] == "confirmed"
     assert "default program" in idx["25/2008"]["evidence"] or "without a selection" in idx["25/2010"]["evidence"]
+
+
+def test_spec_records_the_eco_run_end():
+    idx = spec.load_spec("bshdbus")["_index"]
+    assert "207.3 min" in idx["25/2008"]["evidence"]
+    assert "119.7 s" in idx["25/2012"]["evidence"]
+    assert "seven recorded runs" in spec.load_spec("bshdbus")["runs"]["end"]["marker"]["evidence"]
