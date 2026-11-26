@@ -60,7 +60,13 @@ CREATE TABLE IF NOT EXISTS learned_values(        -- numbers that follow what th
 """
 
 
-FRAMES_VERSION = "2"      # raise when the burst parser changes: frames are then re-derived from the raw bursts at start
+FRAMES_VERSION = "3"      # raise when the burst parser or the derivation changes: frames are then re-derived from the raw bursts at start
+
+
+DUP_WINDOW_S = 5.0
+# an intact frame with the same bytes that came from a raw burst, near the given time
+_DUP_SQL = ("SELECT 1 FROM frames WHERE source_id=? AND ds=? AND cmd=? AND data=? AND crc_ok=1 AND burst_id IS NOT NULL "
+            "AND ts BETWEEN ? AND ? LIMIT 1")
 
 
 def _damaged(d: dict) -> dict:
@@ -369,6 +375,9 @@ class Store:
         """The same frame is logged twice by the old firmware: 'Received frame ...' (component) and 'FRAME ...' (dbus_raw,
         with ACK info). A FRAME line replaces the RECEIVED row of the same bytes logged within 2 s before it."""
         key = (e["ds"], e["cmd"], bytes(e["data"]))
+        if self.db.execute(_DUP_SQL.replace("{f}", "?"), (source_id, e["ds"], e["cmd"], bytes(e["data"]), recv_ts - DUP_WINDOW_S,
+                                                          recv_ts + DUP_WINDOW_S)).fetchone():
+            return                                   # the board also sends the raw burst: this decoded line would count the frame twice
         pend = self._pending_rx.setdefault(source_id, [])
         pend[:] = [p for p in pend if recv_ts - p[2] <= 2.0]
         if e["typ"] == "FRAME":
@@ -440,6 +449,12 @@ class Store:
         if self.kv_get("frames_version") == FRAMES_VERSION:
             return None
         n = self.rebuild_frames()
+        with self.lock:                               # decoded legacy lines that only repeat a raw frame counted it twice
+            self.db.execute("DELETE FROM frames WHERE burst_id IS NULL AND crc_ok=1 AND EXISTS (SELECT 1 FROM frames r "
+                            "WHERE r.source_id=frames.source_id AND r.ds=frames.ds AND r.cmd=frames.cmd AND r.data=frames.data "
+                            "AND r.crc_ok=1 AND r.burst_id IS NOT NULL AND r.ts BETWEEN frames.ts - ? AND frames.ts + ?)",
+                            (DUP_WINDOW_S, DUP_WINDOW_S))
+            self.db.commit()
         self.kv_set("frames_version", FRAMES_VERSION)
         return n
 

@@ -220,3 +220,29 @@ def test_frames_are_rederived_once_when_the_parser_version_changes(store):
     assert store.ensure_frames_current() == 1
     assert [(r["ds"], r["crc_ok"]) for r in store.frames("dw")] == [(0x25, 1)]
     assert store.ensure_frames_current() is None
+
+
+def test_decoded_lines_that_repeat_a_raw_frame_are_not_stored_twice(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    fr = build_frame(0x25, 0x2008, bytes([1, 2, 3, 4, 5, 6, 7, 8]))
+    store.ingest_line(sid, raw1(1, 1000, fr + b"\x2a"), 1_000_000.0)
+    store.ingest_line(sid, "Received frame dest 0x25 cmd 0x2008: 0x0102030405060708", 1_000_001.0)
+    assert len(store.frames("dw")) == 1
+    store.ingest_line(sid, "Received frame dest 0x25 cmd 0x2008: 0x0102030405060708", 1_000_900.0)   # much later: a real new frame
+    assert len(store.frames("dw")) == 2
+
+
+def test_rederive_removes_existing_legacy_duplicates(store):
+    from conftest import raw1
+    from device_bus_analyzer.protocols.bshdbus import build_frame
+    sid = store.source("dw", "bshdbus")
+    store.ingest_line(sid, raw1(1, 1000, build_frame(0x25, 0x2008, bytes(8)) + b"\x2a"), 1_000_000.0)
+    ts = store.frames("dw")[0]["ts"]
+    store.db.execute("INSERT INTO frames(source_id, session_id, burst_id, ts, ds, cmd, data, crc_ok, ack) VALUES(?,?,?,?,?,?,?,?,?)",
+                     (sid, None, None, ts + 0.5, 0x25, 0x2008, bytes(8), 1, None))
+    store.db.commit()
+    assert len(store.frames("dw")) == 2
+    store.ensure_frames_current()
+    assert len(store.frames("dw")) == 1
