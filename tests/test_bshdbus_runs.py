@@ -101,7 +101,7 @@ def test_spec_names_the_end_marker():
 
 
 @pytest.mark.parametrize("cmd,name,data,status", [
-    (0x2009, "heartbeat", b"\x00", "assumed"),
+    (0x2009, "heartbeat", b"\x00", "unknown"),
     (0x2015, "start_parameter", bytes.fromhex("0fff"), "unknown"),
     (0x1012, "cmd_1012", bytes.fromhex("00000000031e00"), "confirmed"),
 ])
@@ -156,7 +156,7 @@ def test_audit_statuses_after_the_review():
     cmds = {c["key"]: c for c in spec.load_spec("bshdbus")["commands"]}
     assert cmds["25/2010"]["status"] == "assumed"                       # echo is mostly 0e, not reliably 'last used'
     assert cmds["22/7ff1"]["status"] == "assumed" and "ACK" in cmds["22/7ff1"]["evidence"]
-    assert cmds["25/2009"]["status"] == "assumed" and "10 s" in cmds["25/2009"]["evidence"]
+    assert cmds["25/2009"]["status"] == "unknown" and "not periodic" in cmds["25/2009"]["evidence"]
     assert [f["name"] for f in cmds["25/1012"]["fields"]] == ["nominal_h", "nominal_m"]
     d = spec.decode("bshdbus", 0x25, 0x1012, bytes([0, 0, 0, 0, 3, 30, 0]))["values"]
     assert d["nominal_h"] == 3 and d["nominal_m"] == 30
@@ -198,3 +198,11 @@ def test_spec_records_the_eco_run_end():
     assert "207.3 min" in idx["25/2008"]["evidence"]
     assert "119.7 s" in idx["25/2012"]["evidence"]
     assert "seven recorded runs" in spec.load_spec("bshdbus")["runs"]["end"]["marker"]["evidence"]
+
+
+def test_confirmed_after_the_review_of_the_raw_recordings():
+    idx = spec.load_spec("bshdbus")["_index"]
+    assert idx["17/1007"]["status"] == "confirmed" and idx["17/1013"]["status"] == "confirmed"
+    assert idx["25/2005"]["status"] == "assumed"
+    hb = idx["25/2009"]
+    assert hb["status"] == "unknown" and "not periodic" in hb["evidence"] and "heartbeat" not in hb["title"].replace("not a fixed-interval heartbeat", "")

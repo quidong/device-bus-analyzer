@@ -37,7 +37,7 @@ nodes:
     status: assumed
     evidence: "state reports (remaining time, door, operating state) appear on their own while the module runs"
 acks:
-  "1": {node: "power module", status: assumed, evidence: "ACK = 0x0A | destination node << 4 (hn); in our data 1A follows 0x1x frames, 2A follows 0x2x frames"}
+  "1": {node: "power module", status: assumed, evidence: "ACK = 0x0A | destination node << 4 (hn); in our data 1A follows 0x1x frames (35 of 35), 2A follows 0x2x frames (1834 of 1838 acknowledged; the other 4 were 25/2008 with the Auto estimate 2:45, acknowledged with 0A)"}
   "2": {node: "control panel", status: assumed, evidence: "ACK high nibble = addressed node (hn): 2A acknowledges 0x2x frames, i.e. the panel"}
 # How telegrams are grouped into runs (program cycles). Detection is a heuristic and always marked as such.
 runs:
@@ -158,10 +158,10 @@ commands:
   - key: "17/1007"
     name: power
     title: Power on (panel)
-    status: assumed
-    evidence: "value 01 appears when the machine is switched on"
+    status: confirmed
+    evidence: "value 01 appears when the machine is switched on: in 5 of 5 power-ons of the raw recordings, each together with the module's power-on messages 25/2010 and 22/7ff1 and never at any other time"
     fields:
-      - {byte: 0, kind: u8, name: power, label: Power, status: assumed}
+      - {byte: 0, kind: u8, name: power, label: Power, status: confirmed}
   - key: "17/1012"
     name: delay_start
     title: Delayed start (7 data bytes)
@@ -171,15 +171,15 @@ commands:
   - key: "17/1013"
     name: start
     title: Start command
-    status: assumed
-    evidence: "data 01 is sent together with 17/1012 at program start; the module then reports 27/2007 = 01"
+    status: confirmed
+    evidence: "data 01 is sent together with 17/1012 at program start; the module then reports 27/2007 = 01. Seen at 4 of 4 run starts of the raw recordings (Auto, Auto, Auto, Eco from the default program) and at no other time"
     fields:
-      - {byte: 0, kind: u8, name: start, label: Start, status: assumed}
+      - {byte: 0, kind: u8, name: start, label: Start, status: confirmed}
   - key: "25/2005"
     name: phase
     title: Program phase
-    status: unknown
-    evidence: "changes during a run; mapping of values to phases not verified. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Auto 45-65 C run (7216 s), minutes after start: 21 (start), 22 (+19), then 12 for 5 s followed by 22 at +47, +57, +58 and +69, 24 (+70), 28 (+84), 18 for 5 s followed by 28 twice at +86. In a second Auto run (110 min) the same sequence came at +19, +42/+51/+61 (pulses), 4 at +61, 8 at +75, so step 2 always starts at +19 min and step 8 lasted 36 min in both Auto runs (35.5 and 36) while the middle steps vary with the run length. Hypothesis: low nibble 1/2/4/8 = step in the order 1, 2, 4, 8 (the last step 8 lasts the final 19 to 35 percent of the run, probably drying), bit 0x10 = short pulse. In the Auto run each pulse in step 2 coincides with a drop of the remaining time (see 25/2008), so the pulses mark moments where the module re-estimates the run time (probably sensor measurements); not verified Eco 50 C run (210 min, default program): 20 at power-on, 21 at the start, 22 at +15.5 min, 12 for 3 s at +113 min, 24 at +129 min, 14 for 1 s at +131 min, 28 at +147.5 min and 18 for 1 s (twice) at +149 min, so the last step 8 began 62 min before the announced end, 30 percent of the run (Auto runs 19 to 35 percent), which fits drying. Each pulse comes within seconds of a small shift of the remaining-time tick (see 25/2008): the pulse marks a re-evaluation of the remaining time. The first step 2 came at +15.5 min here, at +19 min in the Auto runs"
+    status: assumed
+    evidence: "changes during a run; mapping of values to phases not verified. The order of the steps is confirmed: 21 (start), 22, 24, 28 in 4 of 4 raw runs (1 h 65 C, two Auto, Eco), so the low nibble counts steps 1, 2, 4, 8 and bit 0x10 marks a pulse; what each step does is a guess. Sequence in a 3650 s run (1 h 65 C), seconds after start: 20, 21 (start), 22 (+190), 12 for 2 s (+1825) then 22, 14 for 1 s (+2249) then 24, 28 (+2964), 18 for 1 s (+3065) then 28. Auto 45-65 C run (7216 s), minutes after start: 21 (start), 22 (+19), then 12 for 5 s followed by 22 at +47, +57, +58 and +69, 24 (+70), 28 (+84), 18 for 5 s followed by 28 twice at +86. In a second Auto run (110 min) the same sequence came at +19, +42/+51/+61 (pulses), 4 at +61, 8 at +75, so step 2 always starts at +19 min and step 8 lasted 36 min in both Auto runs (35.5 and 36) while the middle steps vary with the run length. Hypothesis: low nibble 1/2/4/8 = step in the order 1, 2, 4, 8 (the last step 8 lasts the final 19 to 35 percent of the run, probably drying), bit 0x10 = short pulse. In the Auto run each pulse in step 2 coincides with a drop of the remaining time (see 25/2008), so the pulses mark moments where the module re-estimates the run time (probably sensor measurements); not verified Eco 50 C run (210 min, default program): 20 at power-on, 21 at the start, 22 at +15.5 min, 12 for 3 s at +113 min, 24 at +129 min, 14 for 1 s at +131 min, 28 at +147.5 min and 18 for 1 s (twice) at +149 min, so the last step 8 began 62 min before the announced end, 30 percent of the run (Auto runs 19 to 35 percent), which fits drying. Each pulse comes within seconds of a small shift of the remaining-time tick (see 25/2008): the pulse marks a re-evaluation of the remaining time. The first step 2 came at +15.5 min here, at +19 min in the Auto runs"
     fields:
       - {byte: 0, kind: u8, name: phase, label: Phase, status: unknown}
   - key: "25/2004"
@@ -198,13 +198,13 @@ commands:
     name: program_list
     title: Program list (module announces supported programs)
     status: assumed
-    evidence: "starts with a5 followed by the program ids 1c 0d 0e 0f 15 12 ... seen at power-on on a Neff S413K60S0E"
+    evidence: "starts with a5 followed by the program ids 1c 0d 0e 0f 15 12 ... seen at power-on on a Neff S413K60S0E, 5 of 5 times with the same bytes. The ids 1c, 0d, 0e and 15 are the programs Chef 70 C, Auto 45-65 C, Eco 50 C and 1 h 65 C seen in selections and echoes; 0f and 12 have not been seen anywhere else"
     fields: []
   - key: "25/2009"
     name: heartbeat
-    title: Periodic frame, always 00
-    status: assumed
-    evidence: "1536 frames (a large share of all traffic), always the single byte 00 from the first to the last recording, one frame about every 10 s while the module is awake (for example at 581.4 s and 591.4 s); so a cyclic heartbeat of the module"
+    title: Frame 00, irregular (not a fixed-interval heartbeat)
+    status: unknown
+    evidence: "504 frames in the raw recordings (a large share of all traffic), always the single byte 00. It is not periodic: in the 207 min Eco run 115 frames came with gaps from 0.1 s to a minute (0.1 s 11 times, 2.0 s 7 times, 10.0 s 7 times, 15 s 5 times, many others), so the earlier idea of a cyclic heartbeat does not hold; meaning unknown"
     fields: []
   - key: "25/2015"
     name: start_parameter
