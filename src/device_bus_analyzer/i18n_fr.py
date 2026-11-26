@@ -30,6 +30,7 @@ filter | Filtrer
 since | De
 until | À
 limit | Limite
+with_damaged | inclure les télégrammes endommagés
 only_bad | Erreurs CRC uniquement
 count | Nombre
 distinct | Valeurs distinctes

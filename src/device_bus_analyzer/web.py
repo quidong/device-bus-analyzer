@@ -648,13 +648,14 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
 
     @app.get("/s/{source}/frames", response_class=HTMLResponse, dependencies=[api])
     def html_frames(request: Request, source: str, ds: str = "", cmd: str = "", since: str = "", until: str = "",
-                    bad_only: bool = False, limit: int = 200, offset: int = 0, run: str = ""):
+                    bad_only: bool = False, limit: int = 200, offset: int = 0, run: str = "",
+                    with_damaged: bool = False):
         src = source_or_404(source)
         limit = max(1, min(limit, 1000))
         run_id = int(run) if run.isdigit() else None
         lo, hi = window(source, run_id, parse_time(since, tz), parse_time(until, tz))
-        rows = annotate(source, store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi, False if bad_only else None, limit, max(0, offset)))
-        return page(request, "frames.html", src=src, rows=rows, q=dict(ds=ds, cmd=cmd, since=since, until=until, bad_only=bad_only,
+        rows = annotate(source, store.frames(source, parse_hex(ds, 2), parse_hex(cmd, 4), lo, hi, False if bad_only else (None if with_damaged else True), limit, max(0, offset)))
+        return page(request, "frames.html", src=src, rows=rows, q=dict(ds=ds, cmd=cmd, since=since, until=until, bad_only=bad_only, with_damaged=with_damaged,
                     limit=limit, offset=max(0, offset), run=run))
 
     @app.get("/s/{source}/timeline", response_class=HTMLResponse, dependencies=[api])

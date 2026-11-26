@@ -299,3 +299,15 @@ def test_macs_pages_show_devices_and_decoded_frames(store):
     h = {"Authorization": f"Bearer {TOKEN}"}
     f = c.get("/api/tr/frames", headers=h).json()
     assert f[0]["decoded"]["name"] == "heartbeat" and f[0]["decoded"]["sender"]["status"] == "assumed"
+
+
+def test_frames_page_hides_damaged_telegrams_unless_asked(app, store):
+    sid = store.source("dw", "bshdbus")
+    bad = bytearray(build_frame(0x25, 0x2000, b"\x05")); bad[-1] ^= 0xFF
+    store.ingest_line(sid, raw1(9, 9_000_000, bytes(bad)), 1_800_000_009.0)
+    c = TestClient(app, follow_redirects=False)
+    login(c)
+    default = c.get("/s/dw/frames").text
+    assert 'class="bad"' not in default and "2008" in default
+    assert 'class="bad"' in c.get("/s/dw/frames", params={"with_damaged": "true"}).text
+    assert 'class="bad"' in c.get("/s/dw/frames", params={"bad_only": "true"}).text

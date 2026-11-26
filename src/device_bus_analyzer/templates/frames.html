@@ -7,6 +7,7 @@
 <label>{{ t.until }} <input name="until" value="{{ q.until }}"></label>
 <label>{{ t.limit }} <input name="limit" value="{{ q.limit }}" size="4"></label>
 <label class="chk"><input type="checkbox" name="bad_only" value="true" {% if q.bad_only %}checked{% endif %}> {{ t.only_bad }}</label>
+<label class="chk"><input type="checkbox" name="with_damaged" value="true" {% if q.with_damaged %}checked{% endif %}> {{ t.with_damaged }}</label>
 <button>{{ t.filter }}</button></form>
 <div data-live="rows" data-live-every="10">{% if not rows %}<p>{{ t.no_data }}</p>{% else %}
 <div class="tbl"><table class="stack"><tr><th>{{ t.time }}</th><th>{{ t.sender }}</th><th>{{ t.dest }}</th><th>{{ t.cmd }}</th><th>{{ t.data }}</th><th>{{ t.ack }}</th><th>{{ t.crc }}</th><th>{{ t.decoded }}</th></tr>
