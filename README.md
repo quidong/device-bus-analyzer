@@ -64,7 +64,8 @@ connection (MCP). Record **complete runs** (choose a program, start it, let it f
 when ("20:14 door opened"). Repeat interesting actions a few times. Then connect Claude (account menu → *AI connection*) and use one
 of the example prompts on that page (overview, analyse a run with your actions, find display values, explain unknown commands,
 write a contribution file, export a complete run). The device card shows how much of a recording is already **analysed**: the share
-of telegrams whose command the spec describes (confirmed or assumed) or for which a finding was accepted.
+of telegram types (destination + command) that the spec describes (confirmed or assumed) or for which a finding was accepted. It
+counts types, not telegrams, so a heartbeat sent every minute weighs no more than a command that appears twice.
 
 There are two ways to give knowledge back to the project: **complete runs** (let Claude export a run with times relative to its
 start and without host names, addresses or keys, and attach it to an issue) or **analysed findings** (let Claude write a contribution

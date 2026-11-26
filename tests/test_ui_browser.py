@@ -40,7 +40,7 @@ def server(tmp_path):
 def test_overview_layout_and_pages_without_overflow(server, width):
     base, store = server
     sid = store.source_by_name("dw")["id"]
-    for i, cmd in enumerate([0x1010, 0x1010, 0x1010, 0x7777]):        # 0x7777 is not in the spec: 3 of 4 telegrams are analysed at most
+    for i, cmd in enumerate([0x1010, 0x1010, 0x1010, 0x7777]):        # 0x7777 is not in the spec: 1 of 2 telegram types is analysed at most
         store.db.execute("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", (sid, time.time() - 10 + i, 0x17, cmd, b"\x00\x01"))
     store.db.commit()
     with pw.sync_playwright() as p:
@@ -63,7 +63,7 @@ def test_overview_layout_and_pages_without_overflow(server, width):
         assert pg.locator("article.dev details").count() == 0
         # analysed share instead of the telegram count
         txt = pg.inner_text("article.dev .analysed dd")
-        assert "%" in txt and int(txt.split("%")[0].strip()) <= 75 and pg.locator("article.dev .analysed progress").count() == 1
+        assert "%" in txt and int(txt.split("%")[0].strip()) <= 50 and pg.locator("article.dev .analysed progress").count() == 1
         # icon and name open the device
         pg.click("article.dev a.devlink .name"); pg.wait_for_url("**/s/dw/runs")
         pg.goto(base + "/devices?lang=en"); pg.click("article.dev a.devlink .tile"); pg.wait_for_url("**/s/dw/runs")

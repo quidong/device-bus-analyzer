@@ -332,3 +332,20 @@ def test_no_page_shows_a_python_method_instead_of_a_text(client, store):
     for f in files.iterdir():
         if f.name.endswith(".html"):
             assert not re.search(r"\bt\.(copy|values|items|keys|get|pop|update|clear)\b", f.read_text(encoding="utf-8")), f.name
+
+
+def test_analysed_share_counts_telegram_types_not_telegrams(client, store):
+    """A heartbeat sent every minute must not dominate: one known type with 500 telegrams and three unknown types with one
+    telegram each are 1 of 4 types = 25 %, not 500 of 503 telegrams = 99 %."""
+    login(client)
+    store.source("hb", "bshdbus")
+    store.save_device("hb", "bshdbus", "dishwasher", "Neff", "S413K60S0E", "h.lan", 6053, None)
+    sid = store.source_by_name("hb")["id"]
+    rows = [(sid, T0 + i, 0x17, 0x1010, b"\x00\x01") for i in range(500)]                 # known in the spec (confirmed)
+    rows += [(sid, T0 + 600 + i, 0x17, 0x7770 + i, b"\x00") for i in range(3)]             # three unknown types, once each
+    store.db.executemany("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", rows); store.db.commit()
+    html = client.get("/devices?lang=de").text
+    card = html[html.index('class="devlink" href="/s/hb"'):]
+    card = card[:card.index("</article>")]
+    assert "<b>25 %</b>" in card and 'value="25"' in card
+    assert "1 von 4 Telegrammarten" in card and "(1 bestätigt)" in card

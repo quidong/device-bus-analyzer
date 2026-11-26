@@ -206,7 +206,7 @@ help_step2 | Graba ciclos completos: elige un programa, inícialo y deja que ter
 help_step3 | Repite las acciones interesantes varias veces con unos segundos de pausa. Las repeticiones convierten una suposición en un hallazgo confirmado.
 help_step4 | Conecta Claude: menú de cuenta → Conexión IA. Instala la extensión e introduce la dirección y el token de API.
 help_step5 | Deja que Claude analice el ciclo. Hay prompts de ejemplo en la página Conexión IA; añade tus notas con la hora.
-help_step6 | «Analizado» en la tarjeta del aparato muestra cuántas tramas explica ya la especificación o un hallazgo aceptado.
+help_step6 | «Analizado» en la tarjeta del aparato muestra cuántos tipos de trama (destino + comando) explica ya la especificación o un hallazgo aceptado, sin importar con qué frecuencia se envía cada uno.
 help_step7 | Comparte lo que hayas averiguado con el proyecto (ver abajo), para que los siguientes empiecen con más conocimiento.
 help_why_title | ¿Por qué tanto cuidado?
 help_why | La aplicación solo escucha y nunca envía nada al aparato. Claude compara las tramas con tus notas y la especificación existente; horas exactas y repeticiones hacen fiable la comparación.
@@ -330,7 +330,7 @@ menu_system | Sistema
 learn_silent | Sin reacción del aparato (no contadas, ¿estaba encendido?): {}
 need_class | Indica tipo, fabricante y modelo: deciden qué es general y qué es específico del modelo.
 analysed | Analizado
-analysed_of | {} de {} tramas están explicadas por la especificación o un hallazgo aceptado ({} confirmadas).
+analysed_of | {} de {} tipos de trama (destino + comando) están explicados por la especificación o un hallazgo aceptado ({} confirmados).
 open_device | Abrir aparato
 onb_run | Grabar un ciclo completo (iniciar un programa y dejar que termine)
 onb_mcp | Conectar Claude (conexión IA) y dejar que analice el ciclo

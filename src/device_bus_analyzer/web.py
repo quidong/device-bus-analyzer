@@ -330,14 +330,15 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return out
 
     def analysed_share(source: str) -> dict:
-        """How much of the recording is understood: telegrams whose command the spec describes (confirmed or assumed)
-        or for which a finding was accepted, against all telegrams. {'pct', 'known', 'total', 'confirmed'}"""
+        """How much of the recording is understood, counted per telegram type (destination + command), not per telegram:
+        a heartbeat that arrives every minute weighs as much as a command seen twice. A type counts as analysed when the
+        spec describes it (confirmed or assumed) or a finding was accepted for it. {'pct', 'known', 'total', 'confirmed'}"""
         stats = store.command_stats(source)
         taught = set(learned.overlay(store.learned(source), store.learned_values(source)))
-        total = sum(r["n"] for r in stats)
-        known = sum(r["n"] for r in stats if r["decoded"]["status"] in ("confirmed", "assumed") or (r["ds"], r["cmd"]) in taught)
-        confirmed = sum(r["n"] for r in stats if r["decoded"]["status"] == "confirmed")
-        pct = int(known * 100 / total) if total else None                    # floor: 100 % only when everything is known
+        total = len(stats)
+        known = sum(1 for r in stats if r["decoded"]["status"] in ("confirmed", "assumed") or (r["ds"], r["cmd"]) in taught)
+        confirmed = sum(1 for r in stats if r["decoded"]["status"] == "confirmed")
+        pct = int(known * 100 / total) if total else None                    # floor: 100 % only when every type is known
         return {"pct": pct, "known": known, "total": total, "confirmed": confirmed}
 
     def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):

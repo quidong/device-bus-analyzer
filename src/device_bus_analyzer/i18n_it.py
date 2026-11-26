@@ -206,7 +206,7 @@ help_step2 | Registra cicli completi: scegli un programma, avvialo e lascialo fi
 help_step3 | Ripeti più volte le azioni interessanti con qualche secondo di pausa. Le ripetizioni trasformano un'ipotesi in un risultato confermato.
 help_step4 | Collega Claude: menu account → Connessione IA. Installa l'estensione e inserisci l'indirizzo e il token API.
 help_step5 | Lascia che Claude analizzi il ciclo. Prompt di esempio sono nella pagina Connessione IA; aggiungi le tue note con l'orario.
-help_step6 | «Analizzato» sulla scheda dell'apparecchio mostra quanti frame sono già spiegati dalla specifica o da un risultato accettato.
+help_step6 | «Analizzato» sulla scheda dell'apparecchio mostra quanti tipi di frame (destinazione + comando) sono già spiegati dalla specifica o da un risultato accettato, indipendentemente da quanto spesso vengono inviati.
 help_step7 | Condividi ciò che hai scoperto con il progetto (vedi sotto), così chi viene dopo parte con più conoscenze.
 help_why_title | Perché tanta cura?
 help_why | L'app ascolta soltanto e non invia mai nulla all'apparecchio. Claude confronta i frame con le tue note e la specifica esistente; orari esatti e ripetizioni rendono affidabile il confronto.
@@ -330,7 +330,7 @@ menu_system | Sistema
 learn_silent | Nessuna reazione dell'apparecchio (non conteggiate: era acceso?): {}
 need_class | Indica tipo, produttore e modello: decidono cosa è generale e cosa è specifico del modello.
 analysed | Analizzato
-analysed_of | {} frame su {} sono spiegati dalla specifica o da un risultato accettato ({} confermati).
+analysed_of | {} tipi di frame su {} (destinazione + comando) sono spiegati dalla specifica o da un risultato accettato ({} confermati).
 open_device | Apri apparecchio
 onb_run | Registrare un ciclo completo (avviare un programma e lasciarlo finire)
 onb_mcp | Collegare Claude (connessione IA) e fargli analizzare il ciclo

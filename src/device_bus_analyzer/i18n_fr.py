@@ -206,7 +206,7 @@ help_step2 | Enregistrez des cycles complets : choisissez un programme, lancez-l
 help_step3 | Répétez plusieurs fois les actions intéressantes avec quelques secondes de pause. Les répétitions transforment une supposition en résultat confirmé.
 help_step4 | Connectez Claude : menu du compte → Connexion IA. Installez l'extension et saisissez l'adresse et le jeton d'API.
 help_step5 | Laissez Claude analyser le cycle. Des prompts d'exemple se trouvent sur la page Connexion IA ; ajoutez vos notes avec l'heure.
-help_step6 | « Analysé » sur la carte de l'appareil indique combien de trames la spécification ou un résultat accepté explique déjà.
+help_step6 | « Analysé » sur la carte de l'appareil indique combien de types de trame (destination + commande) la spécification ou un résultat accepté explique déjà, quelle que soit leur fréquence d'envoi.
 help_step7 | Partagez ce que vous avez trouvé avec le projet (voir ci-dessous), pour que les suivants partent avec plus de connaissances.
 help_why_title | Pourquoi tant de soin ?
 help_why | L'application ne fait qu'écouter et n'envoie jamais rien à l'appareil. Claude compare les trames à vos notes et à la spécification existante ; des heures exactes et des répétitions rendent la comparaison fiable.
@@ -330,7 +330,7 @@ menu_system | Système
 learn_silent | Sans réaction de l'appareil (non comptées – était-il allumé ?) : {}
 need_class | Indiquez le type, le fabricant et le modèle : ils décident de ce qui est général et de ce qui est propre au modèle.
 analysed | Analysé
-analysed_of | {} trames sur {} sont expliquées par la spécification ou un résultat accepté ({} confirmées).
+analysed_of | {} types de trame sur {} (destination + commande) sont expliqués par la spécification ou un résultat accepté ({} confirmés).
 open_device | Ouvrir l'appareil
 onb_run | Enregistrer un cycle complet (lancer un programme et le laisser se terminer)
 onb_mcp | Connecter Claude (connexion IA) et lui faire analyser le cycle
