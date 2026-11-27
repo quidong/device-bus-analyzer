@@ -178,3 +178,7 @@ main>section.card+section.card{margin-top:16px}
 .an-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mut)}
 .an-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .an-legend i{width:10px;height:10px;border-radius:2px;background:var(--acc)}.an-legend i.a{opacity:.35}
+/* card head: the name breaks only between words (or, if a single word cannot fit a whole line, anywhere); the status
+   badge moves below the name when there is not enough room next to it */
+.dev .head{flex-wrap:wrap;row-gap:10px}.dev .head .devlink{flex:1 1 200px}
+.dev .name{overflow-wrap:break-word;word-break:normal;line-height:1.25}

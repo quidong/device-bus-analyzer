@@ -207,3 +207,24 @@ def test_login_survives_a_second_tab_and_an_expired_token(server):
         assert "bad CSRF" not in a.content()
         a.fill("input[name=password]", PW); a.click("button"); a.wait_for_url(base + "/")  # second try works
         b.close()
+
+
+@pytest.mark.parametrize("width", [1100, 390, 320])
+def test_device_names_do_not_break_inside_a_word(server, width):
+    base, store = server
+    store.save_device("spuelmaschine", "bshdbus", "dishwasher", "Neff", "S413K60S0E", "h.lan")
+    store.save_device("ein-sehr-langer-geraetename-ohne-leerzeichen-im-keller", "macs", "dryer", "AEG", "T8DEE", "h2.lan")
+    with sync_playwright_ctx() as p:
+        b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+        pg = b.new_page(viewport={"width": width, "height": 900})
+        _login(pg, base); pg.goto(base + "/devices?lang=de")
+        name = pg.locator("article.dev:has(a[href='/s/spuelmaschine']) .name")
+        line = float(pg.evaluate("parseFloat(getComputedStyle(document.querySelector('article.dev .name')).lineHeight)"))
+        assert name.bounding_box()["height"] < line * 1.5, width                   # "spuelmaschine" stays on one line
+        # the badge sits next to the name when there is room, below it otherwise, never squeezing the name
+        card = pg.locator("article.dev:has(a[href='/s/spuelmaschine'])")
+        badge = card.locator(".badge").bounding_box(); nb = name.bounding_box()
+        assert badge["x"] >= nb["x"] + nb["width"] - 1 or badge["y"] >= nb["y"] + nb["height"] - 1
+        # a single word longer than the card still breaks instead of overflowing
+        assert pg.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0
+        b.close()
