@@ -4,10 +4,10 @@
     "firmware/bshdbus-analysis.example.yaml": "985cf275cc9b9e808ec097c721f78bfdc89f6ec005c463e1fe26c9fa2b4507d9",
     "firmware/macs-analysis.example.yaml": "6bbec55af4dd19f79b2699ca0b36f0de79ad85fd1ac50ada9e3dafc4343b6a5b",
     "firmware/macs_recorder.h": "89bb29cb338d9606906ff4a1cf210aee657a2154bf71f7c1e18d6ed748ad5a99",
-    "spec/bshdbus.yaml": "4610bf97b783a07cdc467662af957c7520237e0c1c316e3063d1d15784e8b248",
+    "spec/bshdbus.yaml": "6cfa92986b94770028d91b00f0018e8800f7289ba12507563b420b0146d33133",
     "spec/macs.yaml": "a8fc4505d19878a842c12b1cf405e7f611b112b82e18285582c59ad0a442712a"
   },
   "format": 1,
-  "revision": "029a1f8f66228b81",
-  "version": "2026-11-27.4"
+  "revision": "4ce1123e5202b07a",
+  "version": "2026-11-28.1"
 }

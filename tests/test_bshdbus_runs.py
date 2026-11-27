@@ -157,7 +157,7 @@ def test_audit_statuses_after_the_review():
     assert cmds["25/2010"]["status"] == "assumed"                       # echo is mostly 0e, not reliably 'last used'
     assert cmds["22/7ff1"]["status"] == "assumed" and "ACK" in cmds["22/7ff1"]["evidence"]
     assert cmds["25/2009"]["status"] == "unknown" and "not periodic" in cmds["25/2009"]["evidence"]
-    assert [f["name"] for f in cmds["25/1012"]["fields"]] == ["nominal_h", "nominal_m", "delay_left_h", "delay_left_m"]
+    assert [f["name"] for f in cmds["25/1012"]["fields"]] == ["nominal_h", "nominal_m", "delay_left_half_hours", "delay_left_h", "delay_left_m"]
     d = spec.decode("bshdbus", 0x25, 0x1012, bytes([0, 0, 0, 0, 3, 30, 0]))["values"]
     assert d["nominal_h"] == 3 and d["nominal_m"] == 30
 
@@ -224,9 +224,9 @@ def test_delayed_start_findings_are_recorded_honestly():
     from pathlib import Path
     spec = yaml.safe_load((Path(__file__).parents[1] / "src/device_bus_analyzer/spec/bshdbus.yaml").read_text())
     cmds = {c["key"]: c for c in spec["commands"]}
-    assert spec["enums"]["operating_state"]["0x04"].endswith("(assumed)")
+    assert spec["enums"]["operating_state"]["0x04"] == "delayed start set, waiting"
     d = cmds["17/1012"]
-    assert d["status"] == "assumed" and any(f["name"] == "delay_h" for f in d["fields"])
+    assert d["status"] == "confirmed" and any(f["name"] == "delay_h" for f in d["fields"])
     assert "delayed start" in cmds["27/2007"]["evidence"]
     assert "delayed start" in cmds["25/2008"]["evidence"]
 
