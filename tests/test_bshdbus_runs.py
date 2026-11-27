@@ -206,3 +206,14 @@ def test_confirmed_after_the_review_of_the_raw_recordings():
     assert idx["25/2005"]["status"] == "assumed"
     hb = idx["25/2009"]
     assert hb["status"] == "unknown" and "not periodic" in hb["evidence"] and "heartbeat" not in hb["title"].replace("not a fixed-interval heartbeat", "")
+
+
+def test_progress_is_derived_from_the_remaining_time_in_the_spec():
+    idx = spec.load_spec("bshdbus")["_index"]
+    assert "100 x (1 - remaining / announced time)" in idx["25/2000"]["evidence"]
+    assert "1 h 65 C run (selected after power-on)" in idx["25/2008"]["evidence"]
+    assert "fixed per program" in idx["25/2005"]["evidence"]
+    assert "5 s later the chosen one" in idx["17/1011"]["evidence"]
+    # the formula itself, as used to check the recording
+    for rem, total, pct in [(118, 165, 28), (88, 165, 47), (20, 210, 90), (30, 60, 50), (0, 60, 100)]:
+        assert round(100 * (1 - rem / total)) == pct
