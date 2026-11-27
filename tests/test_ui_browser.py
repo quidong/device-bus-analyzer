@@ -183,3 +183,19 @@ def test_dialog_offers_every_brand_and_bus_and_remembers_own_models(server, widt
         assert (d["type"], d["manufacturer"], d["model"], d["protocol"]) == ("washer", "Miele", "WWD 120", "bshdbus")
         assert errors == []
         b.close()
+
+
+def test_login_survives_a_second_tab_and_an_expired_token(server):
+    base, store = server
+    with sync_playwright_ctx() as p:
+        b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+        ctx = b.new_context(); a = ctx.new_page(); other = ctx.new_page()
+        a.goto(base + "/login?lang=de"); other.goto(base + "/login?lang=de")          # the second tab must not break the first
+        a.fill("input[name=email]", MAIL); a.fill("input[name=password]", PW); a.click("button"); a.wait_for_url(base + "/")
+        ctx.clear_cookies()                                                              # signed out; the login page then lies around for long (cookies cleared: language falls back to the browser)
+        a.goto(base + "/login?lang=de"); ctx.clear_cookies()                            # its token cookie is gone as well
+        a.fill("input[name=email]", MAIL); a.fill("input[name=password]", PW); a.click("button")
+        assert "open for too long" in a.inner_text("p.err") and a.input_value("input[name=email]") == MAIL
+        assert "bad CSRF" not in a.content()
+        a.fill("input[name=password]", PW); a.click("button"); a.wait_for_url(base + "/")  # second try works
+        b.close()

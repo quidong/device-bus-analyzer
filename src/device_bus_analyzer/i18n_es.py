@@ -352,4 +352,5 @@ mcp_p6_title | Compartir un ciclo completo
 mcp_p6 | Exporta el ciclo <n.º> de «{}» como CSV: tiempo en segundos desde el inicio del ciclo, destino, comando y datos (hex), además de programa y tipo, fabricante y modelo. Sin nombres de host, direcciones IP ni claves.
 bus_system | Sistema de bus
 bus_note | Preseleccionado según el fabricante. Cámbialo si tu aparato usa otro bus; queda fijo una vez creado el aparato.
+login_expired | La página de inicio de sesión estuvo abierta demasiado tiempo. Introduce tu contraseña de nuevo.
 """

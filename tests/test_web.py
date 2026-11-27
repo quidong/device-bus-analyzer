@@ -59,6 +59,44 @@ def test_login_requires_csrf(client):
     assert client.post("/login", data={"email": MAIL, "password": PW}).status_code == 422
 
 
+def test_a_forged_login_signs_nobody_in(client):
+    client.get("/login")
+    r = client.post("/login", data={"email": MAIL, "password": PW, "csrf": "forged-token-value-xyz"})
+    assert r.status_code == 403 and "dba_session" not in r.headers.get("set-cookie", "") and client.get("/").status_code == 303
+
+
+def test_an_old_login_page_still_works_after_another_tab_opened_one(client):
+    """A second tab or a redirect to /login must not invalidate a login form that is already open."""
+    first = re.search(r'name="csrf" value="([^"]+)"', client.get("/login").text).group(1)
+    second = re.search(r'name="csrf" value="([^"]+)"', client.get("/login").text).group(1)
+    assert first == second
+    assert client.post("/login", data={"email": MAIL, "password": PW, "csrf": first}).status_code == 303
+
+
+def test_login_token_lives_for_hours(client):
+    c = client.get("/login").headers["set-cookie"].lower()
+    assert "dba_csrf=" in c and "max-age=43200" in c and "samesite=strict" in c and "httponly" in c
+
+
+def test_an_expired_login_page_shows_the_form_again_instead_of_an_error(client):
+    """Cookie gone (page open too long, cookies cleared): no JSON error, but the form with a fresh token and the e-mail kept."""
+    tok = re.search(r'name="csrf" value="([^"]+)"', client.get("/login").text).group(1)
+    client.cookies.clear()
+    r = client.post("/login?lang=de", data={"email": MAIL, "password": PW, "csrf": tok})
+    assert r.status_code == 403 and r.headers["content-type"].startswith("text/html")
+    assert "bad CSRF token" not in r.text and "zu lange geöffnet" in r.text and f'value="{MAIL}"' in r.text
+    assert client.get("/").status_code == 303                                          # nothing was signed in
+    fresh = re.search(r'name="csrf" value="([^"]+)"', r.text).group(1)
+    assert fresh != tok and client.post("/login", data={"email": MAIL, "password": PW, "csrf": fresh}).status_code == 303
+
+
+def test_after_signing_in_the_next_login_gets_a_new_token(client):
+    tok = re.search(r'name="csrf" value="([^"]+)"', client.get("/login").text).group(1)
+    r = client.post("/login", data={"email": MAIL, "password": PW, "csrf": tok})
+    assert r.status_code == 303 and 'dba_csrf=""' in r.headers.get("set-cookie", "")       # used token is dropped
+    assert re.search(r'name="csrf" value="([^"]+)"', client.get("/login").text).group(1) != tok
+
+
 def test_login_rate_limit(client):
     for _ in range(5):
         assert login(client, pw="bad").status_code == 401

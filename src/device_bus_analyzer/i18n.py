@@ -229,6 +229,7 @@ STR = {
         "mcp_p6": "Export run <no.> of \"{}\" as CSV: time in seconds since the start of the run, destination, command and data (hex), plus program and type, manufacturer and model. No host names, IP addresses or keys.",
         "bus_system": "Bus system",
         "bus_note": "Preset to match the manufacturer. Change it if your appliance uses a different bus; it is fixed once the device exists.",
+        "login_expired": "The login page was open for too long. Please enter your password again.",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -459,6 +460,7 @@ STR = {
         "mcp_p6": "Exportiere Lauf <Nr.> von „{}“ als CSV: Zeit in Sekunden seit Laufbeginn, Ziel, Kommando und Daten (hex), dazu Programm sowie Typ, Hersteller und Modell. Keine Hostnamen, IP-Adressen oder Schlüssel.",
         "bus_system": "Bussystem",
         "bus_note": "Passend zum Hersteller vorbelegt. Ändere ihn, wenn dein Gerät einen anderen Bus nutzt; nach dem Anlegen ist er fest.",
+        "login_expired": "Die Anmeldeseite war zu lange geöffnet. Bitte gib dein Passwort noch einmal ein.",
     },
 }
 

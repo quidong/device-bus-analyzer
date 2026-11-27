@@ -187,27 +187,35 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         return request.client.host if request.client else "?"
 
     # --- login ----------------------------------------------------------------
+    LOGIN_CSRF_AGE = 12 * 3600          # a login page may stay open for hours (tablet, background tab) and still work
+
+    def login_page(request: Request, error: str | None = None, email: str = "", status: int = 200) -> Response:
+        """Login form with its double-submit token. An existing token is reused, so a second tab or a redirect to the
+        login page does not invalidate a form that is already open."""
+        token = request.cookies.get(CSRF_COOKIE, "")
+        if not (20 <= len(token) <= 64 and token.replace("-", "").replace("_", "").isalnum()):
+            token = secrets.token_urlsafe(24)
+        resp = page(request, "login.html", error=error, csrf=token, email=email)
+        resp.status_code = status
+        resp.set_cookie(CSRF_COOKIE, token, httponly=True, samesite="strict", secure=settings.cookie_secure, max_age=LOGIN_CSRF_AGE)
+        return resp
+
     @app.get("/login", response_class=HTMLResponse)
     def login_form(request: Request):
-        token = secrets.token_urlsafe(24)
-        resp = page(request, "login.html", error=None, csrf=token)
-        resp.set_cookie(CSRF_COOKIE, token, httponly=True, samesite="strict", secure=settings.cookie_secure, max_age=900)
-        return resp
+        return login_page(request)
 
     @app.post("/login", response_class=HTMLResponse)
     def login(request: Request, email: str = Form(...), password: str = Form(...), csrf: str = Form(...)):
         cookie = request.cookies.get(CSRF_COOKIE, "")
         if not cookie or not secrets.compare_digest(cookie, csrf):
-            raise HTTPException(403, "bad CSRF token")
+            # page too old or token replaced: show the form again with a fresh token instead of a bare error (nothing is
+            # signed in, so this stays a refusal; the password field is empty, the e-mail is kept)
+            return login_page(request, error="expired", email=email[:200], status=403)
         ip = client_ip(request)
         if auth.locked(ip):
-            r = page(request, "login.html", error="locked", csrf=csrf)
-            r.status_code = 429
-            return r
+            return login_page(request, error="locked", email=email[:200], status=429)
         if not auth.check_login(ip, email, password):
-            r = page(request, "login.html", error="bad", csrf=csrf)
-            r.status_code = 401
-            return r
+            return login_page(request, error="bad", email=email[:200], status=401)
         resp = RedirectResponse("/", status_code=303)
         resp.set_cookie(COOKIE, auth.make_session(), httponly=True, samesite="strict", secure=settings.cookie_secure,
                         max_age=auth.max_age)

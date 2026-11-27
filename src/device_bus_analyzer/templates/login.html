@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% block body %}
 <form method="post" action="/login" class="card narrow">
 <h1>{{ t.login }}</h1>
-{% if error == "bad" %}<p class="err">{{ t.bad_login }}</p>{% elif error == "locked" %}<p class="err">{{ t.locked }}</p>{% endif %}
+{% if error == "bad" %}<p class="err">{{ t.bad_login }}</p>{% elif error == "locked" %}<p class="err">{{ t.locked }}</p>{% elif error == "expired" %}<p class="err">{{ t.login_expired }}</p>{% endif %}
 <input type="hidden" name="csrf" value="{{ csrf }}">
-<label>{{ t.email }}<input type="email" name="email" autocomplete="username" required autofocus></label>
-<label>{{ t.password }}<input type="password" name="password" autocomplete="current-password" required></label>
+<label>{{ t.email }}<input type="email" name="email" autocomplete="username" required{% if email %} value="{{ email }}"{% else %} autofocus{% endif %}></label>
+<label>{{ t.password }}<input type="password" name="password" autocomplete="current-password" required{% if email %} autofocus{% endif %}></label>
 <button>{{ t.login }}</button></form>{% endblock %}
