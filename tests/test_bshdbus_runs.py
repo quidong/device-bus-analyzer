@@ -217,3 +217,15 @@ def test_progress_is_derived_from_the_remaining_time_in_the_spec():
     # the formula itself, as used to check the recording
     for rem, total, pct in [(118, 165, 28), (88, 165, 47), (20, 210, 90), (30, 60, 50), (0, 60, 100)]:
         assert round(100 * (1 - rem / total)) == pct
+
+
+def test_delayed_start_findings_are_recorded_honestly():
+    import yaml
+    from pathlib import Path
+    spec = yaml.safe_load((Path(__file__).parents[1] / "src/device_bus_analyzer/spec/bshdbus.yaml").read_text())
+    cmds = {c["key"]: c for c in spec["commands"]}
+    assert spec["enums"]["operating_state"]["0x04"].endswith("(assumed)")
+    d = cmds["17/1012"]
+    assert d["status"] == "assumed" and any(f["name"] == "delay_h" for f in d["fields"])
+    assert "delayed start" in cmds["27/2007"]["evidence"]
+    assert "delayed start" in cmds["25/2008"]["evidence"]

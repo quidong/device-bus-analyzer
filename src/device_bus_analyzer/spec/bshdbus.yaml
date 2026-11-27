@@ -75,6 +75,7 @@ enums:
     "0x01": "running"
     "0x02": "on / idle"
     "0x03": "finished (cycle ended)"
+    "0x04": "delayed start set, waiting (assumed)"
     "0x06": "seen during or after a run, meaning unclear"
 commands:
   - key: "24/2006"
@@ -90,7 +91,7 @@ commands:
     name: remaining_time
     title: Remaining time
     status: confirmed
-    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time Eco 50 C run from the default program (no selection, started 43 min after power-on): 210 min announced, byte 0 fell by one per minute from 210 to 20 over 188 min with no large re-estimate; the minute tick only shifted by seconds at the phase pulses (28 s early at +113 min, 4 s late at +131 min, one minute skipped at +149 min), and the second hour byte pair stayed 3030. So the large jumps of the Auto runs come from the program, not from the counter itself The Eco 50 C run ended after 207.3 min, not 210: the counter skipped one minute at +149 min and the last step went from 2 straight to 0 within 45 s, where the end marker 27/2007 = 03 came; so Eco also ends a little early, by under three minutes 1 h 65 C run (selected after power-on): 60 min announced (bytes 1-2 4430, bytes 3-4 01 00), the run took 59.0 min. The remaining time ran one per minute with three corrections at the phase pulses: plus one minute at pulse 12 (+30.6 min), minus one minute at pulse 18 (+51.2 min, 11 to 9 within 31 s) and minus one minute at the end (2 to 0 within 48 s). The Eco run also lost a minute at pulse 18 and one at the end, so the last pulse and the end each shorten the displayed time by a minute"
+    evidence: "byte 0 counts down in minutes (160 at start of a Chef 70 C run, 159 a minute later). The estimate is adaptive: an Auto 45-65 C run started with 165 min, the value dropped by 30 min (118 to 88) at the phase pulse 25/2005 = 12 at +47 min and by 15 min (79 to 64) at the next one at +57 min, and the run ended after 120 min; the frames right after power-on alternate between the time of the default selection (210 min for Eco, bytes 1-2 3030) and the selected program (165 min for Auto, bytes 1-2 404c) until the selection is final. In a second Auto run the first re-estimate also landed on 88 min (from 124) and the second on 62 (from 80); the run took 110 min instead of 120, so the module picks the new estimate in steps, probably from sensor measurements. Auto 45-65 C runs lasted 110 to 120 min against the 165 min announced. Bytes 3 and 4 are hours and minutes of the same value: byte 0 = byte 3 * 60 + byte 4 in all 144 sampled frames of three recordings (for example 81 .. 02 09 = 129 min = 2:09), and bytes 6 and 7 repeat bytes 3 and 4. Bytes 1 and 2 are not understood (0x5058 at 129 min, 0x3030 at 210 min, 0x4430 at 60 min); the first frame after power-on can still show the previously used program's time Eco 50 C run from the default program (no selection, started 43 min after power-on): 210 min announced, byte 0 fell by one per minute from 210 to 20 over 188 min with no large re-estimate; the minute tick only shifted by seconds at the phase pulses (28 s early at +113 min, 4 s late at +131 min, one minute skipped at +149 min), and the second hour byte pair stayed 3030. So the large jumps of the Auto runs come from the program, not from the counter itself The Eco 50 C run ended after 207.3 min, not 210: the counter skipped one minute at +149 min and the last step went from 2 straight to 0 within 45 s, where the end marker 27/2007 = 03 came; so Eco also ends a little early, by under three minutes 1 h 65 C run (selected after power-on): 60 min announced (bytes 1-2 4430, bytes 3-4 01 00), the run took 59.0 min. The remaining time ran one per minute with three corrections at the phase pulses: plus one minute at pulse 12 (+30.6 min), minus one minute at pulse 18 (+51.2 min, 11 to 9 within 31 s) and minus one minute at the end (2 to 0 within 48 s). The Eco run also lost a minute at pulse 18 and one at the end, so the last pulse and the end each shorten the displayed time by a minute. With a delayed start (6 h, EasyClean) bytes 3 and 4 showed 7:30 h while byte 0 stayed at 90 min, so byte 0 is the program time only and the hour/minute bytes include the delay: the rule byte 0 = byte 3 * 60 + byte 4 holds only without a delayed start. After the delay was cancelled all of them were back at 90 min / 1:30 h"
     fields:
       - {byte: 0, kind: u8, name: remaining_min, label: Remaining time, unit: min, status: confirmed}
       - {byte: 3, kind: u8, name: remaining_h, label: Remaining hours, unit: h, status: confirmed}
@@ -106,7 +107,7 @@ commands:
     name: after_end
     title: Run flag (01 at the start, 00 two minutes after the end)
     status: unknown
-    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; also seen as 00 less than a second after the door was opened while the machine was idle after power-on In the Eco 50 C run the 00 followed the end marker after 119.7 s, as in the Auto runs"
+    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; it also came as 00 only 12 s after a cancelled delayed start (long press of Reset), so it is not tied to the 120 s after the end marker; also seen as 00 less than a second after the door was opened while the machine was idle after power-on In the Eco 50 C run the 00 followed the end marker after 119.7 s, as in the Auto runs"
   - key: "25/2013"
     name: end_marker
     title: Marker ff00 (at the start and at the end of a run)
@@ -146,7 +147,7 @@ commands:
     name: operating_state
     title: Operating state
     status: confirmed
-    evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 exactly once at the end of every recorded run (six runs plus one earlier partial recording); 06 was seen in earlier runs, unclear, and is not in the current database"
+    evidence: "02 after power-on, 01 right after start; 03 together with remaining time 0 exactly once at the end of every recorded run (six runs plus one earlier partial recording); 06 was seen in earlier runs, unclear, and is not in the current database. 04 was seen once: right after the start command with a delayed start set (17/1012 = 0c06...), together with the remaining time 7:30 h (6 h delay plus 1:30 h of EasyClean); after the delay was cancelled with a long press of Reset the module reported 02 again. One observation, so 04 = delayed start waiting is an assumption"
     fields:
       - {byte: 0, kind: enum, enum: operating_state, name: state, label: State, status: confirmed}
   - key: "17/1001"
@@ -165,9 +166,10 @@ commands:
   - key: "17/1012"
     name: delay_start
     title: Delayed start (7 data bytes)
-    status: unknown
-    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing; layout with a non-zero delay not yet recorded. Hint: the module echo 25/1012 has the same seven bytes and carries hours and minutes in bytes 4 and 5, not in bytes 1 and 2 as the upstream ESPHome example reads them, so check both positions when a delayed start is recorded"
-    fields: []
+    status: assumed
+    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing. One recording of a delayed start (EasyClean, 6 h delay): the panel sent 0c 06 00 00 00 00 00 just before the start command 17/1013 = 01, so byte 1 = delay in hours (06) is the assumption; byte 0 = 0c is not understood. The module echoed the same bytes in 25/1012 = 0c 06 00 00 07 1e 00 with bytes 4 and 5 = 7:30 h (delay plus program time), so the delay is not in bytes 4 and 5 of the panel frame but in byte 1. Cancelling the delay (long press of Reset, 6 s after the start) sent 00 00 00 01 00 00 00 (byte 3 = 01 assumed to be the reset flag); the module then reported 27/2007 = 02, the remaining time 1:30 h again and 25/1012 = 00 00 00 00 01 1e 00. The selected program stayed, no 17/1010 or 17/1011 was sent. Single observation, so everything here is assumed"
+    fields:
+      - {byte: 1, kind: u8, name: delay_h, label: Delay, unit: h, status: assumed}
   - key: "17/1013"
     name: start
     title: Start command
