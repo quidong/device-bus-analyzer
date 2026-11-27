@@ -63,7 +63,7 @@ def test_overview_layout_and_pages_without_overflow(server, width):
         assert pg.locator("article.dev details").count() == 0
         # analysed share instead of the telegram count
         txt = pg.inner_text("article.dev .analysed dd")
-        assert "%" in txt and int(txt.split("%")[0].strip()) <= 50 and pg.locator("article.dev .analysed progress").count() == 1
+        assert "%" in txt and int(txt.split("%")[0].strip()) <= 50 and pg.locator("article.dev .analysed .stack").count() == 1
         # icon and name open the device
         pg.click("article.dev a.devlink .name"); pg.wait_for_url("**/s/dw/runs")
         pg.goto(base + "/devices?lang=en"); pg.click("article.dev a.devlink .tile"); pg.wait_for_url("**/s/dw/runs")

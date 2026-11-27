@@ -347,5 +347,24 @@ def test_analysed_share_counts_telegram_types_not_telegrams(client, store):
     html = client.get("/devices?lang=de").text
     card = html[html.index('class="devlink" href="/s/hb"'):]
     card = card[:card.index("</article>")]
-    assert "<b>25 %</b>" in card and 'value="25"' in card
+    assert "<b>25 %</b>" in card
+    # two colours: confirmed part and, behind it, the assumed rest (here all of the 25 % is confirmed)
+    assert 'class="c" style="width:25%"' in card and 'class="a" style="width:0%"' in card and "25 % bestätigt" in card
     assert "1 von 4 Telegrammarten" in card and "(1 bestätigt)" in card
+
+
+def test_analysed_share_splits_confirmed_and_assumed(client, store):
+    login(client)
+    store.source("hb2", "bshdbus")
+    store.save_device("hb2", "bshdbus", "dishwasher", "Neff", "S413K60S0E", "h.lan", 6053, None)
+    sid = store.source_by_name("hb2")["id"]
+    rows = [(sid, T0, 0x17, 0x1010, b"\x00\x01"),            # confirmed
+            (sid, T0 + 1, 0x17, 0x1013, b"\x01"),             # confirmed
+            (sid, T0 + 2, 0x25, 0x2011, b"\xa5"),             # assumed
+            (sid, T0 + 3, 0x25, 0x2015, b"\x0f\xff")]        # unknown
+    store.db.executemany("INSERT INTO frames(source_id, ts, ds, cmd, data, crc_ok) VALUES(?,?,?,?,?,1)", rows); store.db.commit()
+    html = client.get("/devices?lang=de").text
+    card = html[html.index('class="devlink" href="/s/hb2"'):]
+    card = card[:card.index("</article>")]
+    assert "<b>75 %</b>" in card and 'class="c" style="width:50%"' in card and 'class="a" style="width:25%"' in card
+    assert "50 % bestätigt" in card

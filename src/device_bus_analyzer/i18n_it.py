@@ -330,6 +330,7 @@ menu_system | Sistema
 learn_silent | Nessuna reazione dell'apparecchio (non conteggiate: era acceso?): {}
 need_class | Indica tipo, produttore e modello: decidono cosa è generale e cosa è specifico del modello.
 analysed | Analizzato
+analysed_confirmed | {} % confermato
 analysed_of | {} tipi di frame su {} (destinazione + comando) sono spiegati dalla specifica o da un risultato accettato ({} confermati).
 open_device | Apri apparecchio
 onb_run | Registrare un ciclo completo (avviare un programma e lasciarlo finire)

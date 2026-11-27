@@ -347,7 +347,8 @@ def create_app(settings: Settings, store: Store, start_collectors: bool = False)
         known = sum(1 for r in stats if r["decoded"]["status"] in ("confirmed", "assumed") or (r["ds"], r["cmd"]) in taught)
         confirmed = sum(1 for r in stats if r["decoded"]["status"] == "confirmed")
         pct = int(known * 100 / total) if total else None                    # floor: 100 % only when every type is known
-        return {"pct": pct, "known": known, "total": total, "confirmed": confirmed}
+        cpct = int(confirmed * 100 / total) if total else None
+        return {"pct": pct, "known": known, "total": total, "confirmed": confirmed, "confirmed_pct": cpct}
 
     def devices_page(request: Request, error: str | None = None, form: dict | None = None, status: int = 200):
         lang = i18n.pick(request.headers.get("accept-language"), request.cookies.get("dba_lang"), request.query_params.get("lang"))

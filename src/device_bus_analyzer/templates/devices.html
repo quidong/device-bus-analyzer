@@ -26,7 +26,7 @@
 {% if not d.type or not d.manufacturer or not d.model %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
 <dl data-live="values-{{ d.name }}"><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
 <div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
-<div class="analysed"><dt>{{ t.analysed }}</dt><dd title="{{ t.analysed_of.format(d.analysed.known, d.analysed.total, d.analysed.confirmed) }}">{% if d.analysed.pct is none %}–{% else %}<b>{{ d.analysed.pct }} %</b> <progress max="100" value="{{ d.analysed.pct }}" aria-label="{{ t.analysed }}">{{ d.analysed.pct }} %</progress>{% endif %}</dd></div>
+<div class="analysed"><dt>{{ t.analysed }}</dt><dd title="{{ t.analysed_of.format(d.analysed.known, d.analysed.total, d.analysed.confirmed) }}">{% if d.analysed.pct is none %}–{% else %}<b>{{ d.analysed.pct }} %</b> <span class="stack" role="img" aria-label="{{ t.analysed }}: {{ d.analysed.pct }} %, {{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}"><i class="c" style="width:{{ d.analysed.confirmed_pct }}%"></i><i class="a" style="width:{{ d.analysed.pct - d.analysed.confirmed_pct }}%"></i></span> <small>{{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}</small>{% endif %}</dd></div>
 <div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div>
 {% if d.now %}<div class="now"><dt>{{ t.state_now }}</dt><dd>{% for x in d.now %}<span class="tag learned">{{ x }}</span> {% endfor %}</dd></div>{% endif %}</dl>
 <div class="actions iconbar">

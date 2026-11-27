@@ -330,6 +330,7 @@ menu_system | Sistema
 learn_silent | Sin reacción del aparato (no contadas, ¿estaba encendido?): {}
 need_class | Indica tipo, fabricante y modelo: deciden qué es general y qué es específico del modelo.
 analysed | Analizado
+analysed_confirmed | {} % confirmado
 analysed_of | {} de {} tipos de trama (destino + comando) están explicados por la especificación o un hallazgo aceptado ({} confirmados).
 open_device | Abrir aparato
 onb_run | Grabar un ciclo completo (iniciar un programa y dejar que termine)

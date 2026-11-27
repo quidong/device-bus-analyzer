@@ -163,6 +163,7 @@ select.langsel{min-height:36px;padding:0 8px}
 .ibtn:hover,.ibtn:focus-visible{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-ink)}
 .ibtn.danger{margin-left:auto}.ibtn.danger:hover,.ibtn.danger:focus-visible{border-color:var(--bad);background:transparent;color:var(--bad)}
 .analysed dd{display:flex;align-items:center;gap:8px}
+.analysed .stack{display:flex;flex:1;min-width:40px;max-width:120px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.analysed .stack i{display:block;height:100%}.analysed .stack .c{background:var(--acc)}.analysed .stack .a{background:var(--acc);opacity:.4}.analysed small{color:var(--muted,inherit);white-space:nowrap}
 .analysed progress{flex:1;min-width:40px;max-width:120px;height:6px;border:0;border-radius:3px;background:var(--line);overflow:hidden;appearance:none;-webkit-appearance:none}
 .analysed progress::-webkit-progress-bar{background:var(--line);border-radius:3px}.analysed progress::-webkit-progress-value{background:var(--acc);border-radius:3px}
 .analysed progress::-moz-progress-bar{background:var(--acc);border-radius:3px}
