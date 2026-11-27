@@ -356,4 +356,5 @@ bus_note | Présélectionné selon le fabricant. Changez-le si votre appareil ut
 login_expired | La page de connexion est restée ouverte trop longtemps. Veuillez saisir à nouveau votre mot de passe.
 analysed_types | {} types de trame sur {}
 analysed_assumed | {} % supposé
+run_waited | + {} min de départ différé
 """

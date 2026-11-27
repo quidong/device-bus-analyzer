@@ -6,7 +6,7 @@
 {% for r in runs %}<tr><td data-label="#">{{ r.id }}</td>
 <td data-label="{{ t.start }}">{{ fmt(r.start_ts) }} {{ m.badge(r.start_status, t) }}</td>
 <td data-label="{{ t.end }}">{% if r.open %}<span class="st assumed">{{ t.running }}</span>{% else %}{{ fmt(r.end_ts) }} {{ m.badge(r.end_status, t) }}{% endif %}</td>
-<td data-label="{{ t.duration }}">{{ (r.duration_s // 60)|int }} min</td><td data-label="{{ t.program }}">{{ r.program or '–' }}</td>
+<td data-label="{{ t.duration }}">{{ (r.duration_s // 60)|int }} min{% if r.wait_s %}<br><small>{{ t.run_waited.format((r.wait_s // 60)|int) }}</small>{% endif %}</td><td data-label="{{ t.program }}">{{ r.program or '–' }}</td>
 <td data-label="{{ t.remaining }}">{{ r.remaining_start_min if r.remaining_start_min is not none else '–' }} → {{ r.remaining_end_min if r.remaining_end_min is not none else '–' }} min</td>
 <td data-label="{{ t.frames }}">{{ r.frames }}</td><td data-label="{{ t.bad }}">{{ r.crc_errors }}</td>
 <td class="wide" data-label=""><a href="/s/{{ src.name }}/timeline?run={{ r.id }}">{{ t.timeline }}</a> · <a href="/s/{{ src.name }}/frames?run={{ r.id }}">{{ t.frames }}</a> · <a href="/s/{{ src.name }}/bursts?run={{ r.id }}">{{ t.bursts }}</a></td></tr>{% endfor %}</table></div>{% endif %}</div>

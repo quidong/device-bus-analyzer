@@ -274,3 +274,44 @@ def test_idle_state_without_a_delay_does_not_end_a_run(store):
     _put(store, sid, 4, T0 + 1200, 0x27, 0x2007, b"\x03")
     (r,) = store.runs("dw3")
     assert r["end_by"] == "marker"
+
+
+def _delayed(store, sid, t0, *, delay_s, run_s, cancel=False):
+    _put(store, sid, 1, t0, 0x17, 0x1011, b"\x0d")
+    _put(store, sid, 2, t0 + 10, 0x17, 0x1013, b"\x01")
+    _put(store, sid, 3, t0 + 10, 0x27, 0x2007, b"\x04")
+    if cancel:
+        _put(store, sid, 4, t0 + 100, 0x27, 0x2007, b"\x02")
+        return
+    _put(store, sid, 4, t0 + 10 + delay_s, 0x27, 0x2007, b"\x01")
+    _put(store, sid, 5, t0 + 10 + delay_s + 60, 0x25, 0x2008, bytes([165, 0x40, 0x4c, 2, 44, 0, 2, 44]))
+    _put(store, sid, 6, t0 + 10 + delay_s + run_s, 0x27, 0x2007, b"\x03")
+
+
+def test_delayed_start_splits_waiting_and_running(store):
+    sid = store.source("dw3", "bshdbus")
+    _delayed(store, sid, T0, delay_s=3592, run_s=7125)
+    (r,) = store.runs("dw3")
+    assert r["end_by"] == "marker" and r["wait_s"] == 3592
+    assert r["run_start_ts"] == T0 + 10 + 3592
+    assert r["duration_s"] == 7125 and r["start_ts"] == T0 + 10
+
+
+def test_run_without_delay_has_no_wait(store):
+    sid = store.source("dw3", "bshdbus")
+    _run(store, sid, 1, T0)
+    (r,) = store.runs("dw3")
+    assert r["wait_s"] == 0 and r["run_start_ts"] == r["start_ts"] and r["duration_s"] == 180
+
+
+def test_cancelled_wait_has_no_run_start(store):
+    sid = store.source("dw3", "bshdbus")
+    _delayed(store, sid, T0, delay_s=0, run_s=0, cancel=True)
+    (r,) = store.runs("dw3")
+    assert r["end_by"] == "cancelled" and r["run_start_ts"] is None and r["wait_s"] == 90
+
+
+def test_wait_text_exists_in_every_language():
+    from device_bus_analyzer import i18n
+    for lang in i18n.LANGS:
+        assert "{}" in i18n.STR[lang]["run_waited"], lang

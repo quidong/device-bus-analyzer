@@ -356,4 +356,5 @@ bus_note | Preimpostato in base al produttore. Cambialo se il tuo apparecchio us
 login_expired | La pagina di accesso è rimasta aperta troppo a lungo. Inserisci di nuovo la password.
 analysed_types | {} tipi di frame su {}
 analysed_assumed | {} % ipotizzato
+run_waited | + {} min di partenza ritardata
 """

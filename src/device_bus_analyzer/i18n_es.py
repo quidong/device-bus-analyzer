@@ -356,4 +356,5 @@ bus_note | Preseleccionado según el fabricante. Cámbialo si tu aparato usa otr
 login_expired | La página de inicio de sesión estuvo abierta demasiado tiempo. Introduce tu contraseña de nuevo.
 analysed_types | {} de {} tipos de trama
 analysed_assumed | {} % supuesto
+run_waited | + {} min de inicio diferido
 """

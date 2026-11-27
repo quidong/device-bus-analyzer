@@ -187,10 +187,32 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                         (len(d) > rem_when["byte"] and d[rem_when["byte"]] == rem_when["value"]))]
                 if rows:
                     rem_start, rem_end = rows[0][rem_byte], rows[-1][rem_byte]
+            # a delayed start: the machine reports "waiting" first; the programme itself begins when it reports "running"
+            run_start, wait_s = s["ts"], 0.0
+            wait = rules["start"].get("wait")
+            if wait:
+                w_ds, w_cmd = _split_key(wait["key"])
+                wb = wait.get("byte", 0)
+                waiting = False
+                for r in db.execute("SELECT ts, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND crc_ok=1 AND ts>=? AND ts<=? "
+                                    "ORDER BY ts, id", (source_id, w_ds, w_cmd, s["ts"], end_ts)):
+                    if len(r["data"]) <= wb:
+                        continue
+                    if not waiting and r["data"][wb] in wait["wait_values"] and r["ts"] - s["ts"] < 120:
+                        waiting = True
+                    elif waiting and r["data"][wb] in wait["run_values"]:
+                        run_start, wait_s = r["ts"], r["ts"] - s["ts"]
+                        break
+                if waiting and run_start == s["ts"]:
+                    wait_s = end_ts - s["ts"]          # still waiting, or cancelled before it began
+                    if not cancelled and (last_ts_all - end_ts) <= gap and marker_ts is None:
+                        run_start = end_ts             # still waiting: no programme time yet
             is_open = marker_ts is None and limit_ts is None and not ended_by_gap and (last_ts_all - end_ts) <= gap
             start_rule = fallback if s.get("fallback") else rules["start"]
             runs.append({
-                "id": s["id"], "start_ts": s["ts"], "end_ts": end_ts, "duration_s": round(end_ts - s["ts"], 1),
+                "id": s["id"], "start_ts": s["ts"], "end_ts": end_ts,
+                "duration_s": round(end_ts - run_start, 1) if not cancelled else round(end_ts - s["ts"], 1),
+                "wait_s": round(wait_s, 1), "run_start_ts": run_start if not cancelled else None,
                 "from_ts": max(s["ts"] - ctx, runs[-1]["end_ts"] if runs else 0), "frames": n, "crc_errors": bad,
                 "program": program, "remaining_start_min": rem_start, "remaining_end_min": rem_end, "open": is_open,
                 "start_by": "fallback" if s.get("fallback") else "command",

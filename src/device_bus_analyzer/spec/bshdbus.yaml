@@ -47,6 +47,13 @@ runs:
     value: 1
     status: assumed
     evidence: "17/1013 = 01 comes together with 17/1012 at program start; the module then reports 27/2007 = 01"
+    wait:                   # delayed start: the run begins when the state goes from waiting to running, not at the start command
+      key: "27/2007"
+      byte: 0
+      wait_values: [4]
+      run_values: [1]
+      status: confirmed
+      evidence: "with a delay set the module reports 27/2007 = 04 after the start command and 01 when the delay is over (one full run: 59 min 52 s for a 1 h delay); the programme time counts from 01"
   end:
     marker:                 # the run ends with the first intact frame that matches; the gap below is only the fallback
       key: "27/2007"
