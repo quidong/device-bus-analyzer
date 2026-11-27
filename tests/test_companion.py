@@ -349,7 +349,9 @@ def test_analysed_share_counts_telegram_types_not_telegrams(client, store):
     card = card[:card.index("</article>")]
     assert "<b>25 %</b>" in card
     # two colours: confirmed part and, behind it, the assumed rest (here all of the 25 % is confirmed)
-    assert 'class="c" style="width:25%"' in card and 'class="a" style="width:0%"' in card and "25 % bestätigt" in card
+    assert '<rect class="c" x="0" y="0" width="25"' in card and '<rect class="a" x="25" y="0" width="0"' in card and "25 % bestätigt" in card
+    assert "angenommen" not in card.split('class="an-legend"')[1]                       # no empty "0 % assumed" entry
+    assert 'style="' not in card                                                         # the CSP forbids inline styles
     assert "1 von 4 Telegrammarten" in card and "(1 bestätigt)" in card
 
 
@@ -366,5 +368,6 @@ def test_analysed_share_splits_confirmed_and_assumed(client, store):
     html = client.get("/devices?lang=de").text
     card = html[html.index('class="devlink" href="/s/hb2"'):]
     card = card[:card.index("</article>")]
-    assert "<b>75 %</b>" in card and 'class="c" style="width:50%"' in card and 'class="a" style="width:25%"' in card
-    assert "50 % bestätigt" in card
+    assert "<b>75 %</b>" in card and "3 von 4 Telegrammarten" in card
+    assert '<rect class="c" x="0" y="0" width="50"' in card and '<rect class="a" x="50" y="0" width="25"' in card
+    assert "50 % bestätigt" in card and "25 % angenommen" in card

@@ -26,8 +26,11 @@
 {% if not d.type or not d.manufacturer or not d.model %}<div class="notice"><span>{{ t.needs_class }}</span><button type="button" class="edit-device" {{ editdata(d) }}>{{ t.assign }}</button></div>{% endif %}
 <dl data-live="values-{{ d.name }}"><div><dt>{{ t.protocol }}</dt><dd class="mono">{{ d.protocol }}</dd></div>
 <div><dt>{{ t.connection }}</dt><dd class="mono">{% if d.host %}{{ d.host }}:{{ d.port }}{% else %}–{% endif %}</dd></div>
-<div class="analysed"><dt>{{ t.analysed }}</dt><dd title="{{ t.analysed_of.format(d.analysed.known, d.analysed.total, d.analysed.confirmed) }}">{% if d.analysed.pct is none %}–{% else %}<b>{{ d.analysed.pct }} %</b> <span class="stack" role="img" aria-label="{{ t.analysed }}: {{ d.analysed.pct }} %, {{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}"><i class="c" style="width:{{ d.analysed.confirmed_pct }}%"></i><i class="a" style="width:{{ d.analysed.pct - d.analysed.confirmed_pct }}%"></i></span> <small>{{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}</small>{% endif %}</dd></div>
 <div><dt>{{ t.last_seen }}</dt><dd>{{ d.ago }}</dd></div>
+<div class="analysed"><dt>{{ t.analysed }}</dt><dd title="{{ t.analysed_of.format(d.analysed.known, d.analysed.total, d.analysed.confirmed) }}">{% if d.analysed.pct is none %}–{% else %}{% set ap = d.analysed.pct - d.analysed.confirmed_pct %}
+<span class="an-top"><b>{{ d.analysed.pct }} %</b><span class="an-of">{{ t.analysed_types.format(d.analysed.known, d.analysed.total) }}</span></span>
+<svg class="an-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label="{{ t.analysed }}: {{ d.analysed.pct }} %, {{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}"><rect class="bg" x="0" y="0" width="100" height="8"/><rect class="c" x="0" y="0" width="{{ d.analysed.confirmed_pct }}" height="8"/><rect class="a" x="{{ d.analysed.confirmed_pct }}" y="0" width="{{ ap }}" height="8"/></svg>
+<span class="an-legend"><span><i class="c"></i>{{ t.analysed_confirmed.format(d.analysed.confirmed_pct) }}</span>{% if ap %}<span><i class="a"></i>{{ t.analysed_assumed.format(ap) }}</span>{% endif %}</span>{% endif %}</dd></div>
 {% if d.now %}<div class="now"><dt>{{ t.state_now }}</dt><dd>{% for x in d.now %}<span class="tag learned">{{ x }}</span> {% endfor %}</dd></div>{% endif %}</dl>
 <div class="actions iconbar">
 <a class="ibtn" href="/s/{{ d.name }}/frames" title="{{ t.frames }}" aria-label="{{ t.frames }}">{{ ico('frames') }}</a>

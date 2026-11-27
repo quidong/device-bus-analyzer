@@ -354,4 +354,6 @@ mcp_p6 | Esporta il ciclo <n.> di «{}» come CSV: tempo in secondi dall'inizio 
 bus_system | Sistema bus
 bus_note | Preimpostato in base al produttore. Cambialo se il tuo apparecchio usa un altro bus; è fisso una volta creato l'apparecchio.
 login_expired | La pagina di accesso è rimasta aperta troppo a lungo. Inserisci di nuovo la password.
+analysed_types | {} tipi di frame su {}
+analysed_assumed | {} % ipotizzato
 """

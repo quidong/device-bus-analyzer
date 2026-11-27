@@ -62,8 +62,16 @@ def test_overview_layout_and_pages_without_overflow(server, width):
         assert all(pg.locator("article.dev .ibtn").nth(i).inner_text().strip() == "" for i in range(len(boxes)))
         assert pg.locator("article.dev details").count() == 0
         # analysed share instead of the telegram count
-        txt = pg.inner_text("article.dev .analysed dd")
-        assert "%" in txt and int(txt.split("%")[0].strip()) <= 50 and pg.locator("article.dev .analysed .stack").count() == 1
+        txt = pg.inner_text("article.dev .analysed .an-top b")
+        assert "%" in txt and int(txt.split("%")[0].strip()) <= 50
+        # own full-width row, the number on one line, a bar that is actually drawn (CSP: no inline styles)
+        row, card = pg.locator("article.dev .analysed").first.bounding_box(), pg.locator("article.dev dl").first.bounding_box()
+        assert row["width"] >= card["width"] - 2
+        assert pg.locator("article.dev .an-top b").first.bounding_box()["height"] < 30
+        bar = pg.locator("article.dev svg.an-bar").first.bounding_box()
+        assert bar["width"] >= card["width"] - 2 and 6 <= bar["height"] <= 10
+        filled = pg.evaluate("parseFloat(document.querySelector('article.dev svg.an-bar rect.c').getAttribute('width')) + parseFloat(document.querySelector('article.dev svg.an-bar rect.a').getAttribute('width'))")
+        assert 0 < filled <= 50
         # icon and name open the device
         pg.click("article.dev a.devlink .name"); pg.wait_for_url("**/s/dw/runs")
         pg.goto(base + "/devices?lang=en"); pg.click("article.dev a.devlink .tile"); pg.wait_for_url("**/s/dw/runs")

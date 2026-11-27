@@ -231,6 +231,8 @@ STR = {
         "bus_system": "Bus system",
         "bus_note": "Preset to match the manufacturer. Change it if your appliance uses a different bus; it is fixed once the device exists.",
         "login_expired": "The login page was open for too long. Please enter your password again.",
+        "analysed_types": "{} of {} telegram types",
+        "analysed_assumed": "{} % assumed",
     },
     "de": {
         "title": "Geräte-Bus-Analyse", "login": "Anmelden", "email": "E-Mail", "password": "Passwort", "logout": "Abmelden",
@@ -463,6 +465,8 @@ STR = {
         "bus_system": "Bussystem",
         "bus_note": "Passend zum Hersteller vorbelegt. Ändere ihn, wenn dein Gerät einen anderen Bus nutzt; nach dem Anlegen ist er fest.",
         "login_expired": "Die Anmeldeseite war zu lange geöffnet. Bitte gib dein Passwort noch einmal ein.",
+        "analysed_types": "{} von {} Telegrammarten",
+        "analysed_assumed": "{} % angenommen",
     },
 }
 
