@@ -94,6 +94,26 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                     if len(r["data"]) > mb and r["data"][mb] in mk_values:
                         marker_ts = r["ts"]
                         break
+            # a delayed start that is cancelled again: the state frame goes from "waiting" to "idle" without the run ever starting
+            cancelled = False
+            cancel = rules.get("end", {}).get("cancel")
+            if cancel:
+                c_ds, c_cmd = _split_key(cancel["key"])
+                cq = ("SELECT ts, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND crc_ok=1 AND ts>=?"
+                      + (" AND ts<?" if limit_ts else "") + " ORDER BY ts, id")
+                cargs = (source_id, c_ds, c_cmd, start_ts) + ((limit_ts,) if limit_ts else ())
+                cb, prev_state = cancel.get("byte", 0), None
+                for r in db.execute(cq, cargs):
+                    if len(r["data"]) <= cb:
+                        continue
+                    v = r["data"][cb]
+                    if v in mk_values:
+                        break                                   # the normal end came first
+                    if prev_state in cancel["after_values"] and v in cancel["values"]:
+                        if marker_ts is None or r["ts"] < marker_ts:
+                            marker_ts, cancelled = r["ts"], True
+                        break
+                    prev_state = v
             q = ("SELECT ts, crc_ok FROM frames WHERE source_id=? AND ts>=?"
                  + (" AND ts<?" if limit_ts else "") + (" AND ts<=?" if marker_ts else "") + " ORDER BY ts, id")
             args = (source_id, start_ts) + ((limit_ts,) if limit_ts else ()) + ((marker_ts,) if marker_ts else ())
@@ -108,7 +128,7 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                 prev = end_ts = r["ts"]
                 n += 1
                 bad += 0 if r["crc_ok"] else 1
-            return {"end_ts": end_ts, "n": n, "bad": bad, "marker_ts": marker_ts, "ended_by_gap": ended_by_gap}
+            return {"end_ts": end_ts, "n": n, "bad": bad, "marker_ts": marker_ts, "ended_by_gap": ended_by_gap, "cancelled": cancelled}
 
         # Plan B: runs whose start command was not recorded
         if fallback:
@@ -140,6 +160,8 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
             limit_ts = merged[i + 1]["ts"] if i + 1 < len(merged) else None
             e = span(s["ts"], limit_ts)
             end_ts, n, bad, marker_ts, ended_by_gap = e["end_ts"], e["n"], e["bad"], e["marker_ts"], e["ended_by_gap"]
+            cancelled = e["cancelled"]
+            cancel_rule = rules.get("end", {}).get("cancel") or {}
             program = None
             if prog_cmd is not None:
                 p = db.execute("SELECT ds, cmd, data FROM frames WHERE source_id=? AND ds=? AND cmd=? AND ts<=? AND ts>=? "
@@ -173,10 +195,12 @@ def find_runs(db, source_id: int, protocol: str, lock) -> list[dict[str, Any]]:
                 "program": program, "remaining_start_min": rem_start, "remaining_end_min": rem_end, "open": is_open,
                 "start_by": "fallback" if s.get("fallback") else "command",
                 "start_status": start_rule.get("status", "assumed"), "start_evidence": start_rule.get("evidence", ""),
-                "end_by": "marker" if marker_ts else ("open" if is_open else "gap"),
-                "end_status": ("unknown" if is_open else marker.get("status", "assumed") if marker_ts
+                "end_by": "cancelled" if cancelled else "marker" if marker_ts else ("open" if is_open else "gap"),
+                "end_status": ("unknown" if is_open else cancel_rule.get("status", "assumed") if cancelled
+                               else marker.get("status", "assumed") if marker_ts
                                else rules.get("end", {}).get("status", "assumed")),
-                "end_evidence": ("run still receiving telegrams" if is_open else marker.get("evidence", "") if marker_ts
+                "end_evidence": ("run still receiving telegrams" if is_open else cancel_rule.get("evidence", "") if cancelled
+                                 else marker.get("evidence", "") if marker_ts
                                  else rules.get("end", {}).get("evidence", "")),
             })
         return runs

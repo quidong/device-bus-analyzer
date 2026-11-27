@@ -54,6 +54,13 @@ runs:
       value: 3
       status: confirmed
       evidence: "27/2007 = 03 (finished) is sent exactly once at the end of each of the seven recorded runs (1 h 65 C, Auto 45-65 C, Eco 50 C) and of one earlier partial recording; the module then sends 25/2012 = 00 about 120 s later"
+    cancel:                 # delayed start cancelled again: state 04 (waiting) followed by 02 (idle) ends the run
+      key: "27/2007"
+      byte: 0
+      after_values: [4]
+      values: [2]
+      status: assumed
+      evidence: "a delayed start (state 04) was cancelled with a long press of Reset in 2 of 2 recordings: the module then reported 27/2007 = 02 again, the remaining time fell back to the program time and no program ran; so 04 followed by 02 is read as a cancelled start, not as a finished run"
     gap_minutes: 20         # fallback: no telegram for this long ends the run, or the next start begins a new one
     status: assumed
     evidence: "fallback when the end marker frame was lost (CRC error): the end is the last telegram before a silent gap"

@@ -241,3 +241,36 @@ def test_second_delayed_start_recording_is_in_the_spec():
     assert "delay_left_h" in names and "delay_left_m" in names
     assert "extra drying" in cmds["17/1000"]["evidence"].lower()
     assert "0fcb" in cmds["25/2015"]["evidence"]
+
+
+def test_cancelled_delayed_start_ends_the_run(store):
+    sid = store.source("dw3", "bshdbus")
+    _put(store, sid, 1, T0, 0x17, 0x1011, b"\x15")
+    _put(store, sid, 2, T0 + 10, 0x17, 0x1013, b"\x01")
+    _put(store, sid, 3, T0 + 10, 0x27, 0x2007, b"\x04")          # delayed start waiting
+    _put(store, sid, 4, T0 + 100, 0x17, 0x1012, bytes([0, 0, 0, 1, 0, 0, 0]))
+    _put(store, sid, 5, T0 + 100, 0x27, 0x2007, b"\x02")         # back to idle: cancelled
+    _put(store, sid, 6, T0 + 104, 0x25, 0x2012, b"\x00")
+    (r,) = store.runs("dw3")
+    assert r["end_by"] == "cancelled" and r["end_status"] == "assumed" and r["open"] is False
+    assert r["end_ts"] == T0 + 100 and "cancelled" in r["end_evidence"]
+
+
+def test_delayed_start_that_runs_is_not_cancelled(store):
+    sid = store.source("dw3", "bshdbus")
+    _put(store, sid, 1, T0, 0x17, 0x1013, b"\x01")
+    _put(store, sid, 2, T0, 0x27, 0x2007, b"\x04")
+    _put(store, sid, 3, T0 + 3600, 0x27, 0x2007, b"\x01")        # delay over: the programme runs
+    _put(store, sid, 4, T0 + 7200, 0x27, 0x2007, b"\x03")
+    (r,) = store.runs("dw3")
+    assert r["end_by"] == "marker" and r["end_ts"] == T0 + 7200
+
+
+def test_idle_state_without_a_delay_does_not_end_a_run(store):
+    sid = store.source("dw3", "bshdbus")
+    _put(store, sid, 1, T0, 0x17, 0x1013, b"\x01")
+    _put(store, sid, 2, T0, 0x27, 0x2007, b"\x01")
+    _put(store, sid, 3, T0 + 600, 0x27, 0x2007, b"\x02")
+    _put(store, sid, 4, T0 + 1200, 0x27, 0x2007, b"\x03")
+    (r,) = store.runs("dw3")
+    assert r["end_by"] == "marker"
