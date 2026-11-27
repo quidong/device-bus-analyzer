@@ -107,7 +107,7 @@ commands:
     name: after_end
     title: Run flag (01 at the start, 00 two minutes after the end)
     status: unknown
-    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; it also came as 00 only 12 s after a cancelled delayed start (long press of Reset), so it is not tied to the 120 s after the end marker; also seen as 00 less than a second after the door was opened while the machine was idle after power-on In the Eco 50 C run the 00 followed the end marker after 119.7 s, as in the Auto runs"
+    evidence: "value 01 about 1 s after power-on at the start of a run (1 h 65 C), value 00 as one frame exactly 120 s after 27/2007 = 03 at the end of each run; probably marks the module leaving and entering standby; it also came as 00 only 12 s after a cancelled delayed start (long press of Reset), so it is not tied to the 120 s after the end marker (second time: 4 s after the cancel, 98 s after the start); switching the machine off by hand a few minutes later produced no telegram at all, so a manual power-off is not visible on the bus; also seen as 00 less than a second after the door was opened while the machine was idle after power-on In the Eco 50 C run the 00 followed the end marker after 119.7 s, as in the Auto runs"
   - key: "25/2013"
     name: end_marker
     title: Marker ff00 (at the start and at the end of a run)
@@ -138,7 +138,7 @@ commands:
     name: options
     title: Options
     status: confirmed
-    evidence: "byte 1 bits follow the option buttons"
+    evidence: "byte 1 bits follow the option buttons. Extra drying switched on with 1 h 65 C selected (byte 1 = 02): the module raised the remaining time from 60 to 70 min at once (25/2008 bytes 1-2 4430 became 4830, 25/1012 nominal time 1:10), so the option adds 10 min for this program; it stayed set after a cancelled delayed start"
     fields:
       - {byte: 1, bit: 7, name: vario_speed_plus, label: VarioSpeedPlus, status: confirmed}
       - {byte: 1, bit: 6, name: intensive_zone, label: IntensiveZone, status: confirmed}
@@ -167,7 +167,7 @@ commands:
     name: delay_start
     title: Delayed start (7 data bytes)
     status: assumed
-    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing. One recording of a delayed start (EasyClean, 6 h delay): the panel sent 0c 06 00 00 00 00 00 just before the start command 17/1013 = 01, so byte 1 = delay in hours (06) is the assumption; byte 0 = 0c is not understood. The module echoed the same bytes in 25/1012 = 0c 06 00 00 07 1e 00 with bytes 4 and 5 = 7:30 h (delay plus program time), so the delay is not in bytes 4 and 5 of the panel frame but in byte 1. Cancelling the delay (long press of Reset, 6 s after the start) sent 00 00 00 01 00 00 00 (byte 3 = 01 assumed to be the reset flag); the module then reported 27/2007 = 02, the remaining time 1:30 h again and 25/1012 = 00 00 00 00 01 1e 00. The selected program stayed, no 17/1010 or 17/1011 was sent. Single observation, so everything here is assumed"
+    evidence: "all zero when started without delay; changing the delay on the panel alone sends nothing. One recording of a delayed start (EasyClean, 6 h delay): the panel sent 0c 06 00 00 00 00 00 just before the start command 17/1013 = 01, so byte 1 = delay in hours (06) is the assumption; byte 0 = 0c is not understood. The module echoed the same bytes in 25/1012 = 0c 06 00 00 07 1e 00 with bytes 4 and 5 = 7:30 h (delay plus program time), so the delay is not in bytes 4 and 5 of the panel frame but in byte 1. Cancelling the delay (long press of Reset, 6 s after the start) sent 00 00 00 01 00 00 00 (byte 3 = 01 assumed to be the reset flag); the module then reported 27/2007 = 02, the remaining time 1:30 h again and 25/1012 = 00 00 00 00 01 1e 00. The selected program stayed, no 17/1010 or 17/1011 was sent. Second recording (1 h 65 C with extra drying, 3 h delay): 06 03 00 00 00 00 00, so byte 1 = delay in hours holds (03), and byte 0 was 2 x byte 1 both times (0c with 6 h, 06 with 3 h), probably the delay in units of 30 min. Cancelling again sent 00 00 00 01 00 00 00, 98 s after the start, with the same reaction (27/2007 = 02, remaining time back to the program time of 1:10 h, option and program kept). Two observations, so everything here stays assumed"
     fields:
       - {byte: 1, kind: u8, name: delay_h, label: Delay, unit: h, status: assumed}
   - key: "17/1013"
@@ -212,16 +212,18 @@ commands:
     name: start_parameter
     title: Parameter sent at power-on / start (0fff or 0e40)
     status: unknown
-    evidence: "0fff 11 times, 0e40 twice, both right before a 1 h 65 C run; so it may depend on the program last used or selected"
+    evidence: "0fff 11 times, 0e40 twice, both right before a 1 h 65 C run; so it may depend on the program last used or selected. It follows the program selected at power-on: Eco 0fff, Glass 40 C 0fcb, Chef 70 C 0fff, EasyClean 0800 and, again, 1 h 65 C 0e40 (third time), seen in the 25/2008 burst of each selection; meaning still unknown"
     fields: []
   - key: "25/1012"
     name: cmd_1012
     title: Nominal run time of the stored program (seven data bytes at power-on)
     status: confirmed
-    evidence: "00 00 00 00 03 1e 00 in 15 power-ons, once 00 00 00 00 02 2d 00. Bytes 4 and 5 read as hours and minutes give 3:30 = 210 min (Eco) and 2:45 = 165 min (Auto), the announced times of the programs that 25/2010 names in the same moment (0e and once 0d, 5 ms apart). So it is the nominal run time of the program the module holds at power-on; bytes 0-3 and 6 are always 0 Confirmed by the Eco 50 C run that started without any program selection: the run announced 210 min, exactly bytes 4 and 5 (3:30) of this frame, and the Auto runs announced 165 min (2:45)"
+    evidence: "00 00 00 00 03 1e 00 in 15 power-ons, once 00 00 00 00 02 2d 00. Bytes 4 and 5 read as hours and minutes give 3:30 = 210 min (Eco) and 2:45 = 165 min (Auto), the announced times of the programs that 25/2010 names in the same moment (0e and once 0d, 5 ms apart). So it is the nominal run time of the program the module holds at power-on; bytes 0-3 and 6 are always 0 Confirmed by the Eco 50 C run that started without any program selection: the run announced 210 min, exactly bytes 4 and 5 (3:30) of this frame, and the Auto runs announced 165 min (2:45). With a delayed start the frame is sent again right after the start command and during the wait: 0c 06 00 00 07 1e 00 (6 h delay, EasyClean) and 06 03 00 00 04 0a 00 (3 h delay, 1 h 65 C with extra drying), so bytes 4 and 5 are the total time including the delay (delay plus program time). 39 s after the start the frame read 06 02 3b 00 04 09 00: bytes 1 and 2 count the remaining delay down (2 h 59 min), byte 0 stayed 06 and bytes 4 and 5 fell by a minute to 4:09. After the delay was cancelled the frame was 00 00 00 00 01 0a 00 (program time only). Two observations, the countdown only once, so the delay bytes are assumed"
     fields:
       - {byte: 4, kind: u8, name: nominal_h, label: Nominal hours, unit: h, status: assumed}
       - {byte: 5, kind: u8, name: nominal_m, label: Nominal minutes, unit: min, status: assumed}
+      - {byte: 1, kind: u8, name: delay_left_h, label: Remaining delay hours, unit: h, status: assumed}
+      - {byte: 2, kind: u8, name: delay_left_m, label: Remaining delay minutes, unit: min, status: assumed}
   - key: "22/7ff1"
     name: wake_up
     title: "Power-on call to the panel (repeated until acknowledged)"
